@@ -1,0 +1,15 @@
+[submodule "dependencies/dm-tools"]
+	path = dependencies/dm-tools
+	url = https://github.com/dotmodules/dm-tools.git
+[submodule "future/tomllib"]
+	path = future/tomllib
+	url = https://github.com/uiri/toml.git
+[submodule "python3.11/tomllib"]
+	path = python3.11/tomllib
+	url = https://github.com/uiri/toml.git
+[submodule "python_3_11/tomllib"]
+	path = python_3_11/tomllib
+	url = https://github.com/uiri/toml.git
+[submodule "dependencies/tomllib"]
+	path = dependencies/tomllib
+	url = https://github.com/uiri/toml.git
