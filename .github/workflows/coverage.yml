@@ -46,4 +46,4 @@ jobs:
         filename: coverage.json
         label: coverage
         message: ${{ env.COVERAGE_PERCENTAGE }}
-        color: green
+        color: blue
