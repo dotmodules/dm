@@ -27,7 +27,7 @@ jobs:
         echo "VIRTUAL ENV: ${VIRTUAL_ENV}"
     - name: Initialize testing system
       run: |
-        make init
+        make dev-init
     - name: Run code quality checks
       run: |
         make check
