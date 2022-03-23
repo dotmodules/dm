@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from dotmodules.modules import ConfigParser, ConfigError, Module
+from dotmodules.modules import ConfigError, ConfigParser, Module
 
 
 class TestStringParsing:

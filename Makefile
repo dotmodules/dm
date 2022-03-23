@@ -43,21 +43,14 @@ init:
 # =============================================================================
 #  DEV ENVIRONMENT COMMANDS
 
-.PHONY: dev-init
-dev-init: virtualenv_activated
+.PHONY: dev_init
+dev_init: virtualenv_activated
 	@pip install --requirement requirements-dev.txt 2>&1 | sed 's/^/pip    | /'
 	@safety check --file requirements-dev.txt 2>&1 | sed 's/^/safety | /'
 
-# The colored isort output has a colorama issue which prevent it to close
-# correctly the coloring sequences hence the manual reset on each line ending..
 .PHONY: check
 check: virtualenv_activated
-	@isort --diff --color --profile black dotmodules tests 2>&1 | sed 's/^/isort  | /' | sed 's/$$/$(shell tput sgr0)/'
-	@black --diff --quiet --color dotmodules tests 2>&1 | sed 's/^/black  | /'
-	@flake8 dotmodules tests 2>&1 | sed 's/^/flake8 | /'
-	@bandit --silent --recursive dotmodules 2>&1 | sed 's/^/bandit | /'
-	@bandit --silent --skip B101 --recursive tests 2>&1 | sed 's/^/bandit | /'
-	@MYPY_FORCE_COLOR=1 mypy dotmodules tests 2>&1 | sed 's/^/mypy   | /'
+	@./utils/check.sh
 
 .PHONY: fix
 fix: virtualenv_activated

@@ -204,7 +204,9 @@ class Modules:
 
     @classmethod
     def load(cls, modules_root_path: os.PathLike, config_file_name: str):
-        config_file_paths = cls._config_file_paths(modules_root_path=modules_root_path, config_file_name=config_file_name)
+        config_file_paths = cls._config_file_paths(
+            modules_root_path=modules_root_path, config_file_name=config_file_name
+        )
         for config_file_path in config_file_paths:
             module = Module.from_path(path=config_file_path)
             print(module)
