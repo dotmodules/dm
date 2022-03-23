@@ -8,12 +8,12 @@ NAME := DOTMODULES
 # =============================================================================
 #  HELPER VARIABLES
 
-BOLD   := $(shell tput bold)
-RED    := $(shell tput setaf 1)
-GREEN  := $(shell tput setaf 2)
-YELLOW := $(shell tput setaf 3)
-BLUE   := $(shell tput setaf 4)
-RESET  := $(shell tput sgr0)
+BOLD   := $(shell tput bold 2>/dev/null)
+RED    := $(shell tput setaf 1 2>/dev/null)
+GREEN  := $(shell tput setaf 2 2>/dev/null)
+YELLOW := $(shell tput setaf 3 2>/dev/null)
+BLUE   := $(shell tput setaf 4 2>/dev/null)
+RESET  := $(shell tput sgr0 2>/dev/null)
 
 # =============================================================================
 #  HELP COMMAND
