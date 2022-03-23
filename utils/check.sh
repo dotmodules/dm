@@ -15,6 +15,23 @@ set -u  # prevent unset variable expansion
 # the repository root.
 
 #==============================================================================
+# COLOR VARIABLES
+#==============================================================================
+
+if command -v tput >/dev/null && tput init >/dev/null 2>&1
+then
+  RED=$(tput setaf 1)
+  GREEN=$(tput setaf 2)
+  RESET=$(tput sgr0)
+  BOLD=$(tput bold)
+else
+  RED=''
+  GREEN=''
+  RESET=''
+  BOLD=''
+fi
+
+#==============================================================================
 # HEADER
 #==============================================================================
 
@@ -144,37 +161,37 @@ echo '==========================================================================
 
 if [ "$status__isort" -gt '0' ]
 then
-  echo ' isort  | failed'
+  echo " isort  | ${RED}${BOLD}failed${RESET}"
 else
-  echo ' isort  | passed'
+  echo " isort  | ${GREEN}${BOLD}passed${RESET}"
 fi
 
 if [ "$status__black" -gt '0' ]
 then
-  echo ' black  | failed'
+  echo " black  | ${RED}${BOLD}failed${RESET}"
 else
-  echo ' black  | passed'
+  echo " black  | ${GREEN}${BOLD}passed${RESET}"
 fi
 
 if [ "$status__flake8" -gt '0' ]
 then
-  echo ' flake8 | failed'
+  echo " flake8 | ${RED}${BOLD}failed${RESET}"
 else
-  echo ' flake8 | passed'
+  echo " flake8 | ${GREEN}${BOLD}passed${RESET}"
 fi
 
 if [ "$status__bandit" -gt '0' ]
 then
-  echo ' bandit | failed'
+  echo " bandit | ${RED}${BOLD}failed${RESET}"
 else
-  echo ' bandit | passed'
+  echo " bandit | ${GREEN}${BOLD}passed${RESET}"
 fi
 
 if [ "$status__mypy" -gt '0' ]
 then
-  echo ' mypy   | failed'
+  echo " mypy   | ${RED}${BOLD}failed${RESET}"
 else
-  echo ' mypy   | passed'
+  echo " mypy   | ${GREEN}${BOLD}passed${RESET}"
 fi
 
 echo '========================================================================================================================'
