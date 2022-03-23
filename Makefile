@@ -63,7 +63,7 @@ test: virtualenv_activated
 
 .PHONY: virtualenv_activated
 virtualenv_activated:
-	@if [[ -z "${VIRTUAL_ENV}" ]]; then \
+	@if [ -z "${VIRTUAL_ENV}" ]; then \
 		echo "$(BOLD)$(RED)No python virtual env present. Create and/or activate one before you can use the make interface!$(RESET)"; \
 		exit 1; \
 	fi

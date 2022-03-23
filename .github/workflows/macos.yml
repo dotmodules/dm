@@ -24,14 +24,20 @@ jobs:
       run: |
         python -m venv env
         source env/bin/activate
-        echo "VIRTUAL ENV: ${VIRTUAL_ENV}"
+        echo "VIRTUAL_ENV='${VIRTUAL_ENV}'"
     - name: Initialize testing system
       run: |
+        source env/bin/activate
+        echo "VIRTUAL_ENV='${VIRTUAL_ENV}'"
         make init
         make dev_init
     - name: Run code quality checks
       run: |
+        source env/bin/activate
+        echo "VIRTUAL_ENV='${VIRTUAL_ENV}'"
         make check
     - name: Run test suite
       run: |
+        source env/bin/activate
+        echo "VIRTUAL_ENV='${VIRTUAL_ENV}'"
         make test
