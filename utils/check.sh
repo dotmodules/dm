@@ -15,7 +15,7 @@ set -u  # prevent unset variable expansion
 # the repository root.
 
 #==============================================================================
-# COLOR VARIABLES
+# GLOBAL VARIABLES AND EYECANDY
 #==============================================================================
 
 if command -v tput >/dev/null && tput init >/dev/null 2>&1
@@ -23,21 +23,41 @@ then
   RED=$(tput setaf 1)
   GREEN=$(tput setaf 2)
   RESET=$(tput sgr0)
+  DIM=$(tput dim)
   BOLD=$(tput bold)
 else
   RED=''
   GREEN=''
   RESET=''
+  DIM=''
   BOLD=''
 fi
+
+is_output_printed_before='0'
+
+divider__double__top() {
+  echo '════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════'
+}
+
+divider__double__header() {
+  echo '════════╤═══════════════════════════════════════════════════════════════════════════════════════════════════════════════'
+}
+
+divider__double__footer() {
+  echo '════════╧═══════════════════════════════════════════════════════════════════════════════════════════════════════════════'
+}
+
+divider__inner() {
+  echo '────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────'
+}
 
 #==============================================================================
 # HEADER
 #==============================================================================
 
-echo '========================================================================================================================'
-echo ' CODE QUALITY CHECKS'
-echo '========================================================================================================================'
+divider__double__top
+echo " ${BOLD}CODE QUALITY CHECKS${RESET}"
+divider__double__header
 
 #==============================================================================
 # CHECK - ISORT
@@ -56,7 +76,8 @@ fi
 # correctly the coloring sequences hence the manual reset on each line ending..
 if [ -n "$output__isort" ]
 then
-  echo "$output__isort" | sed 's/^/ isort  | /' | sed "s/$/$(tput sgr0)/"
+  echo "$output__isort" | sed "s/^/ ${DIM}isort${RESET}  │ /" | sed "s/$/$(tput sgr0)/"
+  is_output_printed_before='1'
 fi
 
 #==============================================================================
@@ -74,8 +95,12 @@ fi
 
 if [ -n "$output__black" ]
 then
-  echo '------------------------------------------------------------------------------------------------------------------------'
-  echo "$output__black" | sed 's/^/ black  | /'
+  if [ "$is_output_printed_before" -eq '1' ]
+  then
+    divider__inner
+  fi
+  echo "$output__black" | sed "s/^/ ${DIM}black${RESET}  │ /"
+  is_output_printed_before='1'
 fi
 
 #==============================================================================
@@ -91,8 +116,12 @@ fi
 
 if [ -n "$output__flake8" ]
 then
-  echo '------------------------------------------------------------------------------------------------------------------------'
-  echo "$output__flake8" | sed 's/^/ flake8 | /'
+  if [ "$is_output_printed_before" -eq '1' ]
+  then
+    divider__inner
+  fi
+  echo "$output__flake8" | sed "s/^/ ${DIM}flake8${RESET} │ /"
+  is_output_printed_before='1'
 fi
 
 #==============================================================================
@@ -111,8 +140,12 @@ fi
 
 if [ -n "$output__bandit_module" ]
 then
-  echo '------------------------------------------------------------------------------------------------------------------------'
-  echo "$output__bandit_module" | sed 's/^/ bandit | /'
+  if [ "$is_output_printed_before" -eq '1' ]
+  then
+    divider__inner
+  fi
+  echo "$output__bandit_module" | sed "s/^/ ${DIM}bandit${RESET} │ /"
+  is_output_printed_before='1'
 fi
 
 # Separate bandit run for the test suite with a safety cat.
@@ -127,8 +160,12 @@ fi
 
 if [ -n "$output__bandit_tests" ]
 then
-  echo '------------------------------------------------------------------------------------------------------------------------'
-  echo "$output__bandit_tests" | sed 's/^/ bandit | /'
+  if [ "$is_output_printed_before" -eq '1' ]
+  then
+    divider__inner
+  fi
+  echo "$output__bandit_tests" | sed "s/^/ ${DIM}bandit${RESET} │ /"
+  is_output_printed_before='1'
 fi
 
 status__bandit=$((status__bandit_module + status__bandit_tests))
@@ -146,8 +183,12 @@ fi
 
 if [ -n "$output__mypy" ]
 then
-  echo '------------------------------------------------------------------------------------------------------------------------'
-  echo "$output__mypy" | sed 's/^/ mypy   | /'
+  if [ "$is_output_printed_before" -eq '1' ]
+  then
+    divider__inner
+  fi
+  echo "$output__mypy" | sed "s/^/ ${DIM}mypy${RESET}   │ /"
+  is_output_printed_before='1'
 fi
 
 
@@ -155,46 +196,46 @@ fi
 # DETAILED STATUS REPORT
 #==============================================================================
 
-echo '========================================================================================================================'
-echo ' RESULTS'
-echo '========================================================================================================================'
+divider__double__footer
+echo " ${BOLD}RESULTS${RESET}"
+divider__double__header
 
 if [ "$status__isort" -gt '0' ]
 then
-  echo " isort  | ${RED}${BOLD}failed${RESET}"
+  echo " ${DIM}isort${RESET}  │ ${RED}${BOLD}failed${RESET}"
 else
-  echo " isort  | ${GREEN}${BOLD}passed${RESET}"
+  echo " ${DIM}isort${RESET}  │ ${GREEN}${BOLD}passed${RESET}"
 fi
 
 if [ "$status__black" -gt '0' ]
 then
-  echo " black  | ${RED}${BOLD}failed${RESET}"
+  echo " ${DIM}black${RESET}  │ ${RED}${BOLD}failed${RESET}"
 else
-  echo " black  | ${GREEN}${BOLD}passed${RESET}"
+  echo " ${DIM}black${RESET}  │ ${GREEN}${BOLD}passed${RESET}"
 fi
 
 if [ "$status__flake8" -gt '0' ]
 then
-  echo " flake8 | ${RED}${BOLD}failed${RESET}"
+  echo " ${DIM}flake8${RESET} │ ${RED}${BOLD}failed${RESET}"
 else
-  echo " flake8 | ${GREEN}${BOLD}passed${RESET}"
+  echo " ${DIM}flake8${RESET} │ ${GREEN}${BOLD}passed${RESET}"
 fi
 
 if [ "$status__bandit" -gt '0' ]
 then
-  echo " bandit | ${RED}${BOLD}failed${RESET}"
+  echo " ${DIM}bandit${RESET} │ ${RED}${BOLD}failed${RESET}"
 else
-  echo " bandit | ${GREEN}${BOLD}passed${RESET}"
+  echo " ${DIM}bandit${RESET} │ ${GREEN}${BOLD}passed${RESET}"
 fi
 
 if [ "$status__mypy" -gt '0' ]
 then
-  echo " mypy   | ${RED}${BOLD}failed${RESET}"
+  echo " ${DIM}mypy${RESET}   │ ${RED}${BOLD}failed${RESET}"
 else
-  echo " mypy   | ${GREEN}${BOLD}passed${RESET}"
+  echo " ${DIM}mypy${RESET}   │ ${GREEN}${BOLD}passed${RESET}"
 fi
 
-echo '========================================================================================================================'
+divider__double__footer
 
 #==============================================================================
 # EXIT STATUS CALCULATION
