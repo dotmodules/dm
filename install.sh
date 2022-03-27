@@ -34,29 +34,29 @@ else
 fi
 
 #==============================================================================
-# DM_TOOLS INTEGRATION
+# POSIX_ADAPTER INTEGRATION
 #==============================================================================
 
 #==============================================================================
-# The first module we are loading is the dm-tools project that would provide the
-# necessary platform independent interface for the command line tools. We are
-# only loading the dm-tools system when it hasn't been loaded by other code (the
-# tested system for example).
+# The first module we are loading is the posix-adapter project that would
+# provide the necessary platform independent interface for the command line
+# tools. We are only loading the posix-adapter system when it hasn't been loaded
+# by other code (the tested system for example).
 #==============================================================================
 
-if [ -z ${DM_TOOLS__READY+x} ]
+if [ -z ${POSIX_ADAPTER__READY+x} ]
 then
-  # If dm_tools has not sourced yet, we have to source it from this repository.
-  # Implementing the dm-tools inporting system variables.
-  ___dm_tools_path_prefix="${DM_REPO_ROOT}/dependencies/dm-tools"
-  DM_TOOLS__CONFIG__MANDATORY__SUBMODULE_PATH_PREFIX="$___dm_tools_path_prefix"
-  if [ -d "$DM_TOOLS__CONFIG__MANDATORY__SUBMODULE_PATH_PREFIX" ]
+  # If posix_adapter has not sourced yet, we have to source it from this
+  # repository.  Implementing the posix-adapter inporting system variables.
+  ___posix_adapter_path_prefix="${DM_REPO_ROOT}/dependencies/posix-adapter"
+  POSIX_ADAPTER__CONFIG__MANDATORY__SUBMODULE_PATH_PREFIX="$___posix_adapter_path_prefix"
+  if [ -d "$POSIX_ADAPTER__CONFIG__MANDATORY__SUBMODULE_PATH_PREFIX" ]
   then
-    # shellcheck source=./dependencies/dm-tools/dm.tools.sh
-    . "${DM_TOOLS__CONFIG__MANDATORY__SUBMODULE_PATH_PREFIX}/dm.tools.sh"
+    # shellcheck source=./dependencies/posix-adapter/posix_adapter.sh
+    . "${POSIX_ADAPTER__CONFIG__MANDATORY__SUBMODULE_PATH_PREFIX}/posix_adapter.sh"
   else
       echo 'Initialization failed!'
-      echo 'dm_tools needs to be initialized but its git submodule is missing!'
+      echo 'posix_adapter needs to be initialized but its git submodule is missing!'
       echo 'You need to init the dotmodules repository: make init'
   fi
 fi
@@ -65,22 +65,22 @@ fi
 # GLOBAL VARIABLES
 #==============================================================================
 
-VERSION=$(dm_tools__cat "${DM_REPO_ROOT}/VERSION")
+VERSION=$(posix_adapter__cat "${DM_REPO_ROOT}/VERSION")
 DEFAULT_MODULES_DIR='modules'
 MAKEFILE_TEMPLATE_PATH='templates/Makefile.template'
 MAKEFILE_NAME='Makefile'
 
-if dm_tools__tput__is_available
+if posix_adapter__tput__is_available
 then
-  RED=$(dm_tools__tput setaf 1)
-  RED_BG=$(dm_tools__tput setab 1)
-  GREEN=$(dm_tools__tput setaf 2)
-  YELLOW=$(dm_tools__tput setaf 3)
-  BLUE=$(dm_tools__tput setaf 4)
-  MAGENTA=$(dm_tools__tput setaf 5)
-  CYAN=$(dm_tools__tput setaf 6)
-  RESET=$(dm_tools__tput sgr0)
-  BOLD=$(dm_tools__tput bold)
+  RED=$(posix_adapter__tput setaf 1)
+  RED_BG=$(posix_adapter__tput setab 1)
+  GREEN=$(posix_adapter__tput setaf 2)
+  YELLOW=$(posix_adapter__tput setaf 3)
+  BLUE=$(posix_adapter__tput setaf 4)
+  MAGENTA=$(posix_adapter__tput setaf 5)
+  CYAN=$(posix_adapter__tput setaf 6)
+  RESET=$(posix_adapter__tput sgr0)
+  BOLD=$(posix_adapter__tput bold)
 else
   RED=''
   RED_BG=''
@@ -117,7 +117,7 @@ fi
 #   0 - Other status is not expected.
 #==============================================================================
 print_documentation() {
-dm_tools__cat <<EOM
+posix_adapter__cat <<EOM
 - DOTMODULES ${VERSION} ------------------------------------------------------------
    _           _        _ _       _
   (_)         | |      | | |     | |
@@ -180,7 +180,7 @@ EOM
 calculate_relative_path_for() {
   origin_path="$1"
   target_path="$2"
-  dm_tools__realpath --relative-to "$origin_path" "$target_path"
+  posix_adapter__realpath --relative-to "$origin_path" "$target_path"
 }
 
 #==============================================================================
@@ -211,27 +211,27 @@ done
 # ENTRY POINT
 #==============================================================================
 
-dm_tools__echo ''
-dm_tools__echo "  ${BOLD}DOTMODULES INSTALLER SCRIPT${RESET}"
-dm_tools__echo ''
+posix_adapter__echo ''
+posix_adapter__echo "  ${BOLD}DOTMODULES INSTALLER SCRIPT${RESET}"
+posix_adapter__echo ''
 
 relative_modules_path="$(calculate_relative_path_for "${DM_REPO_ROOT}" "$(pwd)/${MODULES_DIR}")"
 relative_dm_repo_root_path="$(calculate_relative_path_for "$(pwd)" "${DM_REPO_ROOT}")"
 
-dm_tools__echo "    Current working directory: ${BLUE}$(pwd)${RESET}"
-dm_tools__echo "    Dotmodules repository root: ${BLUE}${DM_REPO_ROOT}${RESET}"
-dm_tools__echo "    Modules directory path: ${BLUE}$(pwd)/${MODULES_DIR}${RESET}"
-dm_tools__echo "    Calculated relative modules directory path: ${GREEN}${relative_modules_path}${RESET}"
+posix_adapter__echo "    Current working directory: ${BLUE}$(pwd)${RESET}"
+posix_adapter__echo "    Dotmodules repository root: ${BLUE}${DM_REPO_ROOT}${RESET}"
+posix_adapter__echo "    Modules directory path: ${BLUE}$(pwd)/${MODULES_DIR}${RESET}"
+posix_adapter__echo "    Calculated relative modules directory path: ${GREEN}${relative_modules_path}${RESET}"
 
 # Substitute calculated variables to the Makefile template and place it to the
 # invocation's directory.
-dm_tools__sed \
+posix_adapter__sed \
   --expression "s#__RELATIVE_DM_ROOT_PATH__#${relative_dm_repo_root_path}#" \
   "${DM_REPO_ROOT}/${MAKEFILE_TEMPLATE_PATH}" > "${MAKEFILE_NAME}"
-dm_tools__sed \
+posix_adapter__sed \
   --in-place '' \
   --expression "s#__RELATIVE_MODULES_PATH__#${relative_modules_path}#" \
   "${MAKEFILE_NAME}"
 
-dm_tools__echo ''
-dm_tools__echo "    ${BOLD}Makefile template generated.${RESET}"
+posix_adapter__echo ''
+posix_adapter__echo "    ${BOLD}Makefile template generated.${RESET}"
