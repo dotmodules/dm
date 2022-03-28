@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from dotmodules.modules import ConfigError, ConfigParser, Module
+from dotmodules.modules import ConfigError, ConfigParser, Module, Modules
 
 
 class TestStringParsing:
@@ -319,7 +319,7 @@ class TestHooksParsing:
         dummy_data = {
             "hooks": [
                 {
-                    "hook_name": "my_hook_name",
+                    "name": "my_hook_name",
                     "path_to_script": "my_path_to_script",
                     "priority": 42,
                 },
@@ -329,14 +329,14 @@ class TestHooksParsing:
         assert len(result) == 1
         hook = result[0]
         assert hook.path_to_script == "my_path_to_script"
-        assert hook.hook_name == "my_hook_name"
+        assert hook.name == "my_hook_name"
         assert hook.priority == 42
 
     def test__priority_is_optional(self):
         dummy_data = {
             "hooks": [
                 {
-                    "hook_name": "my_hook_name",
+                    "name": "my_hook_name",
                     "path_to_script": "my_path_to_script",
                 },
             ],
@@ -345,7 +345,7 @@ class TestHooksParsing:
         assert len(result) == 1
         hook = result[0]
         assert hook.path_to_script == "my_path_to_script"
-        assert hook.hook_name == "my_hook_name"
+        assert hook.name == "my_hook_name"
         assert hook.priority == 0
 
     def test__invalid_data__error_should_be_raised(self):
@@ -367,11 +367,11 @@ class TestHooksParsing:
 
 
 @pytest.mark.integration
-class TestEndToEndConfigPArsingCases:
+class TestEndToEndConfigParsingCases:
     SAMPLE_FILE_DIR = Path(__file__).parent / "sample_config_files"
 
     def test__valid_file__full(self):
-        file_path = str(self.SAMPLE_FILE_DIR / "valid__full.toml")
+        file_path = self.SAMPLE_FILE_DIR / "valid__full.toml"
         module = Module.from_path(path=file_path)
 
         assert module.name == "name_1"
@@ -401,17 +401,17 @@ class TestEndToEndConfigPArsingCases:
         assert len(module.hooks) == 2
 
         hook = module.hooks[0]
-        assert hook.hook_name == "hook_name_1"
+        assert hook.name == "hook_name_1"
         assert hook.path_to_script == "path_to_script_1"
         assert hook.priority == 1
 
         hook = module.hooks[1]
-        assert hook.hook_name == "hook_name_2"
+        assert hook.name == "hook_name_2"
         assert hook.path_to_script == "path_to_script_2"
         assert hook.priority == 2
 
     def test__valid_file__minimal(self):
-        file_path = str(self.SAMPLE_FILE_DIR / "valid__minimal.toml")
+        file_path = self.SAMPLE_FILE_DIR / "valid__minimal.toml"
         module = Module.from_path(path=file_path)
 
         assert module.name == "name_1"
@@ -421,7 +421,7 @@ class TestEndToEndConfigPArsingCases:
         assert module.hooks == []
 
     def test__invalid_file__non_existent_file(self):
-        file_path = str(self.SAMPLE_FILE_DIR / "NON_EXISTENT")
+        file_path = self.SAMPLE_FILE_DIR / "NON_EXISTENT"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected_section_1 = (
@@ -432,28 +432,28 @@ class TestEndToEndConfigPArsingCases:
         assert expected_section_2 in str(exception_info.value)
 
     def test__invalid_file__toml_syntax(self):
-        file_path = str(self.SAMPLE_FILE_DIR / "invalid__toml_syntax.toml")
+        file_path = self.SAMPLE_FILE_DIR / "invalid__toml_syntax.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected = "configuration loading error: Found tokens after a closed string. Invalid TOML. (line 1 column 1 char 0)"
         assert str(exception_info.value) == expected
 
     def test__invalid_file__name_missing(self):
-        file_path = str(self.SAMPLE_FILE_DIR / "invalid__name_missing.toml")
+        file_path = self.SAMPLE_FILE_DIR / "invalid__name_missing.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected = "configuration syntax error: mandatory 'name' section is missing"
         assert str(exception_info.value) == expected
 
     def test__invalid_file__name_empty(self):
-        file_path = str(self.SAMPLE_FILE_DIR / "invalid__name_empty.toml")
+        file_path = self.SAMPLE_FILE_DIR / "invalid__name_empty.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected = "configuration value error: empty value for section 'name'"
         assert str(exception_info.value) == expected
 
     def test__invalid_file__name_non_string(self):
-        file_path = str(self.SAMPLE_FILE_DIR / "invalid__name_non_string.toml")
+        file_path = self.SAMPLE_FILE_DIR / "invalid__name_non_string.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected = (
@@ -462,21 +462,21 @@ class TestEndToEndConfigPArsingCases:
         assert str(exception_info.value) == expected
 
     def test__invalid_file__version_missing(self):
-        file_path = str(self.SAMPLE_FILE_DIR / "invalid__version_missing.toml")
+        file_path = self.SAMPLE_FILE_DIR / "invalid__version_missing.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected = "configuration syntax error: mandatory 'version' section is missing"
         assert str(exception_info.value) == expected
 
     def test__invalid_file__version_empty(self):
-        file_path = str(self.SAMPLE_FILE_DIR / "invalid__version_empty.toml")
+        file_path = self.SAMPLE_FILE_DIR / "invalid__version_empty.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected = "configuration value error: empty value for section 'version'"
         assert str(exception_info.value) == expected
 
     def test__invalid_file__version_non_string(self):
-        file_path = str(self.SAMPLE_FILE_DIR / "invalid__version_non_string.toml")
+        file_path = self.SAMPLE_FILE_DIR / "invalid__version_non_string.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected = (
@@ -485,7 +485,7 @@ class TestEndToEndConfigPArsingCases:
         assert str(exception_info.value) == expected
 
     def test__invalid_file__variables_structure(self):
-        file_path = str(self.SAMPLE_FILE_DIR / "invalid__variables_structure.toml")
+        file_path = self.SAMPLE_FILE_DIR / "invalid__variables_structure.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected = (
@@ -507,3 +507,83 @@ class TestEndToEndConfigPArsingCases:
             "unexpected error happened during configuration parsing: shit happens"
         )
         assert str(exception_info.value) == expected
+
+
+@pytest.mark.integration
+class TestEndToEndModuleLoadingCases:
+    def test__modules_can_be_loaded_from_a_direcotry_structure(self):
+        modules_root_path = Path(__file__).parent / "dummy_modules_dir"
+        config_file_name = "config.toml"
+        modules = Modules.load(
+            modules_root_path=modules_root_path, config_file_name=config_file_name
+        )
+        assert modules
+        assert len(modules) == 3
+
+        # Modules are sorted by root:
+        # .../category_1/module_2
+        # .../category_1/module_3
+        # .../module_1
+
+        module = modules[0]
+        assert isinstance(module, Module)
+        assert module.name == "module_2"
+        assert module.version == "version_2"
+        assert module.documentation == ["docs_2"]
+        assert module.variables == {
+            "VAR_2_1": ["var_1"],
+            "VAR_2_2": ["var_2_1", "var_2_2", "var_2_3"],
+        }
+        assert len(module.links) == 1
+        link = module.links[0]
+        assert link.name == "link_name_2"
+        assert link.path_to_file == "path_to_file_2"
+        assert link.path_to_symlink == "path_to_symlink_2"
+
+        assert len(module.hooks) == 1
+        hook = module.hooks[0]
+        assert hook.name == "hook_name_2"
+        assert hook.path_to_script == "path_to_script_2"
+        assert hook.priority == 2
+
+        module = modules[1]
+        assert isinstance(module, Module)
+        assert module.name == "module_3"
+        assert module.version == "version_3"
+        assert module.documentation == ["docs_3"]
+        assert module.variables == {
+            "VAR_3_1": ["var_1"],
+            "VAR_3_2": ["var_2_1", "var_2_2", "var_2_3"],
+        }
+        assert len(module.links) == 1
+        link = module.links[0]
+        assert link.name == "link_name_3"
+        assert link.path_to_file == "path_to_file_3"
+        assert link.path_to_symlink == "path_to_symlink_3"
+
+        assert len(module.hooks) == 1
+        hook = module.hooks[0]
+        assert hook.name == "hook_name_3"
+        assert hook.path_to_script == "path_to_script_3"
+        assert hook.priority == 3
+
+        module = modules[2]
+        assert isinstance(module, Module)
+        assert module.name == "module_1"
+        assert module.version == "version_1"
+        assert module.documentation == ["docs_1"]
+        assert module.variables == {
+            "VAR_1_1": ["var_1"],
+            "VAR_1_2": ["var_2_1", "var_2_2", "var_2_3"],
+        }
+        assert len(module.links) == 1
+        link = module.links[0]
+        assert link.name == "link_name_1"
+        assert link.path_to_file == "path_to_file_1"
+        assert link.path_to_symlink == "path_to_symlink_1"
+
+        assert len(module.hooks) == 1
+        hook = module.hooks[0]
+        assert hook.name == "hook_name_1"
+        assert hook.path_to_script == "path_to_script_1"
+        assert hook.priority == 1

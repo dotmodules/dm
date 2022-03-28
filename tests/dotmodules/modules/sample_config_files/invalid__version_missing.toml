@@ -21,11 +21,11 @@ path_to_file = "path_to_file_2"
 path_to_symlink = "path_to_symlink_2"
 
 [[hooks]]
-hook_name = "hook_name_1"
+name = "hook_name_1"
 path_to_script = "path_to_script_1"
 priority = 1
 
 [[hooks]]
-hook_name = "hook_name_2"
+name = "hook_name_2"
 path_to_script = "path_to_script_2"
 priority = 2

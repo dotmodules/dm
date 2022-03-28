@@ -1,7 +1,6 @@
-import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Type, cast
+from typing import Dict, Generator, List, Type, cast
 
 # TODO: After python 3.11 'tomllib' will be available from the standard library.
 # This library import hack can be removed then.
@@ -10,15 +9,15 @@ import tomllib
 
 @dataclass
 class LinkItem:
-    path_to_file: os.PathLike
-    path_to_symlink: os.PathLike
+    path_to_file: Path
+    path_to_symlink: Path
     name: str = "link"
 
 
 @dataclass
 class HookItem:
-    hook_name: str
-    path_to_script: os.PathLike
+    name: str
+    path_to_script: Path
     priority: int = 0
 
 
@@ -28,7 +27,7 @@ class ConfigError(Exception):
 
 class ConfigLoader:
     @staticmethod
-    def load_raw_config_data(config_file_path: os.PathLike) -> dict:
+    def load_raw_config_data(config_file_path: Path) -> dict:
         try:
             with open(config_file_path) as f:
                 return tomllib.load(f)
@@ -162,9 +161,10 @@ class Module:
     variables: Dict[str, List[str]]
     links: List[LinkItem]
     hooks: List[HookItem]
+    root: Path
 
     @classmethod
-    def from_path(cls, path: os.PathLike) -> "Module":
+    def from_path(cls, path: Path) -> "Module":
         data = ConfigLoader.load_raw_config_data(config_file_path=path)
 
         try:
@@ -190,23 +190,37 @@ class Module:
             variables=variables,
             links=links,
             hooks=hooks,
+            root=path.parent,
         )
         return ret
 
 
 class Modules:
     def __init__(self):
-        self.modules = []
+        self._modules = []
+
+    def __len__(self):
+        return len(self._modules)
+
+    def __getitem__(self, k):
+        return self._modules[k]
 
     @staticmethod
-    def _config_file_paths(modules_root_path: os.PathLike, config_file_name: str):
+    def _config_file_paths(
+        modules_root_path: Path, config_file_name: str
+    ) -> Generator[Path, None, None]:
         return Path(modules_root_path).rglob(config_file_name)
 
     @classmethod
-    def load(cls, modules_root_path: os.PathLike, config_file_name: str):
+    def load(cls, modules_root_path: Path, config_file_name: str) -> "Modules":
+        modules = cls()
         config_file_paths = cls._config_file_paths(
             modules_root_path=modules_root_path, config_file_name=config_file_name
         )
         for config_file_path in config_file_paths:
             module = Module.from_path(path=config_file_path)
-            print(module)
+            modules._modules.append(module)
+
+        # Sorting the modules in alphabetical path order.
+        modules._modules.sort(key=lambda m: str(m.root))
+        return modules
