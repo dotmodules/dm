@@ -4,7 +4,7 @@
 # SANE ENVIRONMENT
 #==============================================================================
 
-set -e  # exit on error
+# set -e  # exit on error
 set -u  # prevent unset variable expansion
 
 #==============================================================================
