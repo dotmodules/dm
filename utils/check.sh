@@ -4,7 +4,8 @@
 # SANE ENVIRONMENT
 #==============================================================================
 
-# set -e  # exit on error
+# NOTE: exit on error is turned off, as we want to see the failed checkers
+# output in the report.
 set -u  # prevent unset variable expansion
 
 #==============================================================================
