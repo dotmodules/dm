@@ -1,0 +1,18 @@
+name = "module_2"
+version = "version_2"
+
+documentation = "docs_2"
+
+[variables]
+VAR_2_1 = "var_1"
+VAR_2_2 = ["var_2_1", "var_2_2", "var_2_3"]
+
+[[links]]
+name = "link_name_2"
+path_to_file = "path_to_file_2"
+path_to_symlink = "path_to_symlink_2"
+
+[[hooks]]
+name = "hook_name_2"
+path_to_script = "path_to_script_2"
+priority = 2

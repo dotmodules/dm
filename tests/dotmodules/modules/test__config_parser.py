@@ -587,3 +587,13 @@ class TestEndToEndModuleLoadingCases:
         assert hook.name == "hook_name_1"
         assert hook.path_to_script == "path_to_script_1"
         assert hook.priority == 1
+
+    def test__error_during_loading(self):
+        modules_root_path = Path(__file__).parent / "dummy_modules_dir_error"
+        config_file_name = "config.toml"
+        with pytest.raises(ConfigError) as exception_info:
+            Modules.load(
+                modules_root_path=modules_root_path, config_file_name=config_file_name
+            )
+        expected = "got an unexpected keyword argument 'INVALID'"
+        assert expected in str(exception_info.value)
