@@ -33,8 +33,6 @@ else
   BOLD=''
 fi
 
-is_output_printed_before='0'
-
 divider__double__top() {
   echo '════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════'
 }
@@ -77,7 +75,8 @@ fi
 if [ -n "$output__isort" ]
 then
   echo "$output__isort" | sed "s/^/ ${DIM}isort${RESET}  │ /" | sed "s/$/$(tput sgr0)/"
-  is_output_printed_before='1'
+else
+  echo " ${DIM}isort${RESET}  │ Nothing to report"
 fi
 
 #==============================================================================
@@ -93,14 +92,12 @@ else
   status__black=1
 fi
 
+divider__inner
 if [ -n "$output__black" ]
 then
-  if [ "$is_output_printed_before" -eq '1' ]
-  then
-    divider__inner
-  fi
   echo "$output__black" | sed "s/^/ ${DIM}black${RESET}  │ /"
-  is_output_printed_before='1'
+else
+  echo " ${DIM}black${RESET}  │ Nothing to report"
 fi
 
 #==============================================================================
@@ -114,14 +111,12 @@ else
   status__flake8=1
 fi
 
+divider__inner
 if [ -n "$output__flake8" ]
 then
-  if [ "$is_output_printed_before" -eq '1' ]
-  then
-    divider__inner
-  fi
   echo "$output__flake8" | sed "s/^/ ${DIM}flake8${RESET} │ /"
-  is_output_printed_before='1'
+else
+  echo " ${DIM}flake8${RESET} │ Nothing to report"
 fi
 
 #==============================================================================
@@ -138,14 +133,12 @@ else
   status__bandit_module=1
 fi
 
+divider__inner
 if [ -n "$output__bandit_module" ]
 then
-  if [ "$is_output_printed_before" -eq '1' ]
-  then
-    divider__inner
-  fi
   echo "$output__bandit_module" | sed "s/^/ ${DIM}bandit${RESET} │ /"
-  is_output_printed_before='1'
+else
+  echo " ${DIM}bandit${RESET} │ Nothing to report for module"
 fi
 
 # Separate bandit run for the test suite with a safety cat.
@@ -158,14 +151,12 @@ else
   status__bandit_tests=1
 fi
 
+divider__inner
 if [ -n "$output__bandit_tests" ]
 then
-  if [ "$is_output_printed_before" -eq '1' ]
-  then
-    divider__inner
-  fi
   echo "$output__bandit_tests" | sed "s/^/ ${DIM}bandit${RESET} │ /"
-  is_output_printed_before='1'
+else
+  echo " ${DIM}bandit${RESET} │ Nothing to report for test suite"
 fi
 
 status__bandit=$((status__bandit_module + status__bandit_tests))
@@ -181,14 +172,12 @@ else
   status__mypy=1
 fi
 
+divider__inner
 if [ -n "$output__mypy" ]
 then
-  if [ "$is_output_printed_before" -eq '1' ]
-  then
-    divider__inner
-  fi
   echo "$output__mypy" | sed "s/^/ ${DIM}mypy${RESET}   │ /"
-  is_output_printed_before='1'
+else
+  echo " ${DIM}mypy${RESET}  │ Nothing to report for test suite"
 fi
 
 
