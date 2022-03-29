@@ -1,9 +1,15 @@
 import argparse
 import pathlib
+from typing import List
+
+settings = None
 
 
-def __parse_settins():
+def load_settings(args: List[str]):
+    global settings
+
     parser = argparse.ArgumentParser(description="Dotmodules")
+
     parser.add_argument("--debug", type=int, required=True)
     parser.add_argument("--relative-modules-path", type=pathlib.Path, required=True)
     parser.add_argument("--config-file-name", type=str, required=True)
@@ -16,7 +22,5 @@ def __parse_settins():
     parser.add_argument("--hotkey-modules", required=True)
     parser.add_argument("--hotkey-variables", required=True)
     parser.add_argument("--warning-wrapped-docs", type=int, required=True)
-    return parser.parse_args()
 
-
-settings = __parse_settins()
+    settings = parser.parse_args(args)

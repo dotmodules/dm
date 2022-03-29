@@ -62,7 +62,7 @@ divider__double__header
 # CHECK - ISORT
 #==============================================================================
 
-output__isort="$(isort --diff --color --profile black dotmodules tests 2>&1)"
+output__isort="$(isort --diff --color --profile black dotmodules tests dm.py 2>&1)"
 
 if [ -z "$output__isort" ]
 then
@@ -84,7 +84,7 @@ fi
 # CHECK - BLACK
 #==============================================================================
 
-output__black="$(black --diff --quiet --color dotmodules tests 2>&1)"
+output__black="$(black --diff --quiet --color dotmodules tests dm.py 2>&1)"
 
 if [ -z "$output__black" ]
 then
@@ -105,7 +105,7 @@ fi
 # CHECK - FLAKE8
 #==============================================================================
 
-if output__flake8="$(flake8 dotmodules tests 2>&1)"
+if output__flake8="$(flake8 dotmodules tests dm.py 2>&1)"
 then
   status__flake8=0
 else
@@ -125,7 +125,7 @@ fi
 #==============================================================================
 
 # Separate bandit run for the module itself with a safety cat.
-output__bandit_module="$(bandit --silent --recursive dotmodules 2>&1 | cat)"
+output__bandit_module="$(bandit --silent --recursive dotmodules ./dm.py 2>&1 | cat)"
 
 if [ -z "$output__bandit_module" ]
 then
@@ -166,7 +166,7 @@ status__bandit=$((status__bandit_module + status__bandit_tests))
 # CHECK - MYPY
 #==============================================================================
 
-if output__mypy="$(MYPY_FORCE_COLOR=1 mypy dotmodules tests 2>&1)"
+if output__mypy="$(MYPY_FORCE_COLOR=1 mypy dotmodules tests dm.py 2>&1)"
 then
   status__mypy=0
 else
