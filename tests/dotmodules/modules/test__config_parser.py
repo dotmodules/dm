@@ -525,7 +525,7 @@ class TestEndToEndModuleLoadingCases:
         # .../category_1/module_3
         # .../module_1
 
-        module = modules[0]
+        module = modules.modules[0]
         assert isinstance(module, Module)
         assert module.name == "module_2"
         assert module.version == "version_2"
@@ -546,7 +546,7 @@ class TestEndToEndModuleLoadingCases:
         assert hook.path_to_script == "path_to_script_2"
         assert hook.priority == 2
 
-        module = modules[1]
+        module = modules.modules[1]
         assert isinstance(module, Module)
         assert module.name == "module_3"
         assert module.version == "version_3"
@@ -567,7 +567,7 @@ class TestEndToEndModuleLoadingCases:
         assert hook.path_to_script == "path_to_script_3"
         assert hook.priority == 3
 
-        module = modules[2]
+        module = modules.modules[2]
         assert isinstance(module, Module)
         assert module.name == "module_1"
         assert module.version == "version_1"

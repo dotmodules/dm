@@ -1,12 +1,10 @@
-import sys
+from dotmodules.interpreter import CommandLineInterpreter
 
-from dotmodules.settings import load_settings
 
-if __name__ == "__main__":
-    args = sys.argv[1:]
-    load_settings(args=args)
-
-    from dotmodules.interpreter import CommandLineInterpreter
-
+def main():
     interpreter = CommandLineInterpreter()
     interpreter.run()
+
+
+if __name__ == "__main__":
+    main()

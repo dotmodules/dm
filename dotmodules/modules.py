@@ -190,20 +190,20 @@ class Module:
             variables=variables,
             links=links,
             hooks=hooks,
-            root=path.parent,
+            root=path.parent.resolve(),
         )
         return ret
 
 
 class Modules:
     def __init__(self):
-        self._modules = []
+        self.modules: List[Module] = []
 
-    def __len__(self):
-        return len(self._modules)
+    def __len__(self) -> int:
+        return len(self.modules)
 
-    def __getitem__(self, k):
-        return self._modules[k]
+    # def __getitem__(self, k) -> Module:
+    #     return self.modules[k]
 
     @staticmethod
     def _config_file_paths(
@@ -219,8 +219,8 @@ class Modules:
         )
         for config_file_path in config_file_paths:
             module = Module.from_path(path=config_file_path)
-            modules._modules.append(module)
+            modules.modules.append(module)
 
         # Sorting the modules in alphabetical path order.
-        modules._modules.sort(key=lambda m: str(m.root))
+        modules.modules.sort(key=lambda m: str(m.root))
         return modules

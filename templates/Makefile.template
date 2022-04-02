@@ -10,7 +10,7 @@ RELATIVE_DOTMODULES_REPO_ROOT_PATH := __RELATIVE_DM_ROOT_PATH__
 RELATIVE_MODULES_PATH := __RELATIVE_MODULES_PATH__
 
 # Configuration file name.
-CONFIG_FILE_NAME := dm.conf
+CONFIG_FILE_NAME := dm.toml
 
 # Python interpreter to use when invoking the starting script.
 PYTHON_INTERPRETER := python3
@@ -20,6 +20,9 @@ CLI__TEXT_WRAP_LIMIT := 90
 
 # Indentation size in the interpreter as number of spaces.
 CLI__INDENT := 2
+
+# Indentation size in the interpreter as number of spaces.
+CLI__COLUMN_PADDING := 1
 
 # Prompt template that can be constructed from the following variables:
 #   <<indent>>  - Indentation block you previously defined.
@@ -77,6 +80,7 @@ dm:
 		--config-file-name '$(CONFIG_FILE_NAME)' \
 		--text-wrap-limit '$(CLI__TEXT_WRAP_LIMIT)' \
 		--indent '$(CLI__INDENT)' \
+		--column-padding '$(CLI__COLUMN_PADDING)' \
 		--prompt-template '$(CLI__PROMPT_TEMPLATE)' \
 		--hotkey-exit '$(CLI__HOTKEYS__EXIT)' \
 		--hotkey-help '$(CLI__HOTKEYS__HELP)' \

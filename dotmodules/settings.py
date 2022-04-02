@@ -1,13 +1,40 @@
 import argparse
 import pathlib
+import sys
+from dataclasses import dataclass, field
 from typing import List
 
-settings = None
+
+@dataclass
+class Settings:
+    """
+    Transfer only dataclass that does not perform any checking on the passed
+    values. The validation is performed by the argparse module. All fields set
+    to be assignable after the initialization.
+    """
+
+    debug: bool = field(init=False)
+    relative_modules_path: pathlib.Path = field(init=False)
+    config_file_name: str = field(init=False)
+    text_wrap_limit: int = field(init=False)
+    indent: int = field(init=False)
+    column_padding: int = field(init=False)
+    prompt_template: str = field(init=False)
+    hotkey_exit: str = field(init=False)
+    hotkey_help: str = field(init=False)
+    hotkey_hooks: str = field(init=False)
+    hotkey_modules: str = field(init=False)
+    hotkey_variables: str = field(init=False)
+    warning_wrapped_docs: bool = field(init=False)
 
 
-def load_settings(args: List[str]):
-    global settings
+def _get_argument_list() -> List[str]:
+    # The argparse module cannot handle the pure sys.argv input. It expects to
+    # receive only the parseable parameters in the input list.
+    return sys.argv[1:]
 
+
+def load_settings() -> Settings:
     parser = argparse.ArgumentParser(description="Dotmodules")
 
     parser.add_argument("--debug", type=int, required=True)
@@ -15,6 +42,7 @@ def load_settings(args: List[str]):
     parser.add_argument("--config-file-name", type=str, required=True)
     parser.add_argument("--text-wrap-limit", type=int, required=True)
     parser.add_argument("--indent", type=int, required=True)
+    parser.add_argument("--column-padding", type=int, required=True)
     parser.add_argument("--prompt-template", required=True)
     parser.add_argument("--hotkey-exit", required=True)
     parser.add_argument("--hotkey-help", required=True)
@@ -23,4 +51,22 @@ def load_settings(args: List[str]):
     parser.add_argument("--hotkey-variables", required=True)
     parser.add_argument("--warning-wrapped-docs", type=int, required=True)
 
-    settings = parser.parse_args(args)
+    args = _get_argument_list()
+    parsed_args = parser.parse_args(args)
+
+    settings = Settings()
+    settings.debug = bool(parsed_args.debug)
+    settings.relative_modules_path = parsed_args.relative_modules_path
+    settings.config_file_name = parsed_args.config_file_name
+    settings.text_wrap_limit = parsed_args.text_wrap_limit
+    settings.indent = " " * parsed_args.indent
+    settings.column_padding = " " * parsed_args.column_padding
+    settings.prompt_template = parsed_args.prompt_template
+    settings.hotkey_exit = parsed_args.hotkey_exit
+    settings.hotkey_help = parsed_args.hotkey_help
+    settings.hotkey_hooks = parsed_args.hotkey_hooks
+    settings.hotkey_modules = parsed_args.hotkey_modules
+    settings.hotkey_variables = parsed_args.hotkey_variables
+    settings.warning_wrapped_docs = bool(parsed_args.warning_wrapped_docs)
+
+    return settings
