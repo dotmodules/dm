@@ -10,15 +10,10 @@ def test_root_path():
     return str(Path(__file__).parent)
 
 
-@pytest.fixture()
-def shell_adapter():
-    return ShellAdapter()
-
-
 class TestGlobalCommandExecution:
-    def test__capture_standard_output(self, shell_adapter):
+    def test__capture_standard_output(self):
         dummy_command = ["echo", "hello"]
-        result = shell_adapter.execute(command=dummy_command)
+        result = ShellAdapter.execute(command=dummy_command)
 
         assert result
         assert result.command == dummy_command
@@ -27,9 +22,9 @@ class TestGlobalCommandExecution:
         assert result.stdout == ["hello"]
         assert result.stderr == []
 
-    def test__capture_standard_error(self, shell_adapter):
+    def test__capture_standard_error(self):
         dummy_command = ["cat", "invalid_file"]
-        result = shell_adapter.execute(command=dummy_command)
+        result = ShellAdapter.execute(command=dummy_command)
 
         assert result
         assert result.command == dummy_command
@@ -40,10 +35,10 @@ class TestGlobalCommandExecution:
 
 
 class TestLocalScriptExecution:
-    def test__capture_stdout__single_line(self, test_root_path, shell_adapter):
+    def test__capture_stdout__single_line(self, test_root_path):
         dummy_command = ["./dummy_command.sh", "--stdout", "hello"]
         dummy_cwd = test_root_path
-        result = shell_adapter.execute(command=dummy_command, cwd=dummy_cwd)
+        result = ShellAdapter.execute(command=dummy_command, cwd=dummy_cwd)
 
         assert result
         assert result.command == dummy_command
@@ -52,13 +47,13 @@ class TestLocalScriptExecution:
         assert result.stdout == ["hello"]
         assert result.stderr == []
 
-    def test__capture_stdout__multiline(self, test_root_path, shell_adapter):
+    def test__capture_stdout__multiline(self, test_root_path):
         dummy_command = ["./dummy_command.sh"]
         dummy_command += ["--stdout", "line_1"]
         dummy_command += ["--stdout", "line_2"]
         dummy_command += ["--stdout", "line_3"]
         dummy_cwd = test_root_path
-        result = shell_adapter.execute(command=dummy_command, cwd=dummy_cwd)
+        result = ShellAdapter.execute(command=dummy_command, cwd=dummy_cwd)
 
         assert result
         assert result.command == dummy_command
@@ -67,10 +62,10 @@ class TestLocalScriptExecution:
         assert result.stdout == ["line_1", "line_2", "line_3"]
         assert result.stderr == []
 
-    def test__capture_stderr__single_line(self, test_root_path, shell_adapter):
+    def test__capture_stderr__single_line(self, test_root_path):
         dummy_command = ["./dummy_command.sh", "--stderr", "hello"]
         dummy_cwd = test_root_path
-        result = shell_adapter.execute(command=dummy_command, cwd=dummy_cwd)
+        result = ShellAdapter.execute(command=dummy_command, cwd=dummy_cwd)
 
         assert result
         assert result.command == dummy_command
@@ -79,13 +74,13 @@ class TestLocalScriptExecution:
         assert result.stdout == []
         assert result.stderr == ["hello"]
 
-    def test__capture_stderr__multiline(self, test_root_path, shell_adapter):
+    def test__capture_stderr__multiline(self, test_root_path):
         dummy_command = ["./dummy_command.sh"]
         dummy_command += ["--stderr", "line_1"]
         dummy_command += ["--stderr", "line_2"]
         dummy_command += ["--stderr", "line_3"]
         dummy_cwd = test_root_path
-        result = shell_adapter.execute(command=dummy_command, cwd=dummy_cwd)
+        result = ShellAdapter.execute(command=dummy_command, cwd=dummy_cwd)
 
         assert result
         assert result.command == dummy_command
@@ -94,10 +89,10 @@ class TestLocalScriptExecution:
         assert result.stdout == []
         assert result.stderr == ["line_1", "line_2", "line_3"]
 
-    def test__capture_status_code(self, test_root_path, shell_adapter):
+    def test__capture_status_code(self, test_root_path):
         dummy_command = ["./dummy_command.sh", "--status", "42"]
         dummy_cwd = test_root_path
-        result = shell_adapter.execute(command=dummy_command, cwd=dummy_cwd)
+        result = ShellAdapter.execute(command=dummy_command, cwd=dummy_cwd)
 
         assert result
         assert result.command == dummy_command
@@ -106,7 +101,7 @@ class TestLocalScriptExecution:
         assert result.stdout == []
         assert result.stderr == []
 
-    def test__combined_case(self, test_root_path, shell_adapter):
+    def test__combined_case(self, test_root_path):
         dummy_command = ["./dummy_command.sh"]
         dummy_command += ["--stdout", "stdout_line_1"]
         dummy_command += ["--stdout", "stdout_line_2"]
@@ -114,7 +109,7 @@ class TestLocalScriptExecution:
         dummy_command += ["--stderr", "stderr_line_2"]
         dummy_command += ["--status", "42"]
         dummy_cwd = test_root_path
-        result = shell_adapter.execute(command=dummy_command, cwd=dummy_cwd)
+        result = ShellAdapter.execute(command=dummy_command, cwd=dummy_cwd)
 
         assert result
         assert result.command == dummy_command

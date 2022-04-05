@@ -72,14 +72,14 @@ class ModulesCommand(Command):
         for index, module in enumerate(modules.modules, start=1):
             renderer.add_row(
                 values=[
-                    str(index),
-                    module.name,
+                    f"<<BOLD>>[<<BLUE>>{str(index)}<<RESET>><<BOLD>>]<<RESET>>",
+                    f"<<BOLD>><<YELLOW>>{module.name}<<RESET>>",
                     str(module.root),
                 ],
-                styles=[
-                    renderer.STYLE__DEFAULT__LEFT,
-                    renderer.STYLE__DEFAULT__LEFT,
-                    renderer.STYLE__DEFAULT__LEFT,
+                alignments=[
+                    renderer.row.ALIGN__LEFT,
+                    renderer.row.ALIGN__LEFT,
+                    renderer.row.ALIGN__LEFT,
                 ],
             )
         renderer.commit_rows()

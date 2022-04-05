@@ -16,38 +16,51 @@ set -u  # prevent unset variable expansion
 # the repository root.
 
 #==============================================================================
-# GLOBAL VARIABLES AND EYECANDY
+# POSIX_ADAPTER INTEGRATION
 #==============================================================================
 
-if command -v tput >/dev/null && tput init >/dev/null 2>&1
+# The shellcheck source path have to be relative to the file itself. It can be
+# confusing as this script expectes to be called from the repository root.
+# shellcheck source=../utils/posix_adapter_init.sh
+. "utils/posix_adapter_init.sh"
+
+# NOTE AGAIN: exit on failure is turned off this script. Posix_adapter turns it
+# on, so we have to turn it off here after it got loaded.
+set +e
+
+#==============================================================================
+# GLOBAL VARIABLES AND SOME EYE-CANDY
+#==============================================================================
+
+if posix_adapter__tput__is_available
 then
-  RED=$(tput setaf 1)
-  GREEN=$(tput setaf 2)
-  RESET=$(tput sgr0)
-  DIM=$(tput dim)
-  BOLD=$(tput bold)
+  RED=$(posix_adapter__tput setaf 1)
+  GREEN=$(posix_adapter__tput setaf 2)
+  RESET=$(posix_adapter__tput sgr0)
+  BOLD=$(posix_adapter__tput bold)
+  DIM=$(posix_adapter__tput dim)
 else
   RED=''
   GREEN=''
   RESET=''
-  DIM=''
   BOLD=''
+  DIM=''
 fi
 
 divider__double__top() {
-  echo '════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════'
+  posix_adapter__echo '════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════'
 }
 
 divider__double__header() {
-  echo '════════╤═══════════════════════════════════════════════════════════════════════════════════════════════════════════════'
+  posix_adapter__echo '════════╤═══════════════════════════════════════════════════════════════════════════════════════════════════════════════'
 }
 
 divider__double__footer() {
-  echo '════════╧═══════════════════════════════════════════════════════════════════════════════════════════════════════════════'
+  posix_adapter__echo '════════╧═══════════════════════════════════════════════════════════════════════════════════════════════════════════════'
 }
 
 divider__inner() {
-  echo '────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────'
+  posix_adapter__echo '────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────'
 }
 
 #==============================================================================
@@ -55,7 +68,7 @@ divider__inner() {
 #==============================================================================
 
 divider__double__top
-echo " ${BOLD}CODE QUALITY CHECKS${RESET}"
+posix_adapter__echo " ${BOLD}CODE QUALITY CHECKS${RESET}"
 divider__double__header
 
 #==============================================================================
@@ -75,9 +88,11 @@ fi
 # correctly the coloring sequences hence the manual reset on each line ending..
 if [ -n "$output__isort" ]
 then
-  echo "$output__isort" | sed "s/^/ ${DIM}isort${RESET}  │ /" | sed "s/$/$(tput sgr0)/"
+  posix_adapter__echo "$output__isort" | \
+    posix_adapter__sed --expression "s/^/ ${DIM}isort${RESET}  │ /" | \
+    posix_adapter__sed --expression "s/$/${RESET}/"
 else
-  echo " ${DIM}isort${RESET}  │ Nothing to report"
+  posix_adapter__echo " ${DIM}isort${RESET}  │ Nothing to report"
 fi
 
 #==============================================================================
@@ -96,9 +111,10 @@ fi
 divider__inner
 if [ -n "$output__black" ]
 then
-  echo "$output__black" | sed "s/^/ ${DIM}black${RESET}  │ /"
+  posix_adapter__echo "$output__black" | \
+    posix_adapter__sed --expression "s/^/ ${DIM}black${RESET}  │ /"
 else
-  echo " ${DIM}black${RESET}  │ Nothing to report"
+  posix_adapter__echo " ${DIM}black${RESET}  │ Nothing to report"
 fi
 
 #==============================================================================
@@ -115,9 +131,10 @@ fi
 divider__inner
 if [ -n "$output__flake8" ]
 then
-  echo "$output__flake8" | sed "s/^/ ${DIM}flake8${RESET} │ /"
+  posix_adapter__echo "$output__flake8" | \
+    posix_adapter__sed --expression "s/^/ ${DIM}flake8${RESET} │ /"
 else
-  echo " ${DIM}flake8${RESET} │ Nothing to report"
+  posix_adapter__echo " ${DIM}flake8${RESET} │ Nothing to report"
 fi
 
 #==============================================================================
@@ -125,7 +142,10 @@ fi
 #==============================================================================
 
 # Separate bandit run for the module itself with a safety cat.
-output__bandit_module="$(bandit --silent --recursive dotmodules ./dm.py 2>&1 | cat)"
+output__bandit_module="$( \
+  bandit --silent --recursive dotmodules ./dm.py 2>&1 | \
+  posix_adapter__cat \
+)"
 
 if [ -z "$output__bandit_module" ]
 then
@@ -137,13 +157,20 @@ fi
 divider__inner
 if [ -n "$output__bandit_module" ]
 then
-  echo "$output__bandit_module" | sed "s/^/ ${DIM}bandit${RESET} │ /"
+  posix_adapter__echo "$output__bandit_module" | \
+    posix_adapter__sed --expression "s/^/ ${DIM}bandit${RESET} │ /"
 else
-  echo " ${DIM}bandit${RESET} │ Nothing to report for module"
+  posix_adapter__echo " ${DIM}bandit${RESET} │ Nothing to report for module"
 fi
 
-# Separate bandit run for the test suite with a safety cat.
-output__bandit_tests="$(bandit --silent --skip B101 --recursive tests 2>&1 | cat)"
+# Separate bandit run for the test suite with a safety cat. For the test suite
+# testing we are skipping the B101 warning which is for the usage of the assert
+# statement:
+# https://bandit.readthedocs.io/en/latest/plugins/b101_assert_used.html
+output__bandit_tests="$( \
+  bandit --silent --skip B101 --recursive tests 2>&1 | \
+  posix_adapter__cat \
+)"
 
 if [ -z "$output__bandit_tests" ]
 then
@@ -155,9 +182,10 @@ fi
 divider__inner
 if [ -n "$output__bandit_tests" ]
 then
-  echo "$output__bandit_tests" | sed "s/^/ ${DIM}bandit${RESET} │ /"
+  posix_adapter__echo "$output__bandit_tests" | \
+    posix_adapter__sed --expression "s/^/ ${DIM}bandit${RESET} │ /"
 else
-  echo " ${DIM}bandit${RESET} │ Nothing to report for test suite"
+  posix_adapter__echo " ${DIM}bandit${RESET} │ Nothing to report for test suite"
 fi
 
 status__bandit=$((status__bandit_module + status__bandit_tests))
@@ -176,53 +204,53 @@ fi
 divider__inner
 if [ -n "$output__mypy" ]
 then
-  echo "$output__mypy" | sed "s/^/ ${DIM}mypy${RESET}   │ /"
+  posix_adapter__echo "$output__mypy" | \
+    posix_adapter__sed --expression "s/^/ ${DIM}mypy${RESET}   │ /"
 else
-  echo " ${DIM}mypy${RESET}  │ Nothing to report for test suite"
+  posix_adapter__echo " ${DIM}mypy${RESET}  │ Nothing to report for test suite"
 fi
-
 
 #==============================================================================
 # DETAILED STATUS REPORT
 #==============================================================================
 
 divider__double__footer
-echo " ${BOLD}RESULTS${RESET}"
+posix_adapter__echo " ${BOLD}RESULTS${RESET}"
 divider__double__header
 
 if [ "$status__isort" -gt '0' ]
 then
-  echo " ${DIM}isort${RESET}  │ ${RED}${BOLD}failed${RESET}"
+  posix_adapter__echo " ${DIM}isort${RESET}  │ ${RED}${BOLD}failed${RESET}"
 else
-  echo " ${DIM}isort${RESET}  │ ${GREEN}${BOLD}passed${RESET}"
+  posix_adapter__echo " ${DIM}isort${RESET}  │ ${GREEN}${BOLD}passed${RESET}"
 fi
 
 if [ "$status__black" -gt '0' ]
 then
-  echo " ${DIM}black${RESET}  │ ${RED}${BOLD}failed${RESET}"
+  posix_adapter__echo " ${DIM}black${RESET}  │ ${RED}${BOLD}failed${RESET}"
 else
-  echo " ${DIM}black${RESET}  │ ${GREEN}${BOLD}passed${RESET}"
+  posix_adapter__echo " ${DIM}black${RESET}  │ ${GREEN}${BOLD}passed${RESET}"
 fi
 
 if [ "$status__flake8" -gt '0' ]
 then
-  echo " ${DIM}flake8${RESET} │ ${RED}${BOLD}failed${RESET}"
+  posix_adapter__echo " ${DIM}flake8${RESET} │ ${RED}${BOLD}failed${RESET}"
 else
-  echo " ${DIM}flake8${RESET} │ ${GREEN}${BOLD}passed${RESET}"
+  posix_adapter__echo " ${DIM}flake8${RESET} │ ${GREEN}${BOLD}passed${RESET}"
 fi
 
 if [ "$status__bandit" -gt '0' ]
 then
-  echo " ${DIM}bandit${RESET} │ ${RED}${BOLD}failed${RESET}"
+  posix_adapter__echo " ${DIM}bandit${RESET} │ ${RED}${BOLD}failed${RESET}"
 else
-  echo " ${DIM}bandit${RESET} │ ${GREEN}${BOLD}passed${RESET}"
+  posix_adapter__echo " ${DIM}bandit${RESET} │ ${GREEN}${BOLD}passed${RESET}"
 fi
 
 if [ "$status__mypy" -gt '0' ]
 then
-  echo " ${DIM}mypy${RESET}   │ ${RED}${BOLD}failed${RESET}"
+  posix_adapter__echo " ${DIM}mypy${RESET}   │ ${RED}${BOLD}failed${RESET}"
 else
-  echo " ${DIM}mypy${RESET}   │ ${GREEN}${BOLD}passed${RESET}"
+  posix_adapter__echo " ${DIM}mypy${RESET}   │ ${GREEN}${BOLD}passed${RESET}"
 fi
 
 divider__double__footer

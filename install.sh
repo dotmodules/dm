@@ -40,26 +40,12 @@ fi
 #==============================================================================
 # The first module we are loading is the posix-adapter project that would
 # provide the necessary platform independent interface for the command line
-# tools. We are only loading the posix-adapter system when it hasn't been loaded
-# by other code (the tested system for example).
+# tools.
 #==============================================================================
 
-if [ -z ${POSIX_ADAPTER__READY+x} ]
-then
-  # If posix_adapter has not sourced yet, we have to source it from this
-  # repository.  Implementing the posix-adapter inporting system variables.
-  ___posix_adapter_path_prefix="${DM_REPO_ROOT}/dependencies/posix-adapter"
-  POSIX_ADAPTER__CONFIG__MANDATORY__SUBMODULE_PATH_PREFIX="$___posix_adapter_path_prefix"
-  if [ -d "$POSIX_ADAPTER__CONFIG__MANDATORY__SUBMODULE_PATH_PREFIX" ]
-  then
-    # shellcheck source=./dependencies/posix-adapter/posix_adapter.sh
-    . "${POSIX_ADAPTER__CONFIG__MANDATORY__SUBMODULE_PATH_PREFIX}/posix_adapter.sh"
-  else
-      echo 'Initialization failed!'
-      echo 'posix_adapter needs to be initialized but its git submodule is missing!'
-      echo 'You need to init the dotmodules repository: make init'
-  fi
-fi
+# NOTE: DM_REPO_ROOT is set already.
+# shellcheck source=./utils/posix_adapter_init.sh
+. "${DM_REPO_ROOT}/utils/posix_adapter_init.sh"
 
 #==============================================================================
 # GLOBAL VARIABLES

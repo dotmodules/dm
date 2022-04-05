@@ -33,10 +33,11 @@ class ShellAdapter:
         if not is_a_list or not is_a_list_of_strings:
             raise ShellAdapterError("passed command should be a list of strings")
 
+    @classmethod
     def execute(
-        self, command: List[str], cwd: Optional[os.PathLike] = None
+        cls, command: List[str], cwd: Optional[os.PathLike] = None
     ) -> ShellResult:
-        self.validate_command(command=command)
+        cls.validate_command(command=command)
         process = Popen(
             command, stdout=PIPE, stderr=PIPE, cwd=cwd, shell=False  # nosec B603
         )
