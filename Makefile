@@ -59,7 +59,7 @@ fix: virtualenv_activated
 
 .PHONY: test
 test: virtualenv_activated
-	@python -m pytest -c pytest.ini --cov=dotmodules/ --cov=tests/ tests dotmodules
+	@python -m pytest -vv -c pytest.ini --cov=dotmodules/ --cov=tests/ tests dotmodules
 
 .PHONY: virtualenv_activated
 virtualenv_activated:

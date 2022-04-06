@@ -22,8 +22,11 @@ class CommandLineInterpreter:
         raise InterpreterFinished()
 
     def run(self):
+        prompt = self._renderer.prompt.render(
+            prompt_template=self._settings.prompt_template
+        )
         while True:
-            raw_input = input("dm # ")
+            raw_input = input(prompt)
             try:
                 self._commands.process_input(
                     raw_input=raw_input,

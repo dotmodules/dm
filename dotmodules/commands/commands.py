@@ -69,20 +69,15 @@ class ModulesCommand(Command):
         renderer: Renderer,
         parameters: Optional[List[str]] = None,
     ):
+        print()
         for index, module in enumerate(modules.modules, start=1):
-            renderer.add_row(
-                values=[
-                    f"<<BOLD>>[<<BLUE>>{str(index)}<<RESET>><<BOLD>>]<<RESET>>",
-                    f"<<BOLD>><<YELLOW>>{module.name}<<RESET>>",
-                    str(module.root),
-                ],
-                alignments=[
-                    renderer.row.ALIGN__LEFT,
-                    renderer.row.ALIGN__LEFT,
-                    renderer.row.ALIGN__LEFT,
-                ],
+            renderer.rows.add_row(
+                f"<<BOLD>><<BLUE>>[{str(index)}]<<RESET>>",
+                f"<<BOLD>>{module.name}<<RESET>>",
+                f"<<DIM>><<UNDERLINE>>{str(module.root)}<<RESET>>",
             )
-        renderer.commit_rows()
+        renderer.rows.commit_rows()
+        print()
 
 
 class Commands:

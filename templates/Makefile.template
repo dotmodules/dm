@@ -25,20 +25,20 @@ CLI__INDENT := 2
 CLI__COLUMN_PADDING := 1
 
 # Prompt template that can be constructed from the following variables:
-#   <<indent>>  - Indentation block you previously defined.
-#   <<space>>   - Single space character.
-#   <<reset>>   - Removes all formatting.
-#   <<bold>>    - Format the text after it as bold.
-#   <<dim>>     - Format the text after it as muted.
-#   <<red>>     - Format the text after it as red.
-#   <<green>>   - Format the text after it as green.
-#   <<yellow>>  - Format the text after it as yellow.
-#   <<blue>>    - Format the text after it as blue.
-#   <<magenta>> - Format the text after it as magenta.
-#   <<cyan>>    - Format the text after it as cyan.
+#   <<INDENT>>  - Indentation block you previously defined.
+#   <<SPACE>>   - Single space character.
+#   <<RESET>>   - Removes all formatting.
+#   <<BOLD>>    - Format the text after it as bold.
+#   <<DIM>>     - Format the text after it as muted.
+#   <<RED>>     - Format the text after it as red.
+#   <<GREEN>>   - Format the text after it as green.
+#   <<YELLOW>>  - Format the text after it as yellow.
+#   <<BLUE>>    - Format the text after it as blue.
+#   <<MAGENTA>> - Format the text after it as magenta.
+#   <<CYAN>>    - Format the text after it as cyan.
 # Note that Makefile specific characters line dollar signs and hashmarks needs
 # to be escaped in order to be assigned properly.
-CLI__PROMPT_TEMPLATE := <<bold>>dm<<reset>><<space>>\#<<space>>
+CLI__PROMPT_TEMPLATE := <<BOLD>>dm<<RESET>><<SPACE>>\#<<SPACE>>
 
 # Hotkey definitions for the cli as a pipe separated list.
 CLI__HOTKEYS__EXIT      := q|quit|exit
