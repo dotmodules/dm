@@ -202,9 +202,6 @@ class Modules:
     def __len__(self) -> int:
         return len(self.modules)
 
-    # def __getitem__(self, k) -> Module:
-    #     return self.modules[k]
-
     @staticmethod
     def _config_file_paths(
         modules_root_path: Path, config_file_name: str

@@ -51,13 +51,16 @@ class TestRowRenderingCases:
         renderer.add_row("a", "b")
         renderer.add_row("aa", "b")
         renderer.add_row("aaa", "b")
-        renderer.commit_rows()
-        expected_calls = [
-            mocker.call("    a    b"),
-            mocker.call("    aa   b"),
-            mocker.call("    aaa  b"),
-        ]
-        mock_print.assert_has_calls(expected_calls)
+        renderer.render_rows()
+        mock_print.assert_has_calls(
+            [
+                mocker.call("    a    b"),
+                mocker.call("    aa   b"),
+                mocker.call("    aaa  b"),
+            ]
+        )
+        # It has printed two empty lines too.
+        assert mock_print.call_count == 5
 
     def test__rendered_column_width_can_be_adjusted_2(self, settings, colors, mocker):
         mock_print = mocker.patch("dotmodules.renderer.print")
@@ -69,13 +72,16 @@ class TestRowRenderingCases:
         renderer.add_row("a", "b")
         renderer.add_row("aa", "b")
         renderer.add_row("aaa", "b")
-        renderer.commit_rows()
-        expected_calls = [
-            mocker.call("  a   b"),
-            mocker.call("  aa  b"),
-            mocker.call("  aaa b"),
-        ]
-        mock_print.assert_has_calls(expected_calls)
+        renderer.render_rows()
+        mock_print.assert_has_calls(
+            [
+                mocker.call("  a   b"),
+                mocker.call("  aa  b"),
+                mocker.call("  aaa b"),
+            ]
+        )
+        # It has printed two empty lines too.
+        assert mock_print.call_count == 5
 
     def test__coloring_should_not_affect_the_width_adjustment(
         self, settings, colors, mocker
@@ -93,7 +99,7 @@ class TestRowRenderingCases:
         renderer.add_row("<<RED>>a<<RESET>>", "<<BLUE>>b<<RESET>>")
         renderer.add_row("<<RED>>aa<<RESET>>", "<<BLUE>>b<<RESET>>")
         renderer.add_row("<<RED>>aaa<<RESET>>", "<<BLUE>>b<<RESET>>")
-        renderer.commit_rows()
+        renderer.render_rows()
 
         mock_print.assert_has_calls(
             [
@@ -102,6 +108,8 @@ class TestRowRenderingCases:
                 mocker.call("    redaaareset  bluebreset"),
             ]
         )
+        # It has printed two empty lines too.
+        assert mock_print.call_count == 5
         mock_load_color_for_tag.assert_has_calls(
             [
                 mocker.call(tag="RED"),
@@ -136,7 +144,7 @@ class TestRowRenderingCases:
             "<<YELLOW>>aaa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        renderer.commit_rows(
+        renderer.render_rows(
             column_alignments=[
                 renderer.ALIGN__LEFT,
                 renderer.ALIGN__RIGHT,
@@ -151,6 +159,8 @@ class TestRowRenderingCases:
                 mocker.call("  bold[red3resetbold]reset yellowaaareset dimbreset"),
             ]
         )
+        # It has printed two empty lines too.
+        assert mock_print.call_count == 5
         mock_load_color_for_tag.assert_has_calls(
             [
                 mocker.call(tag="BOLD"),

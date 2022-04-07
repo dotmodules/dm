@@ -1,4 +1,4 @@
-from dotmodules.commands.commands import Commands
+from dotmodules.commands import Commands
 from dotmodules.modules import Modules
 from dotmodules.renderer import Renderer
 from dotmodules.settings import load_settings

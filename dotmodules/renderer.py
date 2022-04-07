@@ -131,12 +131,13 @@ class RowRenderer:
         row = [str(value).strip() for value in values]
         self._row_buffer.append(row)
 
-    def commit_rows(self, column_alignments: Optional[List[str]] = None):
+    def render_rows(self, column_alignments: Optional[List[str]] = None):
         column_widths = self._calculate_max_column_width(buffer=self._row_buffer)
 
         if not column_alignments:
             column_alignments = [self.ALIGN__LEFT] * len(column_widths)
 
+        print("")
         for row in self._row_buffer:
             rendered_columns = [
                 self._render_item(
@@ -150,6 +151,7 @@ class RowRenderer:
                 self._settings.indent
                 + self._settings.column_padding.join(rendered_columns)
             )
+        print("")
 
         self._row_buffer = []
 
@@ -172,6 +174,19 @@ class RowRenderer:
 
 
 class PromptRenderer:
+    def __init__(self, settings: Settings, colors: Colors):
+        self._settings = settings
+        self._colors = colors
+
+    def render(self, prompt_template: str) -> str:
+        prompt = prompt_template.replace("<<SPACE>>", " ").replace(
+            "<<INDENT>>", self._settings.indent
+        )
+        colorize_result = self._colors.colorize(string=prompt)
+        return colorize_result.colorized_string
+
+
+class WrapRenderer:
     def __init__(self, settings: Settings, colors: Colors):
         self._settings = settings
         self._colors = colors

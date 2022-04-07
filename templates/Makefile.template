@@ -42,7 +42,7 @@ CLI__PROMPT_TEMPLATE := <<BOLD>>dm<<RESET>><<SPACE>>\#<<SPACE>>
 
 # Hotkey definitions for the cli as a pipe separated list.
 CLI__HOTKEYS__EXIT      := q|quit|exit
-CLI__HOTKEYS__HELP      := ?|help
+CLI__HOTKEYS__HELP      := help
 CLI__HOTKEYS__HOOKS     := h|hooks
 CLI__HOTKEYS__MODULES   := m|modules
 CLI__HOTKEYS__VARIABLES := v|variables
