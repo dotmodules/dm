@@ -14,26 +14,23 @@ def colors():
     return Colors()
 
 
-@pytest.fixture
-def prompt_renderer(settings, colors):
-    return PromptRenderer(settings=settings, colors=colors)
-
-
 class TestPromptRenderingCases:
-    def test__space_and_indent_can_be_resolved(self, settings, prompt_renderer):
+    def test__space_and_indent_can_be_resolved(self, settings, colors):
         settings.indent = " " * 4
+        prompt_renderer = PromptRenderer(settings=settings, colors=colors)
         dummy_prommpt_template = "<<SPACE>>hello<<INDENT>>"
         expected = " hello    "
         result = prompt_renderer.render(prompt_template=dummy_prommpt_template)
         assert result == expected
 
-    def test__colors_can_be_resolved_too(self, settings, prompt_renderer, mocker):
+    def test__colors_can_be_resolved_too(self, settings, colors, mocker):
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
 
         settings.indent = " " * 4
+        prompt_renderer = PromptRenderer(settings=settings, colors=colors)
         dummy_prommpt_template = "<<RED>>hello<<RESET>>"
         expected = "redhelloreset"
         result = prompt_renderer.render(prompt_template=dummy_prommpt_template)

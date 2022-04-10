@@ -27,7 +27,12 @@ class ModulesCommand(Command):
         commands: List[Command],
         parameters: Optional[List[str]] = None,
     ) -> None:
+        renderer.empty_line()
+        renderer.wrap.render(
+            "<<BLUE>>These are the modules available in your configuration. You can select a module by appending its index to the modules command like m|module 42.<<RESET>>"
+        )
         if not parameters:
+            renderer.empty_line()
             for index, module in enumerate(modules.modules, start=1):
                 renderer.rows.add_row(
                     f"<<DIM>>[{str(index)}]<<RESET>>",
@@ -37,6 +42,7 @@ class ModulesCommand(Command):
                     f"<<UNDERLINE>>{str(module.root)}<<RESET>>",
                 )
             renderer.rows.render_rows()
+            renderer.empty_line()
             return
         else:
             index = int(parameters[0])

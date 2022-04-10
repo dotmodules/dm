@@ -59,8 +59,7 @@ class TestRowRenderingCases:
                 mocker.call("    aaa  b"),
             ]
         )
-        # It has printed two empty lines too.
-        assert mock_print.call_count == 5
+        assert mock_print.call_count == 3
 
     def test__rendered_column_width_can_be_adjusted_2(self, settings, colors, mocker):
         mock_print = mocker.patch("dotmodules.renderer.print")
@@ -80,8 +79,7 @@ class TestRowRenderingCases:
                 mocker.call("  aaa b"),
             ]
         )
-        # It has printed two empty lines too.
-        assert mock_print.call_count == 5
+        assert mock_print.call_count == 3
 
     def test__coloring_should_not_affect_the_width_adjustment(
         self, settings, colors, mocker
@@ -108,8 +106,7 @@ class TestRowRenderingCases:
                 mocker.call("    redaaareset  bluebreset"),
             ]
         )
-        # It has printed two empty lines too.
-        assert mock_print.call_count == 5
+        assert mock_print.call_count == 3
         mock_load_color_for_tag.assert_has_calls(
             [
                 mocker.call(tag="RED"),
@@ -159,8 +156,7 @@ class TestRowRenderingCases:
                 mocker.call("  bold[red3resetbold]reset yellowaaareset dimbreset"),
             ]
         )
-        # It has printed two empty lines too.
-        assert mock_print.call_count == 5
+        assert mock_print.call_count == 3
         mock_load_color_for_tag.assert_has_calls(
             [
                 mocker.call(tag="BOLD"),

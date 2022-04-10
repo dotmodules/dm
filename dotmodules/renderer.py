@@ -137,7 +137,6 @@ class RowRenderer:
         if not column_alignments:
             column_alignments = [self.ALIGN__LEFT] * len(column_widths)
 
-        print("")
         for row in self._row_buffer:
             rendered_columns = [
                 self._render_item(
@@ -151,7 +150,6 @@ class RowRenderer:
                 self._settings.indent
                 + self._settings.column_padding.join(rendered_columns)
             )
-        print("")
 
         self._row_buffer = []
 
@@ -175,12 +173,12 @@ class RowRenderer:
 
 class PromptRenderer:
     def __init__(self, settings: Settings, colors: Colors):
-        self._settings = settings
         self._colors = colors
+        self._indent = settings.indent
 
     def render(self, prompt_template: str) -> str:
         prompt = prompt_template.replace("<<SPACE>>", " ").replace(
-            "<<INDENT>>", self._settings.indent
+            "<<INDENT>>", self._indent
         )
         colorize_result = self._colors.colorize(string=prompt)
         return colorize_result.colorized_string
@@ -188,15 +186,76 @@ class PromptRenderer:
 
 class WrapRenderer:
     def __init__(self, settings: Settings, colors: Colors):
-        self._settings = settings
         self._colors = colors
+        self._wrap_limit = settings.text_wrap_limit - len(settings.indent)
+        self._indent = settings.indent
 
-    def render(self, prompt_template: str) -> str:
-        prompt = prompt_template.replace("<<SPACE>>", " ").replace(
-            "<<INDENT>>", self._settings.indent
-        )
-        colorize_result = self._colors.colorize(string=prompt)
-        return colorize_result.colorized_string
+    def render(self, string: str):
+        wrap_count = 0
+        word_buffer = ""
+        line_buffer = ""
+        wrapped_lines = []
+        for char in string:
+            if not word_buffer:
+                if char.isspace():
+                    line_buffer += char
+                    wrap_count += 1
+                else:
+                    word_buffer += char
+            else:
+                if char.isspace():
+                    word_length = self._colors.real_width(string=word_buffer)
+                    colorize_result = self._colors.colorize(string=word_buffer)
+                    colorized_word = colorize_result.colorized_string
+                    word_buffer = ""
+
+                    if (wrap_count + word_length) > self._wrap_limit:
+                        if wrap_count > 0:
+                            if line_buffer.isspace():
+                                # If there is only whitespace present in the
+                                # line, it can be considered as an indentaion,
+                                # and we should add it right before the long
+                                # word.
+                                line_buffer += colorized_word
+                                wrapped_lines.append(line_buffer.rstrip())
+                                # Resetting the additional state as this step
+                                # was a slight hack.
+                                colorized_word = ""
+                                word_length = 0
+                                char = ""
+                            else:
+                                wrapped_lines.append(line_buffer.rstrip())
+                        line_buffer = ""
+                        wrap_count = 0
+
+                    line_buffer += colorized_word + char
+                    wrap_count += word_length + 1
+                else:
+                    word_buffer += char
+
+        # Process the left over content of the word buffer.
+        if word_buffer:
+            word_length = self._colors.real_width(string=word_buffer)
+            colorize_result = self._colors.colorize(string=word_buffer)
+            colorized_word = colorize_result.colorized_string
+
+        # Append it to the line or append it to a new line after the leftover
+        # line gets appended.
+        if (wrap_count + word_length) > self._wrap_limit:
+            if wrap_count > 0:
+                if line_buffer.isspace():
+                    line_buffer += colorized_word
+                    wrapped_lines.append(line_buffer.rstrip())
+                else:
+                    wrapped_lines.append(line_buffer.rstrip())
+                    wrapped_lines.append(colorized_word)
+            else:
+                wrapped_lines.append(colorized_word)
+        else:
+            line_buffer += colorized_word
+            wrapped_lines.append(line_buffer.rstrip())
+
+        print("\n".join([self._indent + line for line in wrapped_lines]))
 
 
 class Renderer:
@@ -205,6 +264,10 @@ class Renderer:
         self._colors = Colors()
         self._row_renderer = RowRenderer(settings=settings, colors=self._colors)
         self._prompt_renderer = PromptRenderer(settings=settings, colors=self._colors)
+        self._wrap_renderer = WrapRenderer(settings=settings, colors=self._colors)
+
+    def empty_line(self):
+        print("")
 
     @property
     def rows(self):
@@ -213,3 +276,7 @@ class Renderer:
     @property
     def prompt(self):
         return self._prompt_renderer
+
+    @property
+    def wrap(self):
+        return self._wrap_renderer
