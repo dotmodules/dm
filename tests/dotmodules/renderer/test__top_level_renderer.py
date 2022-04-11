@@ -22,3 +22,8 @@ class TestTopLevelRendererCases:
         assert isinstance(renderer.rows, RowRenderer)
         assert isinstance(renderer.prompt, PromptRenderer)
         assert isinstance(renderer.wrap, WrapRenderer)
+
+    def test__new_line_renderer(self, renderer, mocker):
+        mock_print = mocker.patch("dotmodules.renderer.print")
+        renderer.empty_line()
+        mock_print.assert_called_with("")

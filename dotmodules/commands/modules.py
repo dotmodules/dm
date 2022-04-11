@@ -29,7 +29,9 @@ class ModulesCommand(Command):
     ) -> None:
         renderer.empty_line()
         renderer.wrap.render(
-            "<<BLUE>>These are the modules available in your configuration. You can select a module by appending its index to the modules command like m|module 42.<<RESET>>"
+            "<<BLUE>>These are the modules available in your configuration. "
+            "You can select a module by appending its index to the modules "
+            f"command like {settings.hotkey_modules} 42.<<RESET>>"
         )
         if not parameters:
             renderer.empty_line()

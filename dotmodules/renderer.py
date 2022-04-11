@@ -191,11 +191,20 @@ class WrapRenderer:
         self._indent = settings.indent
 
     def render(self, string: str):
+        lines = string.splitlines()
+        if not lines:
+            return print("")
+        for line in lines:
+            wrapped_lines = self._render_line(line=line)
+            for wrapped_line in wrapped_lines:
+                print(self._indent + wrapped_line)
+
+    def _render_line(self, line: str) -> List[str]:
         wrap_count = 0
         word_buffer = ""
         line_buffer = ""
         wrapped_lines = []
-        for char in string:
+        for char in line:
             if not word_buffer:
                 if char.isspace():
                     line_buffer += char
@@ -213,9 +222,9 @@ class WrapRenderer:
                         if wrap_count > 0:
                             if line_buffer.isspace():
                                 # If there is only whitespace present in the
-                                # line, it can be considered as an indentaion,
-                                # and we should add it right before the long
-                                # word.
+                                # line, it should be considered as an
+                                # indentaion, and we should add it right before
+                                # the long word.
                                 line_buffer += colorized_word
                                 wrapped_lines.append(line_buffer.rstrip())
                                 # Resetting the additional state as this step
@@ -238,6 +247,9 @@ class WrapRenderer:
             word_length = self._colors.real_width(string=word_buffer)
             colorize_result = self._colors.colorize(string=word_buffer)
             colorized_word = colorize_result.colorized_string
+        else:
+            word_length = 0
+            colorized_word = ""
 
         # Append it to the line or append it to a new line after the leftover
         # line gets appended.
@@ -255,7 +267,7 @@ class WrapRenderer:
             line_buffer += colorized_word
             wrapped_lines.append(line_buffer.rstrip())
 
-        print("\n".join([self._indent + line for line in wrapped_lines]))
+        return wrapped_lines
 
 
 class Renderer:
