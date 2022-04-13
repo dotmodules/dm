@@ -27,13 +27,15 @@ class ModulesCommand(Command):
         commands: List[Command],
         parameters: Optional[List[str]] = None,
     ) -> None:
+
         renderer.empty_line()
-        renderer.wrap.render(
-            "<<BLUE>>These are the modules available in your configuration. "
-            "You can select a module by appending its index to the modules "
-            f"command like {settings.hotkey_modules} 42.<<RESET>>"
-        )
+
         if not parameters:
+            renderer.wrap.render(
+                "<<BLUE>>These are the modules available in your configuration. "
+                "You can select a module by appending its index to the modules "
+                f"command like {settings.hotkey_modules} 42.<<RESET>>"
+            )
             renderer.empty_line()
             for index, module in enumerate(modules.modules, start=1):
                 renderer.rows.add_row(
@@ -44,18 +46,21 @@ class ModulesCommand(Command):
                     f"<<UNDERLINE>>{str(module.root)}<<RESET>>",
                 )
             renderer.rows.render_rows()
-            renderer.empty_line()
-            return
+
         else:
             index = int(parameters[0])
             module = modules.modules[index - 1]
-            print(module.name)
-            print(module.version)
-            import textwrap
+            renderer.wrap.render(string=module.name)
+            renderer.wrap.render(string=module.version)
+            renderer.wrap.render(string="\n".join(module.documentation))
 
-            for line in module.documentation:
-                wrapped = "\n".join(textwrap.wrap(line, width=settings.text_wrap_limit))
-                print(wrapped)
-            print(f"links: {module.links}")
-            print(f"variables: {module.variables}")
-            print(f"hooks: {module.hooks}")
+            renderer.empty_line()
+
+            for link in module.links:
+                renderer.rows.add_row(link.path_to_file, link.path_to_symlink)
+            renderer.rows.render_rows()
+            # renderer.wrap.render(string=module.links)
+            # renderer.wrap.render(string=module.variables)
+            # renderer.wrap.render(string=module.hooks)
+
+        renderer.empty_line()

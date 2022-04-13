@@ -131,11 +131,18 @@ class RowRenderer:
         row = [str(value).strip() for value in values]
         self._row_buffer.append(row)
 
-    def render_rows(self, column_alignments: Optional[List[str]] = None):
+    def render_rows(
+        self,
+        column_alignments: Optional[List[str]] = None,
+        indent: bool = True,
+        return_lines: bool = False,
+    ):
         column_widths = self._calculate_max_column_width(buffer=self._row_buffer)
 
         if not column_alignments:
             column_alignments = [self.ALIGN__LEFT] * len(column_widths)
+
+        output_lines = []
 
         for row in self._row_buffer:
             rendered_columns = [
@@ -146,12 +153,18 @@ class RowRenderer:
                     row, column_widths, column_alignments
                 )
             ]
-            print(
-                self._settings.indent
-                + self._settings.column_padding.join(rendered_columns)
-            )
+            line = self._settings.column_padding.join(rendered_columns)
+            if indent:
+                line = self._settings.indent + line
+            output_lines.append(line)
 
         self._row_buffer = []
+
+        if return_lines:
+            return output_lines
+
+        for line in output_lines:
+            print(line)
 
     def _render_item(self, item: str, width: int, alignment_template: str) -> str:
         colorized_result = self._colors.colorize(string=item)
@@ -187,23 +200,49 @@ class PromptRenderer:
 class WrapRenderer:
     def __init__(self, settings: Settings, colors: Colors):
         self._colors = colors
-        self._wrap_limit = settings.text_wrap_limit - len(settings.indent)
-        self._indent = settings.indent
+        self._settings = settings
 
-    def render(self, string: str):
+    def render(
+        self,
+        string: str,
+        indent: bool = True,
+        width: Optional[int] = None,
+        return_lines: bool = False,
+    ):
+        if width is None:
+            width = self._settings.text_wrap_limit
+        if indent:
+            width -= len(self._settings.indent)
+
         lines = string.splitlines()
-        if not lines:
-            return print("")
-        for line in lines:
-            wrapped_lines = self._render_line(line=line)
-            for wrapped_line in wrapped_lines:
-                print(self._indent + wrapped_line)
 
-    def _render_line(self, line: str) -> List[str]:
+        output_lines = []
+
+        if not lines:
+            output_lines.append("")
+        else:
+            for line in lines:
+                wrapped_lines = self._render_line(line=line, width=width)
+                if indent:
+                    wrapped_lines = [
+                        self._settings.indent + wrapped_line
+                        for wrapped_line in wrapped_lines
+                    ]
+                output_lines += wrapped_lines
+
+        if return_lines:
+            return output_lines
+
+        for line in output_lines:
+            print(line)
+
+    def _render_line(self, line: str, width: int) -> List[str]:
         wrap_count = 0
         word_buffer = ""
         line_buffer = ""
+
         wrapped_lines = []
+
         for char in line:
             if not word_buffer:
                 if char.isspace():
@@ -218,7 +257,7 @@ class WrapRenderer:
                     colorized_word = colorize_result.colorized_string
                     word_buffer = ""
 
-                    if (wrap_count + word_length) > self._wrap_limit:
+                    if (wrap_count + word_length) > width:
                         if wrap_count > 0:
                             if line_buffer.isspace():
                                 # If there is only whitespace present in the
@@ -253,7 +292,7 @@ class WrapRenderer:
 
         # Append it to the line or append it to a new line after the leftover
         # line gets appended.
-        if (wrap_count + word_length) > self._wrap_limit:
+        if (wrap_count + word_length) > width:
             if wrap_count > 0:
                 if line_buffer.isspace():
                     line_buffer += colorized_word

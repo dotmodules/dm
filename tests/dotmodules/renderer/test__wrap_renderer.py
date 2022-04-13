@@ -14,252 +14,215 @@ def colors():
     return Colors()
 
 
-class TestWrapRenderingWithoutColoringCases:
-    def test__empty_string_remains_empty(self, settings, colors, mocker):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
+@pytest.fixture
+def wrap_renderer(settings, colors):
+    return WrapRenderer(settings=settings, colors=colors)
 
+
+class TestWrapRenderingWithoutColoringCases:
+    def test__empty_string_remains_empty(self, wrap_renderer):
         dummy_string = ""
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call(""),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 1
 
-    def test__wrapping_wont_happen_for_shorter_text(self, settings, colors, mocker):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
+        assert result == [
+            "",
+        ]
 
+    def test__wrapping_wont_happen_for_shorter_text(self, wrap_renderer):
         #              |----10----|
         dummy_string = "short text"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call("short text"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 1
 
-    def test__wrapping_will_happen_on_longer_text(self, settings, colors, mocker):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
+        assert result == [
+            "short text",
+        ]
 
+    def test__wrapping_will_happen_on_longer_text(self, wrap_renderer):
         #              |----10----|
         dummy_string = "longer text"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call("longer"),
-                mocker.call("text"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 2
+
+        assert result == [
+            "longer",
+            "text",
+        ]
 
     def test__wrapping_will_happen_on_longer_text_with_multiple_words(
-        self, settings, colors, mocker
+        self, wrap_renderer
     ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
-
         #              |----10----|
         dummy_string = "a b c d e f g h"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call("a b c d e"),
-                mocker.call("f g h"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 2
+
+        assert result == [
+            "a b c d e",
+            "f g h",
+        ]
 
     def test__longer_word_than_wrap_limit_will_be_an_overhagning_word(
-        self, settings, colors, mocker
+        self, wrap_renderer
     ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
-
         #              |----10----|
         dummy_string = "extralongword"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call("extralongword"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 1
 
-    def test__longer_text_than_wrap_limit_in_context_will_overhang(
-        self, settings, colors, mocker
-    ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
+        assert result == [
+            "extralongword",
+        ]
 
+    def test__longer_text_than_wrap_limit_in_context_will_overhang(self, wrap_renderer):
         #              |----10----|
         dummy_string = "extralongword it should be left as is"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call("extralongword"),
-                mocker.call("it should"),
-                mocker.call("be left as"),
-                mocker.call("is"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 4
 
-    def test__indentation_will_be_kept(self, settings, colors, mocker):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
+        assert result == [
+            "extralongword",
+            "it should",
+            "be left as",
+            "is",
+        ]
 
+    def test__indentation_will_be_kept(self, wrap_renderer):
         #              |----10----|
         dummy_string = "  short text"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call("  short"),
-                mocker.call("text"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 2
+
+        assert result == [
+            "  short",
+            "text",
+        ]
 
     def test__indentation_longer_than_the_limit__full_indentation_will_be_kept(
-        self, settings, colors, mocker
+        self, wrap_renderer
     ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
-
         #              |----10----|
         dummy_string = "               short text"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call("               short"),
-                mocker.call("text"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 2
 
-    def test__indentation_will_be_kept_before_the_too_long_word(
-        self, settings, colors, mocker
-    ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
+        assert result == [
+            "               short",
+            "text",
+        ]
 
+    def test__indentation_will_be_kept_before_the_too_long_word(self, wrap_renderer):
         #              |----10----|
         dummy_string = " extralongword"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call(" extralongword"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 1
+
+        assert result == [
+            " extralongword",
+        ]
 
     def test__indentation_will_be_kept_before_the_too_long_word_even_if_it_is_long(
-        self, settings, colors, mocker
+        self, wrap_renderer
     ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
-
         #              |----10----|
         dummy_string = "              extralongword"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call("              extralongword"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 1
+
+        assert result == [
+            "              extralongword",
+        ]
 
     def test__longer_text_than_wrap_limit_in_context_with_indentation(
-        self, settings, colors, mocker
+        self, wrap_renderer
     ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
-
         #              |----10----|
         dummy_string = " extralongword it should be left as is"
 
-        wrap_renderer.render(string=dummy_string)
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
+        )
 
-        mock_print.assert_has_calls(
+        assert result == [
+            " extralongword",
+            "it should",
+            "be left as",
+            "is",
+        ]
+
+    def test__multiple_input_lines__empty_lines(self, wrap_renderer):
+        dummy_string = "\n\n\n"
+
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
+        )
+
+        assert result == [
+            "",
+            "",
+            "",
+        ]
+
+    def test__multiple_input_lines_can_be_handled(self, wrap_renderer):
+        dummy_string = "\n".join(
             [
-                mocker.call(" extralongword"),
-                mocker.call("it should"),
-                mocker.call("be left as"),
-                mocker.call("is"),
+                #       |----------20--------|
+                "This is a bit longer text that will be tested.",
+                "",
+                "It also has some empty lines.",
+                "- it contains",
+                "- multiple levels",
+                "  - of indentations",
+                "",
+                "Longer lines should be wrapped as it is expected.",
             ]
         )
-        assert mock_print.call_count == 4
 
-    def test__multiple_input_lines__empty_lines(self, settings, colors, mocker):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
-
-        dummy_string = "\n" "\n" "\n"
-
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call(""),
-                mocker.call(""),
-                mocker.call(""),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=20, return_lines=True
         )
-        assert mock_print.call_count == 3
 
-    def test__multiple_input_lines_can_be_handled(self, settings, colors, mocker):
+        assert result == [
+            "This is a bit longer",
+            "text that will be",
+            "tested.",
+            "",
+            "It also has some",
+            "empty lines.",
+            "- it contains",
+            "- multiple levels",
+            "  - of indentations",
+            "",
+            "Longer lines should",
+            "be wrapped as it is",
+            "expected.",
+        ]
+
+
+class TestWrapRenderingPrinOutputCases:
+    def test__multiple_input_lines_can_be_handled(self, wrap_renderer, mocker):
         mock_print = mocker.patch("dotmodules.renderer.print")
-        settings.text_wrap_limit = 20
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
 
         dummy_string = "\n".join(
             [
@@ -275,7 +238,7 @@ class TestWrapRenderingWithoutColoringCases:
             ]
         )
 
-        wrap_renderer.render(string=dummy_string)
+        wrap_renderer.render(string=dummy_string, indent=False, width=20)
 
         mock_print.assert_has_calls(
             [
@@ -298,27 +261,21 @@ class TestWrapRenderingWithoutColoringCases:
 
 
 class TestWrapRenderingWithColoringTagsCases:
-    def test__coloring_tags_will_be_ignored(self, settings, colors, mocker):
-        mock_print = mocker.patch("dotmodules.renderer.print")
+    def test__coloring_tags_will_be_ignored(self, wrap_renderer, mocker):
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
-
         #                      |----10----|
         dummy_string = "<<BOLD>>short text<<RESET>>"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call("boldshort textreset"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 1
+
+        assert result == [
+            "boldshort textreset",
+        ]
 
         mock_load_color_for_tag.assert_has_calls(
             [
@@ -328,27 +285,22 @@ class TestWrapRenderingWithColoringTagsCases:
         )
 
     def test__arbitraty_number_of_coloring_tags_can_be_handled(
-        self, settings, colors, mocker
+        self, wrap_renderer, mocker
     ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
 
         dummy_string = "<<BOLD>><<RED>><<DIM>><<UNDERLINE>>short text<<RESET>>"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call("boldreddimunderlineshort textreset"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 1
+
+        assert result == [
+            "boldreddimunderlineshort textreset",
+        ]
 
         mock_load_color_for_tag.assert_has_calls(
             [
@@ -361,28 +313,23 @@ class TestWrapRenderingWithColoringTagsCases:
         )
 
     def test__coloring_tag_will_be_ignored_on_multiline_input_too(
-        self, settings, colors, mocker
+        self, wrap_renderer, mocker
     ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
 
         dummy_string = "<<BOLD>><<RED>>longer<<RESET>> <<BOLD>><<BLUE>>text<<RESET>>"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call("boldredlongerreset"),
-                mocker.call("boldbluetextreset"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 2
+
+        assert result == [
+            "boldredlongerreset",
+            "boldbluetextreset",
+        ]
 
         mock_load_color_for_tag.assert_has_calls(
             [
@@ -394,28 +341,23 @@ class TestWrapRenderingWithColoringTagsCases:
         )
 
     def test__coloring_wont_interfere_with_extra_long_words(
-        self, settings, colors, mocker
+        self, wrap_renderer, mocker
     ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
 
         #              |----10----|
         dummy_string = "<<BOLD>>extralongword<<RESET>>"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call("boldextralongwordreset"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 1
+
+        assert result == [
+            "boldextralongwordreset",
+        ]
 
         mock_load_color_for_tag.assert_has_calls(
             [
@@ -425,33 +367,28 @@ class TestWrapRenderingWithColoringTagsCases:
         )
 
     def test__coloring_wont_interfere_with_extra_long_words_in_context(
-        self, settings, colors, mocker
+        self, wrap_renderer, mocker
     ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
 
         #              |----10----|
         dummy_string = (
             "<<BOLD>>extralongword<<RESET>> it should be <<BOLD>>left<<RESET>> as is"
         )
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call("boldextralongwordreset"),
-                mocker.call("it should"),
-                mocker.call("be boldleftreset as"),
-                mocker.call("is"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 4
+
+        assert result == [
+            "boldextralongwordreset",
+            "it should",
+            "be boldleftreset as",
+            "is",
+        ]
 
         mock_load_color_for_tag.assert_has_calls(
             [
@@ -461,28 +398,23 @@ class TestWrapRenderingWithColoringTagsCases:
         )
 
     def test__coloring_wont_interfere_with_indented_extra_long_words(
-        self, settings, colors, mocker
+        self, wrap_renderer, mocker
     ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
 
         #              |----10----|
         dummy_string = " <<BOLD>>extralongword<<RESET>>"
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call(" boldextralongwordreset"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 1
+
+        assert result == [
+            " boldextralongwordreset",
+        ]
 
         mock_load_color_for_tag.assert_has_calls(
             [
@@ -492,33 +424,28 @@ class TestWrapRenderingWithColoringTagsCases:
         )
 
     def test__coloring_wont_interfere_with_indented_extra_long_words_in_context(
-        self, settings, colors, mocker
+        self, wrap_renderer, mocker
     ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
-        settings.text_wrap_limit = 10
-        settings.indent = ""
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
 
         #              |----10----|
         dummy_string = (
             " <<BOLD>>extralongword<<RESET>> it should be <<BOLD>>left<<RESET>> as is"
         )
 
-        wrap_renderer.render(string=dummy_string)
-
-        mock_print.assert_has_calls(
-            [
-                mocker.call(" boldextralongwordreset"),
-                mocker.call("it should"),
-                mocker.call("be boldleftreset as"),
-                mocker.call("is"),
-            ]
+        result = wrap_renderer.render(
+            string=dummy_string, indent=False, width=10, return_lines=True
         )
-        assert mock_print.call_count == 4
+
+        assert result == [
+            " boldextralongwordreset",
+            "it should",
+            "be boldleftreset as",
+            "is",
+        ]
 
         mock_load_color_for_tag.assert_has_calls(
             [
@@ -529,56 +456,96 @@ class TestWrapRenderingWithColoringTagsCases:
 
 
 class TestWrapRenderingGlobalIndentationCases:
-    def test__global_indentation_will_be_respected_1(self, settings, colors, mocker):
-        mock_print = mocker.patch("dotmodules.renderer.print")
+    def test__global_indentation_will_be_respected_with_global_width(
+        self, settings, wrap_renderer, mocker
+    ):
         settings.text_wrap_limit = 10
         settings.indent = "  "
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
 
         # The wrap limit will be shortened by the indentation size. Without
         # indentation this input won't be wrapped.
         #              |----8---|
         dummy_string = "short text"
 
-        wrap_renderer.render(string=dummy_string)
+        result = wrap_renderer.render(string=dummy_string, return_lines=True)
 
-        mock_print.assert_has_calls(
-            [
-                mocker.call("  short"),
-                mocker.call("  text"),
-            ]
-        )
-        assert mock_print.call_count == 2
+        assert result == [
+            "  short",
+            "  text",
+        ]
 
-    def test__coloring_wont_interfere_with_extra_long_words_in_context(
-        self, settings, colors, mocker
+    def test__global_indentation_will_be_respected_with_defined_width(
+        self, settings, wrap_renderer
     ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
+        settings.indent = "  "
+
+        # The wrap limit will be shortened by the indentation size. Without
+        # indentation this input won't be wrapped.
+        #              |----8---|
+        dummy_string = "short text"
+
+        result = wrap_renderer.render(string=dummy_string, width=10, return_lines=True)
+
+        assert result == [
+            "  short",
+            "  text",
+        ]
+
+    def test__global_indentation_will_be_respected_while_colored_with_global_width(
+        self, settings, wrap_renderer, mocker
+    ):
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
         settings.text_wrap_limit = 10
         settings.indent = "  "
-        wrap_renderer = WrapRenderer(settings=settings, colors=colors)
 
         #              |----8---|
         dummy_string = (
             "<<BOLD>>extralongword<<RESET>> it should be <<BOLD>>left<<RESET>> as is"
         )
 
-        wrap_renderer.render(string=dummy_string)
+        result = wrap_renderer.render(string=dummy_string, return_lines=True)
 
-        mock_print.assert_has_calls(
+        assert result == [
+            "  boldextralongwordreset",
+            "  it",
+            "  should",
+            "  be boldleftreset",
+            "  as is",
+        ]
+
+        mock_load_color_for_tag.assert_has_calls(
             [
-                mocker.call("  boldextralongwordreset"),
-                mocker.call("  it"),
-                mocker.call("  should"),
-                mocker.call("  be boldleftreset"),
-                mocker.call("  as is"),
+                mocker.call(tag="BOLD"),
+                mocker.call(tag="RESET"),
             ]
         )
-        assert mock_print.call_count == 5
+
+    def test__global_indentation_will_be_respected_while_colored_with_defined_width(
+        self, settings, wrap_renderer, mocker
+    ):
+        mock_load_color_for_tag = mocker.patch(
+            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            wraps=lambda tag: tag.lower(),
+        )
+        settings.indent = "  "
+
+        #              |----8---|
+        dummy_string = (
+            "<<BOLD>>extralongword<<RESET>> it should be <<BOLD>>left<<RESET>> as is"
+        )
+
+        result = wrap_renderer.render(string=dummy_string, width=10, return_lines=True)
+
+        assert result == [
+            "  boldextralongwordreset",
+            "  it",
+            "  should",
+            "  be boldleftreset",
+            "  as is",
+        ]
 
         mock_load_color_for_tag.assert_has_calls(
             [

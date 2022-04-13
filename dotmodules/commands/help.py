@@ -31,6 +31,8 @@ class HelpCommand(Command):
         commands: List[Command],
         parameters: Optional[List[str]] = None,
     ):
+        renderer.empty_line()
         for command in commands:
             renderer.rows.add_row(*command.summary)
         renderer.rows.render_rows()
+        renderer.empty_line()

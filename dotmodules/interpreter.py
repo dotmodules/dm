@@ -25,6 +25,10 @@ class CommandLineInterpreter:
         prompt = self._renderer.prompt.render(
             prompt_template=self._settings.prompt_template
         )
+        self._renderer.wrap.render(
+            string=" <<BOLD>>dotmodules<<RESET>> <<DIM>>v1.0<<RESET>>",
+            indent=False,
+        )
         while True:
             raw_input = input(prompt)
             try:

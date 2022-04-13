@@ -41,50 +41,53 @@ class TestColumnWidthCalculationCases:
 
 
 class TestRowRenderingCases:
-    def test__rendered_column_width_can_be_adjusted_1(self, settings, colors, mocker):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-
+    def test__rendered_column_width_can_be_adjusted_1(self, settings, row_renderer):
         settings.indent = " " * 4
         settings.column_padding = " " * 2
 
-        renderer = RowRenderer(settings=settings, colors=colors)
-        renderer.add_row("a", "b")
-        renderer.add_row("aa", "b")
-        renderer.add_row("aaa", "b")
-        renderer.render_rows()
-        mock_print.assert_has_calls(
-            [
-                mocker.call("    a    b"),
-                mocker.call("    aa   b"),
-                mocker.call("    aaa  b"),
-            ]
-        )
-        assert mock_print.call_count == 3
+        row_renderer.add_row("a", "b")
+        row_renderer.add_row("aa", "b")
+        row_renderer.add_row("aaa", "b")
+        result = row_renderer.render_rows(return_lines=True)
+        assert result == [
+            "    a    b",
+            "    aa   b",
+            "    aaa  b",
+        ]
 
-    def test__rendered_column_width_can_be_adjusted_2(self, settings, colors, mocker):
-        mock_print = mocker.patch("dotmodules.renderer.print")
-
+    def test__rendered_column_width_can_be_adjusted_2(self, settings, row_renderer):
         settings.indent = " " * 2
         settings.column_padding = " " * 1
 
-        renderer = RowRenderer(settings=settings, colors=colors)
-        renderer.add_row("a", "b")
-        renderer.add_row("aa", "b")
-        renderer.add_row("aaa", "b")
-        renderer.render_rows()
-        mock_print.assert_has_calls(
-            [
-                mocker.call("  a   b"),
-                mocker.call("  aa  b"),
-                mocker.call("  aaa b"),
-            ]
-        )
-        assert mock_print.call_count == 3
+        row_renderer.add_row("a", "b")
+        row_renderer.add_row("aa", "b")
+        row_renderer.add_row("aaa", "b")
+        result = row_renderer.render_rows(return_lines=True)
+        assert result == [
+            "  a   b",
+            "  aa  b",
+            "  aaa b",
+        ]
+
+    def test__rendered_column_width_can_be_adjusted_without_indentation(
+        self, settings, row_renderer
+    ):
+        settings.indent = " " * 2
+        settings.column_padding = " " * 1
+
+        row_renderer.add_row("a", "b")
+        row_renderer.add_row("aa", "b")
+        row_renderer.add_row("aaa", "b")
+        result = row_renderer.render_rows(return_lines=True, indent=False)
+        assert result == [
+            "a   b",
+            "aa  b",
+            "aaa b",
+        ]
 
     def test__coloring_should_not_affect_the_width_adjustment(
-        self, settings, colors, mocker
+        self, settings, row_renderer, mocker
     ):
-        mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
@@ -93,20 +96,17 @@ class TestRowRenderingCases:
         settings.indent = " " * 4
         settings.column_padding = " " * 2
 
-        renderer = RowRenderer(settings=settings, colors=colors)
-        renderer.add_row("<<RED>>a<<RESET>>", "<<BLUE>>b<<RESET>>")
-        renderer.add_row("<<RED>>aa<<RESET>>", "<<BLUE>>b<<RESET>>")
-        renderer.add_row("<<RED>>aaa<<RESET>>", "<<BLUE>>b<<RESET>>")
-        renderer.render_rows()
+        row_renderer.add_row("<<RED>>a<<RESET>>", "<<BLUE>>b<<RESET>>")
+        row_renderer.add_row("<<RED>>aa<<RESET>>", "<<BLUE>>b<<RESET>>")
+        row_renderer.add_row("<<RED>>aaa<<RESET>>", "<<BLUE>>b<<RESET>>")
+        result = row_renderer.render_rows(return_lines=True)
 
-        mock_print.assert_has_calls(
-            [
-                mocker.call("    redareset    bluebreset"),
-                mocker.call("    redaareset   bluebreset"),
-                mocker.call("    redaaareset  bluebreset"),
-            ]
-        )
-        assert mock_print.call_count == 3
+        assert result == [
+            "    redareset    bluebreset",
+            "    redaareset   bluebreset",
+            "    redaaareset  bluebreset",
+        ]
+
         mock_load_color_for_tag.assert_has_calls(
             [
                 mocker.call(tag="RED"),
@@ -115,7 +115,115 @@ class TestRowRenderingCases:
             ]
         )
 
-    def test__coloring_can_be_added_to_multiple_items(self, settings, colors, mocker):
+    def test__coloring_can_be_added_to_multiple_items_with_indentation(
+        self, settings, row_renderer, mocker
+    ):
+        mock_load_color_for_tag = mocker.patch(
+            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            wraps=lambda tag: tag.lower(),
+        )
+
+        settings.indent = " " * 2
+        settings.column_padding = " " * 1
+
+        row_renderer.add_row(
+            "<<BOLD>>[<<RED>>1<<RESET>><<BOLD>>]<<RESET>>",
+            "<<YELLOW>>a<<RESET>>",
+            "<<DIM>>b<<RESET>>",
+        )
+        row_renderer.add_row(
+            "<<BOLD>>[<<RED>>2<<RESET>><<BOLD>>]<<RESET>>",
+            "<<YELLOW>>aa<<RESET>>",
+            "<<DIM>>b<<RESET>>",
+        )
+        row_renderer.add_row(
+            "<<BOLD>>[<<RED>>3<<RESET>><<BOLD>>]<<RESET>>",
+            "<<YELLOW>>aaa<<RESET>>",
+            "<<DIM>>b<<RESET>>",
+        )
+        result = row_renderer.render_rows(
+            column_alignments=[
+                row_renderer.ALIGN__LEFT,
+                row_renderer.ALIGN__RIGHT,
+                row_renderer.ALIGN__LEFT,
+            ],
+            indent=True,
+            return_lines=True,
+        )
+
+        assert result == [
+            "  bold[red1resetbold]reset   yellowareset dimbreset",
+            "  bold[red2resetbold]reset  yellowaareset dimbreset",
+            "  bold[red3resetbold]reset yellowaaareset dimbreset",
+        ]
+
+        mock_load_color_for_tag.assert_has_calls(
+            [
+                mocker.call(tag="BOLD"),
+                mocker.call(tag="RED"),
+                mocker.call(tag="RESET"),
+                mocker.call(tag="YELLOW"),
+                mocker.call(tag="DIM"),
+            ]
+        )
+
+    def test__coloring_can_be_added_to_multiple_items_without_indentation(
+        self, settings, row_renderer, mocker
+    ):
+        mock_load_color_for_tag = mocker.patch(
+            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            wraps=lambda tag: tag.lower(),
+        )
+
+        settings.indent = " " * 2
+        settings.column_padding = " " * 1
+
+        row_renderer.add_row(
+            "<<BOLD>>[<<RED>>1<<RESET>><<BOLD>>]<<RESET>>",
+            "<<YELLOW>>a<<RESET>>",
+            "<<DIM>>b<<RESET>>",
+        )
+        row_renderer.add_row(
+            "<<BOLD>>[<<RED>>2<<RESET>><<BOLD>>]<<RESET>>",
+            "<<YELLOW>>aa<<RESET>>",
+            "<<DIM>>b<<RESET>>",
+        )
+        row_renderer.add_row(
+            "<<BOLD>>[<<RED>>3<<RESET>><<BOLD>>]<<RESET>>",
+            "<<YELLOW>>aaa<<RESET>>",
+            "<<DIM>>b<<RESET>>",
+        )
+        result = row_renderer.render_rows(
+            column_alignments=[
+                row_renderer.ALIGN__LEFT,
+                row_renderer.ALIGN__RIGHT,
+                row_renderer.ALIGN__LEFT,
+            ],
+            indent=False,
+            return_lines=True,
+        )
+
+        assert result == [
+            "bold[red1resetbold]reset   yellowareset dimbreset",
+            "bold[red2resetbold]reset  yellowaareset dimbreset",
+            "bold[red3resetbold]reset yellowaaareset dimbreset",
+        ]
+
+        mock_load_color_for_tag.assert_has_calls(
+            [
+                mocker.call(tag="BOLD"),
+                mocker.call(tag="RED"),
+                mocker.call(tag="RESET"),
+                mocker.call(tag="YELLOW"),
+                mocker.call(tag="DIM"),
+            ]
+        )
+
+
+class TestRowRenderingPrintOutputCases:
+    def test__coloring_can_be_added_to_multiple_items_without_indentation(
+        self, settings, row_renderer, mocker
+    ):
         mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
@@ -125,28 +233,82 @@ class TestRowRenderingCases:
         settings.indent = " " * 2
         settings.column_padding = " " * 1
 
-        renderer = RowRenderer(settings=settings, colors=colors)
-        renderer.add_row(
+        row_renderer.add_row(
             "<<BOLD>>[<<RED>>1<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>a<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        renderer.add_row(
+        row_renderer.add_row(
             "<<BOLD>>[<<RED>>2<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>aa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        renderer.add_row(
+        row_renderer.add_row(
             "<<BOLD>>[<<RED>>3<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>aaa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        renderer.render_rows(
+        row_renderer.render_rows(
             column_alignments=[
-                renderer.ALIGN__LEFT,
-                renderer.ALIGN__RIGHT,
-                renderer.ALIGN__LEFT,
+                row_renderer.ALIGN__LEFT,
+                row_renderer.ALIGN__RIGHT,
+                row_renderer.ALIGN__LEFT,
+            ],
+            indent=False,
+        )
+
+        mock_print.assert_has_calls(
+            [
+                mocker.call("bold[red1resetbold]reset   yellowareset dimbreset"),
+                mocker.call("bold[red2resetbold]reset  yellowaareset dimbreset"),
+                mocker.call("bold[red3resetbold]reset yellowaaareset dimbreset"),
             ]
+        )
+        assert mock_print.call_count == 3
+        mock_load_color_for_tag.assert_has_calls(
+            [
+                mocker.call(tag="BOLD"),
+                mocker.call(tag="RED"),
+                mocker.call(tag="RESET"),
+                mocker.call(tag="YELLOW"),
+                mocker.call(tag="DIM"),
+            ]
+        )
+
+    def test__coloring_can_be_added_to_multiple_items_with_indentation(
+        self, settings, row_renderer, mocker
+    ):
+        mock_print = mocker.patch("dotmodules.renderer.print")
+        mock_load_color_for_tag = mocker.patch(
+            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            wraps=lambda tag: tag.lower(),
+        )
+
+        settings.indent = " " * 2
+        settings.column_padding = " " * 1
+
+        row_renderer.add_row(
+            "<<BOLD>>[<<RED>>1<<RESET>><<BOLD>>]<<RESET>>",
+            "<<YELLOW>>a<<RESET>>",
+            "<<DIM>>b<<RESET>>",
+        )
+        row_renderer.add_row(
+            "<<BOLD>>[<<RED>>2<<RESET>><<BOLD>>]<<RESET>>",
+            "<<YELLOW>>aa<<RESET>>",
+            "<<DIM>>b<<RESET>>",
+        )
+        row_renderer.add_row(
+            "<<BOLD>>[<<RED>>3<<RESET>><<BOLD>>]<<RESET>>",
+            "<<YELLOW>>aaa<<RESET>>",
+            "<<DIM>>b<<RESET>>",
+        )
+        row_renderer.render_rows(
+            column_alignments=[
+                row_renderer.ALIGN__LEFT,
+                row_renderer.ALIGN__RIGHT,
+                row_renderer.ALIGN__LEFT,
+            ],
+            indent=True,
         )
 
         mock_print.assert_has_calls(
