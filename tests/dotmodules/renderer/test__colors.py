@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from dotmodules.renderer import ColoringTagCache, Colors
+from dotmodules.renderer import ColorAdapter, Colors
 
 
 @pytest.fixture
@@ -12,7 +12,7 @@ def colors():
 
 @pytest.fixture
 def coloring_tag_cache():
-    return ColoringTagCache()
+    return ColorAdapter()
 
 
 class TestColorTagRecognitionCases:
@@ -46,7 +46,7 @@ class TestColorTagRecognitionCases:
     def test__tag_recognition_and_cleaning(
         self, input_string: str, expected: str, colors
     ):
-        result = colors.clean(string=input_string)
+        result = colors.decolor_string(string=input_string)
         assert result == expected
 
     @pytest.mark.parametrize(
@@ -86,7 +86,7 @@ class TestColorCacheHandlingCases:
         dummy_tag = "my_tag"
         dummy_color = "my_color"
         mock_load_color = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag"
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag"
         )
         mock_load_color.return_value = dummy_color
 
@@ -101,7 +101,7 @@ class TestColorCacheHandlingCases:
         dummy_tag = "my_tag"
         dummy_color = "my_color"
         mock_load_color = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag"
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag"
         )
         coloring_tag_cache._cache[dummy_tag] = dummy_color
 
@@ -183,7 +183,7 @@ class TestColorLoadingCases:
         dummy_tag = "my_tag"
         dummy_command = [dummy_color_adapter, "--success", dummy_tag]
         mock_assemble_command = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._assemble_color_loading_command"
+            "dotmodules.renderer.ColorAdapter._assemble_color_loading_command"
         )
         mock_assemble_command.return_value = dummy_command
 
@@ -198,7 +198,7 @@ class TestColorLoadingCases:
         dummy_tag = "my_tag"
         dummy_command = [dummy_color_adapter, "--error"]
         mock_assemble_command = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._assemble_color_loading_command"
+            "dotmodules.renderer.ColorAdapter._assemble_color_loading_command"
         )
         mock_assemble_command.return_value = dummy_command
 
@@ -219,7 +219,7 @@ class TestColororizeCases:
     def test__color_tags_can_be_resolved(self, mocker, colors):
         dummy_string = "<<RED>>I am in color<<RESET>>"
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
         result = colors.colorize(string=dummy_string)
@@ -238,7 +238,7 @@ class TestColororizeCases:
     def test__repeated_color_tags_can_be_resolved(self, mocker, colors):
         dummy_string = "<<RED>>I am in <<RED>>color<<RESET>>"
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
         result = colors.colorize(string=dummy_string)

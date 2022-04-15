@@ -25,7 +25,7 @@ class TestPromptRenderingCases:
 
     def test__colors_can_be_resolved_too(self, settings, colors, mocker):
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
 

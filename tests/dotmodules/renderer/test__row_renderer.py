@@ -1,6 +1,6 @@
 import pytest
 
-from dotmodules.renderer import Colors, RenderError, RowRenderer
+from dotmodules.renderer import Colors, RenderError, TableRenderer
 from dotmodules.settings import Settings
 
 
@@ -16,7 +16,7 @@ def colors():
 
 @pytest.fixture
 def row_renderer(settings, colors):
-    return RowRenderer(settings=settings, colors=colors)
+    return TableRenderer(settings=settings, colors=colors)
 
 
 class TestColumnWidthCalculationCases:
@@ -48,7 +48,7 @@ class TestRowRenderingCases:
         row_renderer.add_row("a", "b")
         row_renderer.add_row("aa", "b")
         row_renderer.add_row("aaa", "b")
-        result = row_renderer.render_rows(return_lines=True)
+        result = row_renderer.render(return_lines=True)
         assert result == [
             "    a    b",
             "    aa   b",
@@ -62,7 +62,7 @@ class TestRowRenderingCases:
         row_renderer.add_row("a", "b")
         row_renderer.add_row("aa", "b")
         row_renderer.add_row("aaa", "b")
-        result = row_renderer.render_rows(return_lines=True)
+        result = row_renderer.render(return_lines=True)
         assert result == [
             "  a   b",
             "  aa  b",
@@ -78,7 +78,7 @@ class TestRowRenderingCases:
         row_renderer.add_row("a", "b")
         row_renderer.add_row("aa", "b")
         row_renderer.add_row("aaa", "b")
-        result = row_renderer.render_rows(return_lines=True, indent=False)
+        result = row_renderer.render(return_lines=True, indent=False)
         assert result == [
             "a   b",
             "aa  b",
@@ -89,7 +89,7 @@ class TestRowRenderingCases:
         self, settings, row_renderer, mocker
     ):
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
 
@@ -99,7 +99,7 @@ class TestRowRenderingCases:
         row_renderer.add_row("<<RED>>a<<RESET>>", "<<BLUE>>b<<RESET>>")
         row_renderer.add_row("<<RED>>aa<<RESET>>", "<<BLUE>>b<<RESET>>")
         row_renderer.add_row("<<RED>>aaa<<RESET>>", "<<BLUE>>b<<RESET>>")
-        result = row_renderer.render_rows(return_lines=True)
+        result = row_renderer.render(return_lines=True)
 
         assert result == [
             "    redareset    bluebreset",
@@ -119,7 +119,7 @@ class TestRowRenderingCases:
         self, settings, row_renderer, mocker
     ):
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
 
@@ -141,7 +141,7 @@ class TestRowRenderingCases:
             "<<YELLOW>>aaa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        result = row_renderer.render_rows(
+        result = row_renderer.render(
             column_alignments=[
                 row_renderer.ALIGN__LEFT,
                 row_renderer.ALIGN__RIGHT,
@@ -171,7 +171,7 @@ class TestRowRenderingCases:
         self, settings, row_renderer, mocker
     ):
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
 
@@ -193,7 +193,7 @@ class TestRowRenderingCases:
             "<<YELLOW>>aaa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        result = row_renderer.render_rows(
+        result = row_renderer.render(
             column_alignments=[
                 row_renderer.ALIGN__LEFT,
                 row_renderer.ALIGN__RIGHT,
@@ -226,7 +226,7 @@ class TestRowRenderingPrintOutputCases:
     ):
         mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
 
@@ -248,7 +248,7 @@ class TestRowRenderingPrintOutputCases:
             "<<YELLOW>>aaa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        row_renderer.render_rows(
+        row_renderer.render(
             column_alignments=[
                 row_renderer.ALIGN__LEFT,
                 row_renderer.ALIGN__RIGHT,
@@ -280,7 +280,7 @@ class TestRowRenderingPrintOutputCases:
     ):
         mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
 
@@ -302,7 +302,7 @@ class TestRowRenderingPrintOutputCases:
             "<<YELLOW>>aaa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        row_renderer.render_rows(
+        row_renderer.render(
             column_alignments=[
                 row_renderer.ALIGN__LEFT,
                 row_renderer.ALIGN__RIGHT,

@@ -24,7 +24,7 @@ class TestWrapRenderingWithoutColoringCases:
         dummy_string = ""
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -36,7 +36,7 @@ class TestWrapRenderingWithoutColoringCases:
         dummy_string = "short text"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -48,7 +48,7 @@ class TestWrapRenderingWithoutColoringCases:
         dummy_string = "longer text"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -63,7 +63,7 @@ class TestWrapRenderingWithoutColoringCases:
         dummy_string = "a b c d e f g h"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -78,7 +78,7 @@ class TestWrapRenderingWithoutColoringCases:
         dummy_string = "extralongword"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -90,7 +90,7 @@ class TestWrapRenderingWithoutColoringCases:
         dummy_string = "extralongword it should be left as is"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -105,7 +105,7 @@ class TestWrapRenderingWithoutColoringCases:
         dummy_string = "  short text"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -120,7 +120,7 @@ class TestWrapRenderingWithoutColoringCases:
         dummy_string = "               short text"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -133,7 +133,7 @@ class TestWrapRenderingWithoutColoringCases:
         dummy_string = " extralongword"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -147,7 +147,7 @@ class TestWrapRenderingWithoutColoringCases:
         dummy_string = "              extralongword"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -161,7 +161,7 @@ class TestWrapRenderingWithoutColoringCases:
         dummy_string = " extralongword it should be left as is"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -175,7 +175,7 @@ class TestWrapRenderingWithoutColoringCases:
         dummy_string = "\n\n\n"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -200,7 +200,7 @@ class TestWrapRenderingWithoutColoringCases:
         )
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=20, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=20, return_lines=True
         )
 
         assert result == [
@@ -238,7 +238,7 @@ class TestWrapRenderingPrinOutputCases:
             ]
         )
 
-        wrap_renderer.render(string=dummy_string, indent=False, width=20)
+        wrap_renderer.render(string=dummy_string, indent=False, wrap_limit=20)
 
         mock_print.assert_has_calls(
             [
@@ -263,14 +263,14 @@ class TestWrapRenderingPrinOutputCases:
 class TestWrapRenderingWithColoringTagsCases:
     def test__coloring_tags_will_be_ignored(self, wrap_renderer, mocker):
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
         #                      |----10----|
         dummy_string = "<<BOLD>>short text<<RESET>>"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -288,14 +288,14 @@ class TestWrapRenderingWithColoringTagsCases:
         self, wrap_renderer, mocker
     ):
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
 
         dummy_string = "<<BOLD>><<RED>><<DIM>><<UNDERLINE>>short text<<RESET>>"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -316,14 +316,14 @@ class TestWrapRenderingWithColoringTagsCases:
         self, wrap_renderer, mocker
     ):
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
 
         dummy_string = "<<BOLD>><<RED>>longer<<RESET>> <<BOLD>><<BLUE>>text<<RESET>>"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -344,7 +344,7 @@ class TestWrapRenderingWithColoringTagsCases:
         self, wrap_renderer, mocker
     ):
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
 
@@ -352,7 +352,7 @@ class TestWrapRenderingWithColoringTagsCases:
         dummy_string = "<<BOLD>>extralongword<<RESET>>"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -370,7 +370,7 @@ class TestWrapRenderingWithColoringTagsCases:
         self, wrap_renderer, mocker
     ):
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
 
@@ -380,7 +380,7 @@ class TestWrapRenderingWithColoringTagsCases:
         )
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -401,7 +401,7 @@ class TestWrapRenderingWithColoringTagsCases:
         self, wrap_renderer, mocker
     ):
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
 
@@ -409,7 +409,7 @@ class TestWrapRenderingWithColoringTagsCases:
         dummy_string = " <<BOLD>>extralongword<<RESET>>"
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -427,7 +427,7 @@ class TestWrapRenderingWithColoringTagsCases:
         self, wrap_renderer, mocker
     ):
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
 
@@ -437,7 +437,7 @@ class TestWrapRenderingWithColoringTagsCases:
         )
 
         result = wrap_renderer.render(
-            string=dummy_string, indent=False, width=10, return_lines=True
+            string=dummy_string, indent=False, wrap_limit=10, return_lines=True
         )
 
         assert result == [
@@ -484,7 +484,9 @@ class TestWrapRenderingGlobalIndentationCases:
         #              |----8---|
         dummy_string = "short text"
 
-        result = wrap_renderer.render(string=dummy_string, width=10, return_lines=True)
+        result = wrap_renderer.render(
+            string=dummy_string, wrap_limit=10, return_lines=True
+        )
 
         assert result == [
             "  short",
@@ -495,7 +497,7 @@ class TestWrapRenderingGlobalIndentationCases:
         self, settings, wrap_renderer, mocker
     ):
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
         settings.text_wrap_limit = 10
@@ -527,7 +529,7 @@ class TestWrapRenderingGlobalIndentationCases:
         self, settings, wrap_renderer, mocker
     ):
         mock_load_color_for_tag = mocker.patch(
-            "dotmodules.renderer.ColoringTagCache._load_color_for_tag",
+            "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
         )
         settings.indent = "  "
@@ -537,7 +539,9 @@ class TestWrapRenderingGlobalIndentationCases:
             "<<BOLD>>extralongword<<RESET>> it should be <<BOLD>>left<<RESET>> as is"
         )
 
-        result = wrap_renderer.render(string=dummy_string, width=10, return_lines=True)
+        result = wrap_renderer.render(
+            string=dummy_string, wrap_limit=10, return_lines=True
+        )
 
         assert result == [
             "  boldextralongwordreset",

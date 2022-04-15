@@ -33,6 +33,6 @@ class HelpCommand(Command):
     ):
         renderer.empty_line()
         for command in commands:
-            renderer.rows.add_row(*command.summary)
-        renderer.rows.render_rows()
+            renderer.table.add_row(*command.summary)
+        renderer.table.render()
         renderer.empty_line()

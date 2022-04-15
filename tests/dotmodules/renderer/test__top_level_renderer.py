@@ -1,6 +1,6 @@
 import pytest
 
-from dotmodules.renderer import PromptRenderer, Renderer, RowRenderer, WrapRenderer
+from dotmodules.renderer import PromptRenderer, Renderer, TableRenderer, WrapRenderer
 from dotmodules.settings import Settings
 
 
@@ -19,7 +19,7 @@ def renderer(settings):
 
 class TestTopLevelRendererCases:
     def test__sub_renderers_can_be_reached(self, renderer):
-        assert isinstance(renderer.rows, RowRenderer)
+        assert isinstance(renderer.table, TableRenderer)
         assert isinstance(renderer.prompt, PromptRenderer)
         assert isinstance(renderer.wrap, WrapRenderer)
 
