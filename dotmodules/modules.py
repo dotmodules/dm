@@ -221,3 +221,16 @@ class Modules:
         # Sorting the modules in alphabetical path order.
         modules.modules.sort(key=lambda m: str(m.root))
         return modules
+
+    @property
+    def variables(self):
+        vars = {}
+        for module in self.modules:
+            for var, values in module.variables.items():
+                if var not in vars:
+                    vars[var] = values
+                else:
+                    vars[var] += values
+                    vars[var].sort()
+
+        return vars

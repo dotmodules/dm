@@ -188,7 +188,7 @@ class ModulesCommand(Command):
 
         for link in module.links:
             renderer.table.add_row(
-                "<<BOLD>>[<<GREEN>>link<<RESET>><<BOLD>>-<<RED>>target<<RESET>><<BOLD>>]<<RESET>>",
+                "<<BOLD>>[<<GREEN>>link<<RESET>><<BOLD>>=<<RED>>target<<RESET>><<BOLD>>]<<RESET>>",
                 link.path_to_file,
                 link.path_to_symlink,
             )
