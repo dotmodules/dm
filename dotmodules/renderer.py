@@ -453,11 +453,12 @@ class HeaderRenderer:
         self._colors = colors
         self._settings = settings
 
-    def render(self, header: str, lines: List[str], width: int, separator: str) -> None:
-        colorizing_template = f"<<DIM>>{header}<<RESET>>"
-        colorize_result = self._colors.colorize(string=colorizing_template)
+    def render(
+        self, header: str, lines: List[str], header_width: int, separator: str
+    ) -> None:
+        colorize_result = self._colors.colorize(string=header)
         colorized_header = colorize_result.colorized_string
-        colorized_width = width + colorize_result.additional_width
+        colorized_width = header_width + colorize_result.additional_width
 
         prepared_alignment = "{{value:>{width}}}{separator}".format(
             width=colorized_width,
@@ -468,7 +469,7 @@ class HeaderRenderer:
         header_added = False
         for line in lines:
             if header_added:
-                print(" " * width + separator + line)
+                print(" " * header_width + separator + line)
             else:
                 header_added = True
                 print(finalized_header + line)

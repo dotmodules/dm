@@ -95,8 +95,8 @@ class ModulesCommand(Command):
             indent=False,
         )
         renderer.header.render(
-            header="Name",
-            width=header_width,
+            header="<<DIM>>Name<<RESET>>",
+            header_width=header_width,
             lines=text,
             separator=header_separator,
         )
@@ -115,8 +115,8 @@ class ModulesCommand(Command):
             indent=False,
         )
         renderer.header.render(
-            header="Version",
-            width=header_width,
+            header="<<DIM>>Version<<RESET>>",
+            header_width=header_width,
             lines=text,
             separator=header_separator,
         )
@@ -134,8 +134,8 @@ class ModulesCommand(Command):
             indent=False,
         )
         renderer.header.render(
-            header="Status",
-            width=header_width,
+            header="<<DIM>>Status<<RESET>>",
+            header_width=header_width,
             lines=text,
             separator=header_separator,
         )
@@ -154,8 +154,8 @@ class ModulesCommand(Command):
             indent=False,
         )
         renderer.header.render(
-            header="Docs",
-            width=header_width,
+            header="<<DIM>>Docs<<RESET>>",
+            header_width=header_width,
             lines=text,
             separator=header_separator,
         )
@@ -174,8 +174,8 @@ class ModulesCommand(Command):
             indent=False,
         )
         renderer.header.render(
-            header="Path",
-            width=header_width,
+            header="<<DIM>>Path<<RESET>>",
+            header_width=header_width,
             lines=text,
             separator=header_separator,
         )
@@ -195,7 +195,7 @@ class ModulesCommand(Command):
         text = renderer.table.render(return_lines=True, indent=False)
         renderer.header.render(
             header="Links",
-            width=header_width,
+            header_width=header_width,
             lines=text,
             separator=header_separator,
         )
@@ -213,8 +213,8 @@ class ModulesCommand(Command):
         text = renderer.table.render(return_lines=True, indent=False)
 
         renderer.header.render(
-            header="Variables",
-            width=header_width,
+            header="<<DIM>>Variables<<RESET>>",
+            header_width=header_width,
             lines=text,
             separator=header_separator,
         )
@@ -234,8 +234,8 @@ class ModulesCommand(Command):
         text = renderer.table.render(return_lines=True, indent=False)
 
         renderer.header.render(
-            header="Hooks",
-            width=header_width,
+            header="<<DIM>>Hooks<<RESET>>",
+            header_width=header_width,
             lines=text,
             separator=header_separator,
         )

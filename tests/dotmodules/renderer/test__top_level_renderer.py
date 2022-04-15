@@ -1,6 +1,12 @@
 import pytest
 
-from dotmodules.renderer import PromptRenderer, Renderer, TableRenderer, WrapRenderer
+from dotmodules.renderer import (
+    HeaderRenderer,
+    PromptRenderer,
+    Renderer,
+    TableRenderer,
+    WrapRenderer,
+)
 from dotmodules.settings import Settings
 
 
@@ -22,6 +28,7 @@ class TestTopLevelRendererCases:
         assert isinstance(renderer.table, TableRenderer)
         assert isinstance(renderer.prompt, PromptRenderer)
         assert isinstance(renderer.wrap, WrapRenderer)
+        assert isinstance(renderer.header, HeaderRenderer)
 
     def test__new_line_renderer(self, renderer, mocker):
         mock_print = mocker.patch("dotmodules.renderer.print")
