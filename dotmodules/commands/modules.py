@@ -187,8 +187,20 @@ class ModulesCommand(Command):
         header_separator: str = section_data["header_separator"]
 
         for link in module.links:
+            link_color = "RED"
+            target_color = "RED"
+            if link.present:
+                link_color = "GREEN"
+                if link.target_matched:
+                    target_color = "GREEN"
+
+            link_status = f"<<BOLD>><<{link_color}>>link<<RESET>>"
+            target_status = f"<<BOLD>><<{target_color}>>target<<RESET>>"
+
+            status = f"<<DIM>>[<<RESET>>{link_status}<<DIM>>|<<RESET>>{target_status}<<DIM>>]<<RESET>>"
+
             renderer.table.add_row(
-                "<<BOLD>>[<<GREEN>>link<<RESET>><<BOLD>>=<<RED>>target<<RESET>><<BOLD>>]<<RESET>>",
+                status,
                 link.path_to_file,
                 link.path_to_symlink,
             )

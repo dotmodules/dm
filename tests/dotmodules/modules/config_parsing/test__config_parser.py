@@ -225,26 +225,31 @@ class TestVariablesParsing:
 
 
 class TestLinksParsing:
-    def test__missing_key_should_be_converted_to_list(self):
+    @pytest.fixture
+    def module_root(self):
+        # Dummy module file path just to pass it but won't be used.
+        return Path(__file__).parent
+
+    def test__missing_key_should_be_converted_to_list(self, module_root):
         dummy_data = {}
-        result = ConfigParser.parse_links(data=dummy_data)
+        result = ConfigParser.parse_links(data=dummy_data, module_root=module_root)
         assert result == []
 
-    def test__none_value_should_be_left_as_is(self):
+    def test__none_value_should_be_left_as_is(self, module_root):
         dummy_data = {
             "links": None,
         }
-        result = ConfigParser.parse_links(data=dummy_data)
+        result = ConfigParser.parse_links(data=dummy_data, module_root=module_root)
         assert result == []
 
-    def test__empty_value_should_be_left_as_is(self):
+    def test__empty_value_should_be_left_as_is(self, module_root):
         dummy_data = {
             "links": [],
         }
-        result = ConfigParser.parse_links(data=dummy_data)
+        result = ConfigParser.parse_links(data=dummy_data, module_root=module_root)
         assert result == []
 
-    def test__valid_link_can_be_parsed(self):
+    def test__valid_link_can_be_parsed(self, module_root):
         dummy_data = {
             "links": [
                 {
@@ -254,14 +259,14 @@ class TestLinksParsing:
                 },
             ],
         }
-        result = ConfigParser.parse_links(data=dummy_data)
+        result = ConfigParser.parse_links(data=dummy_data, module_root=module_root)
         assert len(result) == 1
         link = result[0]
         assert link.path_to_file == "my_path_to_file"
         assert link.path_to_symlink == "my_path_to_symlink"
         assert link.name == "my_name"
 
-    def test__name_is_optional(self):
+    def test__name_is_optional(self, module_root):
         dummy_data = {
             "links": [
                 {
@@ -270,14 +275,14 @@ class TestLinksParsing:
                 },
             ],
         }
-        result = ConfigParser.parse_links(data=dummy_data)
+        result = ConfigParser.parse_links(data=dummy_data, module_root=module_root)
         assert len(result) == 1
         link = result[0]
         assert link.path_to_file == "my_path_to_file"
         assert link.path_to_symlink == "my_path_to_symlink"
         assert link.name == "link"
 
-    def test__invalid_data__error_should_be_raised(self):
+    def test__invalid_data__error_should_be_raised(self, module_root):
         dummy_data = {
             "links": [
                 {
@@ -286,7 +291,7 @@ class TestLinksParsing:
             ],
         }
         with pytest.raises(SyntaxError) as exception_info:
-            ConfigParser.parse_links(data=dummy_data)
+            ConfigParser.parse_links(data=dummy_data, module_root=module_root)
         expected_section_1 = (
             "unexpected error happened while processing 'links' item at index '1':"
         )
@@ -296,26 +301,31 @@ class TestLinksParsing:
 
 
 class TestHooksParsing:
-    def test__missing_key_should_be_converted_to_list(self):
+    @pytest.fixture
+    def module_root(self):
+        # Dummy module file path just to pass it but won't be used.
+        return Path(__file__).parent
+
+    def test__missing_key_should_be_converted_to_list(self, module_root):
         dummy_data = {}
-        result = ConfigParser.parse_hooks(data=dummy_data)
+        result = ConfigParser.parse_hooks(data=dummy_data, module_root=module_root)
         assert result == []
 
-    def test__none_value_should_be_left_as_is(self):
+    def test__none_value_should_be_left_as_is(self, module_root):
         dummy_data = {
             "hooks": None,
         }
-        result = ConfigParser.parse_hooks(data=dummy_data)
+        result = ConfigParser.parse_hooks(data=dummy_data, module_root=module_root)
         assert result == []
 
-    def test__empty_value_should_be_left_as_is(self):
+    def test__empty_value_should_be_left_as_is(self, module_root):
         dummy_data = {
             "hooks": [],
         }
-        result = ConfigParser.parse_hooks(data=dummy_data)
+        result = ConfigParser.parse_hooks(data=dummy_data, module_root=module_root)
         assert result == []
 
-    def test__valid_hook_can_be_parsed(self):
+    def test__valid_hook_can_be_parsed(self, module_root):
         dummy_data = {
             "hooks": [
                 {
@@ -325,14 +335,14 @@ class TestHooksParsing:
                 },
             ],
         }
-        result = ConfigParser.parse_hooks(data=dummy_data)
+        result = ConfigParser.parse_hooks(data=dummy_data, module_root=module_root)
         assert len(result) == 1
         hook = result[0]
         assert hook.path_to_script == "my_path_to_script"
         assert hook.name == "my_hook_name"
         assert hook.priority == 42
 
-    def test__priority_is_optional(self):
+    def test__priority_is_optional(self, module_root):
         dummy_data = {
             "hooks": [
                 {
@@ -341,14 +351,14 @@ class TestHooksParsing:
                 },
             ],
         }
-        result = ConfigParser.parse_hooks(data=dummy_data)
+        result = ConfigParser.parse_hooks(data=dummy_data, module_root=module_root)
         assert len(result) == 1
         hook = result[0]
         assert hook.path_to_script == "my_path_to_script"
         assert hook.name == "my_hook_name"
         assert hook.priority == 0
 
-    def test__invalid_data__error_should_be_raised(self):
+    def test__invalid_data__error_should_be_raised(self, module_root):
         dummy_data = {
             "hooks": [
                 {
@@ -357,7 +367,7 @@ class TestHooksParsing:
             ],
         }
         with pytest.raises(SyntaxError) as exception_info:
-            ConfigParser.parse_hooks(data=dummy_data)
+            ConfigParser.parse_hooks(data=dummy_data, module_root=module_root)
         expected_section_1 = (
             "unexpected error happened while processing 'hooks' item at index '1':"
         )
@@ -495,7 +505,7 @@ class TestEndToEndConfigParsingCases:
         assert str(exception_info.value) == expected
 
     def test__unexpected_error_can_be_handled(self, mocker):
-        file_path = "irrelevant_path"
+        file_path = self.SAMPLE_FILE_DIR / "irrelevant_file.toml"
         mocker.patch("dotmodules.modules.ConfigLoader.load_raw_config_data")
         mocker.patch(
             "dotmodules.modules.ConfigParser.parse_name",

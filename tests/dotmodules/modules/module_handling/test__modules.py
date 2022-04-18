@@ -22,14 +22,14 @@ def module_factory():
                 links=[
                     LinkItem(
                         name=f"link_{index}",
-                        path_to_file=Path(f"/path/to/file/{index}"),
-                        path_to_symlink=Path(f"/path/to/symlink/{index}"),
+                        path_to_file=f"/path/to/file/{index}",
+                        path_to_symlink=f"/path/to/symlink/{index}",
                     )
                 ],
                 hooks=[
                     HookItem(
                         name=f"hook_{index}",
-                        path_to_script=Path(f"/path/to/script/{index}"),
+                        path_to_script=f"/path/to/script/{index}",
                         priority=index,
                     )
                 ],

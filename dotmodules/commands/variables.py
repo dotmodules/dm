@@ -27,11 +27,29 @@ class VariablesCommand(Command):
         commands: List[Command],
         parameters: Optional[List[str]] = None,
     ):
-        # for index, module in enumerate(modules.variables, start=1):
-        #     renderer.rows.add_row(
-        #         f"<<BOLD>><<YELLOW>>[{str(index)}]<<RESET>>",
-        #         f"<<BOLD>>{module.name}<<RESET>>",
-        #         f"<<DIM>><<UNDERLINE>>{str(module.root)}<<RESET>>",
-        #     )
-        # renderer.rows.commit_rows()
-        print("variables")
+
+        renderer.empty_line()
+
+        header_width = max([len(name) for name in modules.variables.keys()]) + len(
+            settings.column_padding
+        )
+        body_width = (
+            settings.text_wrap_limit - header_width - len(settings.column_padding)
+        )
+        header_separator = " "
+
+        for name, values in modules.variables.items():
+            text = renderer.wrap.render(
+                string=" ".join(values),
+                wrap_limit=body_width,
+                return_lines=True,
+                indent=False,
+            )
+            renderer.header.render(
+                header=f"<<BOLD>><<UNDERLINE>>{name}<<RESET>>",
+                header_width=header_width,
+                lines=text,
+                separator=header_separator,
+            )
+
+        renderer.empty_line()

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Generator, List, Type, cast
 
@@ -9,16 +9,67 @@ import tomllib
 
 @dataclass
 class LinkItem:
-    path_to_file: Path
-    path_to_symlink: Path
+    # From module config.
+    path_to_file: str
+    path_to_symlink: str
     name: str = "link"
+
+    # Additional fields.
+    module_root: Path = field(init=False)
+
+    @property
+    def full_path_to_file(self):
+        """
+        The path to file should be relative to the module root directory.
+        """
+        full_path = self.module_root / self.path_to_file
+        if not full_path.is_file():
+            raise ValueError(
+                f"Link.path_to_file does not name a file: '{self.path_to_file}'"
+            )
+        return full_path
+
+    @property
+    def full_path_to_symlink(self):
+        """
+        The path to symlink should be an absolute path with the the option to
+        resolve the '$HOME' variable to the users home directory.
+        """
+        home_directory = str(Path.home())
+        resolved_path_to_symlink_str = self.path_to_symlink.replace(
+            "$HOME", home_directory
+        )
+        resolved_path_to_symlink = Path(resolved_path_to_symlink_str)
+        if not resolved_path_to_symlink.is_absolute():
+            raise ValueError(
+                f"Link.path_to_symlink should be an absolute path: '{resolved_path_to_symlink_str}'"
+            )
+        return resolved_path_to_symlink
+
+    @property
+    def present(self) -> bool:
+        return self.full_path_to_symlink.is_symlink()
+
+    @property
+    def target_matched(self) -> bool:
+        return (
+            self.present
+            and self.full_path_to_symlink.resolve() == self.full_path_to_file
+        )
+
+    def validate_for_root(self, module_root: Path):
+        pass
 
 
 @dataclass
 class HookItem:
+    # From module config.
     name: str
-    path_to_script: Path
+    path_to_script: str
     priority: int = 0
+
+    # Additional fields.
+    module_root: Path = field(init=False)
 
 
 class ConfigError(Exception):
@@ -107,14 +158,17 @@ class ConfigParser:
         return validated_variables
 
     @classmethod
-    def parse_links(cls, data: dict) -> List[LinkItem]:
-        return cast(
+    def parse_links(cls, data: dict, module_root: Path) -> List[LinkItem]:
+        links = cast(
             List[LinkItem],
             cls._parse_item_list(data=data, key=cls.KEY__LINKS, item_class=LinkItem),
         )
+        for link in links:
+            link.module_root = module_root
+        return links
 
     @classmethod
-    def parse_hooks(cls, data: dict) -> List[HookItem]:
+    def parse_hooks(cls, data: dict, module_root: Path) -> List[HookItem]:
         return cast(
             List[HookItem],
             cls._parse_item_list(data=data, key=cls.KEY__HOOKS, item_class=HookItem),
@@ -165,6 +219,8 @@ class Module:
 
     @classmethod
     def from_path(cls, path: Path) -> "Module":
+        module_root = path.parent.resolve()
+
         data = ConfigLoader.load_raw_config_data(config_file_path=path)
 
         try:
@@ -172,8 +228,8 @@ class Module:
             version = ConfigParser.parse_version(data=data)
             documentation = ConfigParser.parse_documentation(data=data)
             variables = ConfigParser.parse_variables(data=data)
-            links = ConfigParser.parse_links(data=data)
-            hooks = ConfigParser.parse_hooks(data=data)
+            links = ConfigParser.parse_links(data=data, module_root=module_root)
+            hooks = ConfigParser.parse_hooks(data=data, module_root=module_root)
         except SyntaxError as e:
             raise ConfigError(f"configuration syntax error: {e}") from e
         except ValueError as e:
@@ -190,7 +246,7 @@ class Module:
             variables=variables,
             links=links,
             hooks=hooks,
-            root=path.parent.resolve(),
+            root=module_root,
         )
         return ret
 
@@ -226,11 +282,11 @@ class Modules:
     def variables(self):
         vars = {}
         for module in self.modules:
-            for var, values in module.variables.items():
-                if var not in vars:
-                    vars[var] = values
+            for name, values in module.variables.items():
+                if name not in vars:
+                    vars[name] = list(values)
                 else:
-                    vars[var] += values
-                    vars[var].sort()
+                    vars[name] += values
+                    vars[name].sort()
 
         return vars
