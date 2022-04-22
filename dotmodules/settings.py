@@ -2,6 +2,7 @@ import argparse
 import pathlib
 import sys
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List
 
 
@@ -26,6 +27,8 @@ class Settings:
     hotkey_modules: str = field(init=False)
     hotkey_variables: str = field(init=False)
     warning_wrapped_docs: bool = field(init=False)
+    # The current working directory is the dm repository root.
+    variables_aggregation_directory: Path = Path.cwd() / "dm_variables_cache"
 
 
 def _get_argument_list() -> List[str]:

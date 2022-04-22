@@ -1,10 +1,14 @@
-from dataclasses import dataclass, field
+from abc import ABC, abstractmethod
+from collections import OrderedDict
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Generator, List, Type, cast
+from typing import Dict, Generator, List, Optional, Type, cast
 
 # TODO: After python 3.11 'tomllib' will be available from the standard library.
 # This library import hack can be removed then.
 import tomllib
+from dotmodules.settings import Settings
+from dotmodules.shell_adapter import ShellAdapter
 
 
 @dataclass
@@ -15,7 +19,7 @@ class LinkItem:
     name: str = "link"
 
     # Additional fields.
-    module_root: Path = field(init=False)
+    module_root: Optional[Path] = None
 
     @property
     def full_path_to_file(self):
@@ -62,14 +66,92 @@ class LinkItem:
 
 
 @dataclass
-class HookItem:
+class HookResult:
+    details_table: List[List[str]]
+
+
+class Hook(ABC):
+    @abstractmethod
+    def execute(self, settings: Settings) -> HookResult:
+        pass
+
+
+@dataclass
+class HookItem(Hook):
     # From module config.
-    name: str
     path_to_script: str
+    name: str = "hook"
     priority: int = 0
 
     # Additional fields.
-    module_root: Path = field(init=False)
+    module_name: Optional[str] = None
+    module_root: Optional[Path] = None
+
+    @property
+    def full_path_to_script(self):
+        """
+        The path to script should be relative to the module root directory.
+        """
+        full_path = self.module_root / self.path_to_script
+        if not full_path.is_file():
+            raise ValueError(
+                f"Hook.path_to_script does not name a file: '{self.path_to_script}'"
+            )
+        return full_path
+
+    def execute(self, settings: Settings) -> HookResult:
+        adapter = ShellAdapter()
+        command = [
+            str(self.full_path_to_script),
+            str(settings.variables_aggregation_directory),
+        ]
+        result = adapter.execute(command=command, cwd=self.module_root)
+
+        color = "<<GREEN>>" if result.status_code == 0 else "<<RED>>"
+
+        details_table = []
+        details_table.append(
+            [
+                f"<<BOLD>>{color}HOOK<<RESET>>",
+                f"<<BOLD>>{color}{self.module_name} - {self.name}<<RESET>>",
+            ]
+        )
+        details_table.append(
+            [
+                f"<<BOLD>>{color}CMD<<RESET>>",
+                color + " ".join(result.command) + "<<RESET>>",
+            ]
+        )
+        details_table.append(
+            [
+                f"<<BOLD>>{color}CWD<<RESET>>",
+                f"{color}{result.cwd}<<RESET>>",
+            ]
+        )
+        details_table.append(
+            [
+                f"<<BOLD>>{color}STATUS<<RESET>>",
+                f"{color}{result.status_code}<<RESET>>",
+            ]
+        )
+        if result.stdout:
+            for line in result.stdout:
+                details_table.append(
+                    [
+                        f"<<BOLD>>{color}STDOUT<<RESET>>",
+                        f"{color}{line}<<RESET>>",
+                    ]
+                )
+        if result.stderr:
+            for line in result.stderr:
+                details_table.append(
+                    [
+                        f"<<BOLD>>{color}STDERR<<RESET>>",
+                        f"{color}{line}<<RESET>>",
+                    ]
+                )
+
+        return HookResult(details_table=details_table)
 
 
 class ConfigError(Exception):
@@ -168,11 +250,17 @@ class ConfigParser:
         return links
 
     @classmethod
-    def parse_hooks(cls, data: dict, module_root: Path) -> List[HookItem]:
-        return cast(
+    def parse_hooks(
+        cls, data: dict, module_root: Path, module_name: str
+    ) -> List[HookItem]:
+        hooks = cast(
             List[HookItem],
             cls._parse_item_list(data=data, key=cls.KEY__HOOKS, item_class=HookItem),
         )
+        for hook in hooks:
+            hook.module_name = module_name
+            hook.module_root = module_root
+        return hooks
 
     @classmethod
     def _parse_string(cls, data: dict, key: str, mandatory: bool = True) -> str:
@@ -229,7 +317,9 @@ class Module:
             documentation = ConfigParser.parse_documentation(data=data)
             variables = ConfigParser.parse_variables(data=data)
             links = ConfigParser.parse_links(data=data, module_root=module_root)
-            hooks = ConfigParser.parse_hooks(data=data, module_root=module_root)
+            hooks = ConfigParser.parse_hooks(
+                data=data, module_name=name, module_root=module_root
+            )
         except SyntaxError as e:
             raise ConfigError(f"configuration syntax error: {e}") from e
         except ValueError as e:
@@ -290,3 +380,16 @@ class Modules:
                     vars[name].sort()
 
         return vars
+
+    @property
+    def hooks(self) -> OrderedDict:
+        hooks: OrderedDict = OrderedDict()
+        for module in self.modules:
+            for hook in module.hooks:
+                if hook.name not in hooks:
+                    hooks[hook.name] = []
+                hooks[hook.name].append(hook)
+        for _, values in hooks.items():
+            values.sort(key=lambda item: item.priority)
+
+        return hooks

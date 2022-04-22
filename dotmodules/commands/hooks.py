@@ -27,11 +27,24 @@ class HooksCommand(Command):
         commands: List[Command],
         parameters: Optional[List[str]] = None,
     ):
-        # for index, module in enumerate(modules.hooks, start=1):
-        #     renderer.rows.add_row(
-        #         f"<<BOLD>><<YELLOW>>[{str(index)}]<<RESET>>",
-        #         f"<<BOLD>>{module.name}<<RESET>>",
-        #         f"<<DIM>><<UNDERLINE>>{str(module.root)}<<RESET>>",
-        #     )
-        # renderer.rows.commit_rows()
-        print("hooks")
+        renderer.empty_line()
+
+        index = 1
+        for name, hooks in modules.hooks.items():
+            name_printed = False
+            for hook in hooks:
+                renderer.table.add_row(
+                    f"<<BOLD>><<BLUE>>[{str(index)}]<<RESET>>"
+                    if not name_printed
+                    else "",
+                    f"<<BOLD>>{name}<<RESET>>" if not name_printed else "",
+                    hook.priority,
+                    f"<<BOLD>>{hook.module_name}<<RESET>>",
+                    hook.path_to_script,
+                )
+                name_printed = True
+            index += 1
+
+        renderer.table.render()
+
+        renderer.empty_line()

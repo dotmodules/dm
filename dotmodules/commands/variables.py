@@ -46,7 +46,7 @@ class VariablesCommand(Command):
                 indent=False,
             )
             renderer.header.render(
-                header=f"<<BOLD>><<UNDERLINE>>{name}<<RESET>>",
+                header=f"<<BOLD>>{name}<<RESET>>",
                 header_width=header_width,
                 lines=text,
                 separator=header_separator,

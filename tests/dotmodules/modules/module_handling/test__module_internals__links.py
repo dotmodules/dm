@@ -13,7 +13,8 @@ def module_root():
 class TestLinkPathToFilePreparing:
     def test__full_path_to_file_can_be_resolved(self, module_root):
         link = LinkItem(
-            path_to_file="./dummy_file.txt", path_to_symlink="irrelevant for this test"
+            path_to_file="./dummy_file.txt",
+            path_to_symlink="irrelevant for this test",
         )
         link.module_root = module_root
 
@@ -96,3 +97,25 @@ class TestLinkStatus:
 
         assert link.present is True
         assert link.target_matched is True
+
+
+class TestHookPathToFilePreparing:
+    def test__full_path_to_file_can_be_resolved(self, module_root):
+        link = LinkItem(
+            path_to_file="./dummy_file.txt", path_to_symlink="irrelevant for this test"
+        )
+        link.module_root = module_root
+
+        assert link.full_path_to_file
+
+    def test__non_existing__path_to_file__error(self, module_root):
+        link = LinkItem(
+            path_to_file="./non_existent_file",
+            path_to_symlink="irrelevant for this test",
+        )
+        link.module_root = module_root
+
+        with pytest.raises(ValueError) as e:
+            link.full_path_to_file
+        expected = "Link.path_to_file does not name a file: './non_existent_file'"
+        assert str(e.value) == expected

@@ -28,10 +28,15 @@ def module_factory():
                 ],
                 hooks=[
                     HookItem(
-                        name=f"hook_{index}",
-                        path_to_script=f"/path/to/script/{index}",
+                        name=f"HOOK_{index}",
+                        path_to_script=f"/path/to/script_{index}",
                         priority=index,
-                    )
+                    ),
+                    HookItem(
+                        name="COMMON_HOOK",
+                        path_to_script=f"/path/to/common_script_{index}",
+                        priority=index,
+                    ),
                 ],
                 root=Path(f"/module/root/{index}"),
             )
@@ -65,6 +70,27 @@ class TestModuleAggregationCases:
                 "common_4",
                 "common_5",
             ],
+        }
+
+        assert result == expected
+
+    def test__hooks_can_be_aggregated(self, modules):
+        result = modules.hooks
+        expected = {
+            "COMMON_HOOK": [
+                # The second hook is the common hook in the modules hooks, the
+                # lower indexed module has the higher priority.
+                modules.modules[0].hooks[1],
+                modules.modules[1].hooks[1],
+                modules.modules[2].hooks[1],
+                modules.modules[3].hooks[1],
+                modules.modules[4].hooks[1],
+            ],
+            "HOOK_1": [modules.modules[0].hooks[0]],
+            "HOOK_2": [modules.modules[1].hooks[0]],
+            "HOOK_3": [modules.modules[2].hooks[0]],
+            "HOOK_4": [modules.modules[3].hooks[0]],
+            "HOOK_5": [modules.modules[4].hooks[0]],
         }
 
         assert result == expected

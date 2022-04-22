@@ -1,3 +1,7 @@
+import re
+import shutil
+from typing import Dict, List
+
 from dotmodules.commands import Commands
 from dotmodules.modules import Modules
 from dotmodules.renderer import Renderer
@@ -17,6 +21,20 @@ class CommandLineInterpreter:
             modules_root_path=self._settings.relative_modules_path,
             config_file_name=self._settings.config_file_name,
         )
+        self._populate_variables_cache(self._modules.variables)
+
+    def _populate_variables_cache(self, variables: Dict[str, List[str]]):
+        cache_directory = self._settings.variables_aggregation_directory
+        shutil.rmtree(cache_directory, ignore_errors=True)
+        cache_directory.mkdir()
+        for name, values in variables.items():
+            if re.search(r"\s", name):
+                raise ValueError(
+                    f"varibale name should not contain whitespace: '{name}'"
+                )
+            with open(cache_directory / name, "w+") as f:
+                for value in values:
+                    f.write(f"{value}\n")
 
     def _abort_interpreter(self):
         raise InterpreterFinished()

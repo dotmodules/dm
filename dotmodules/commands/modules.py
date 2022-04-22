@@ -32,14 +32,14 @@ class ModulesCommand(Command):
 
         if not parameters:
             renderer.wrap.render(
-                "<<BLUE>>These are the modules available in your configuration. "
+                "<<DIM>>These are the modules available in your configuration. "
                 "You can select a module by appending its index to the modules "
                 f"command like {settings.hotkey_modules} 42.<<RESET>>"
             )
             renderer.empty_line()
             for index, module in enumerate(modules.modules, start=1):
                 renderer.table.add_row(
-                    f"<<DIM>>[{str(index)}]<<RESET>>",
+                    f"<<BOLD>><<BLUE>>[{str(index)}]<<RESET>>",
                     f"<<BOLD>>{module.name}<<RESET>>",
                     f"{str(module.version)}",
                     "<<BOLD>><<GREEN>>deployed<<RESET>>",
@@ -47,7 +47,7 @@ class ModulesCommand(Command):
                 )
             renderer.table.render()
 
-        else:
+        elif len(parameters) == 1:
             header_width = 10
             body_width = (
                 settings.text_wrap_limit - header_width - len(settings.column_padding)
@@ -73,11 +73,23 @@ class ModulesCommand(Command):
             renderer.empty_line()
             self._render_module_documentation(section_data=section_data)
             renderer.empty_line()
-            self._render_module_links(section_data=section_data)
-            renderer.empty_line()
             self._render_module_variables(section_data=section_data)
             renderer.empty_line()
+            self._render_module_links(section_data=section_data)
+            renderer.empty_line()
             self._render_module_hooks(section_data=section_data)
+
+        elif len(parameters) == 2:
+            module_index = int(parameters[0]) - 1
+            hook_index = int(parameters[1]) - 1
+
+            module = modules.modules[module_index]
+            hook = module.hooks[hook_index]
+
+            hook_result = hook.execute(settings=self._settings)
+            for row in hook_result.details_table:
+                renderer.table.add_row(*row)
+            renderer.table.render()
 
         renderer.empty_line()
 
@@ -168,7 +180,7 @@ class ModulesCommand(Command):
         header_separator: str = section_data["header_separator"]
 
         text = renderer.wrap.render(
-            string=str(module.root),
+            string=f"<<UNDERLINE>>{str(module.root)}<<RESET>>",
             wrap_limit=body_width,
             return_lines=True,
             indent=False,
@@ -201,12 +213,12 @@ class ModulesCommand(Command):
 
             renderer.table.add_row(
                 status,
-                link.path_to_file,
-                link.path_to_symlink,
+                f"<<UNDERLINE>>{link.path_to_file}<<RESET>>",
+                f"<<UNDERLINE>>{link.path_to_symlink}<<RESET>>",
             )
         text = renderer.table.render(return_lines=True, indent=False)
         renderer.header.render(
-            header="Links",
+            header="<<DIM>>Links<<RESET>>",
             header_width=header_width,
             lines=text,
             separator=header_separator,
@@ -220,7 +232,7 @@ class ModulesCommand(Command):
 
         for name, values in module.variables.items():
             renderer.table.add_row(
-                f"<<BOLD>><<UNDERLINE>>{name}<<RESET>> " + " ".join(values),
+                f"<<BOLD>>{name}<<RESET>> " + " ".join(values),
             )
         text = renderer.table.render(return_lines=True, indent=False)
 
@@ -239,9 +251,9 @@ class ModulesCommand(Command):
 
         for index, hook in enumerate(module.hooks, start=1):
             renderer.table.add_row(
-                f"<<DIM>>[{index}]<<RESET>>",
-                f"<<BOLD>><<UNDERLINE>>{hook.name}<<RESET>> [{hook.priority}]",
-                hook.path_to_script,
+                f"<<BOLD>><<BLUE>>[{index}]<<RESET>>",
+                f"<<BOLD>>{hook.name}<<RESET>> [{hook.priority}]",
+                f"<<UNDERLINE>>{hook.path_to_script}<<RESET>>",
             )
         text = renderer.table.render(return_lines=True, indent=False)
 

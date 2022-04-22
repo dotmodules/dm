@@ -308,21 +308,27 @@ class TestHooksParsing:
 
     def test__missing_key_should_be_converted_to_list(self, module_root):
         dummy_data = {}
-        result = ConfigParser.parse_hooks(data=dummy_data, module_root=module_root)
+        result = ConfigParser.parse_hooks(
+            data=dummy_data, module_root=module_root, module_name=""
+        )
         assert result == []
 
     def test__none_value_should_be_left_as_is(self, module_root):
         dummy_data = {
             "hooks": None,
         }
-        result = ConfigParser.parse_hooks(data=dummy_data, module_root=module_root)
+        result = ConfigParser.parse_hooks(
+            data=dummy_data, module_root=module_root, module_name=""
+        )
         assert result == []
 
     def test__empty_value_should_be_left_as_is(self, module_root):
         dummy_data = {
             "hooks": [],
         }
-        result = ConfigParser.parse_hooks(data=dummy_data, module_root=module_root)
+        result = ConfigParser.parse_hooks(
+            data=dummy_data, module_root=module_root, module_name=""
+        )
         assert result == []
 
     def test__valid_hook_can_be_parsed(self, module_root):
@@ -335,7 +341,9 @@ class TestHooksParsing:
                 },
             ],
         }
-        result = ConfigParser.parse_hooks(data=dummy_data, module_root=module_root)
+        result = ConfigParser.parse_hooks(
+            data=dummy_data, module_root=module_root, module_name=""
+        )
         assert len(result) == 1
         hook = result[0]
         assert hook.path_to_script == "my_path_to_script"
@@ -351,7 +359,9 @@ class TestHooksParsing:
                 },
             ],
         }
-        result = ConfigParser.parse_hooks(data=dummy_data, module_root=module_root)
+        result = ConfigParser.parse_hooks(
+            data=dummy_data, module_root=module_root, module_name=""
+        )
         assert len(result) == 1
         hook = result[0]
         assert hook.path_to_script == "my_path_to_script"
@@ -367,7 +377,9 @@ class TestHooksParsing:
             ],
         }
         with pytest.raises(SyntaxError) as exception_info:
-            ConfigParser.parse_hooks(data=dummy_data, module_root=module_root)
+            ConfigParser.parse_hooks(
+                data=dummy_data, module_root=module_root, module_name=""
+            )
         expected_section_1 = (
             "unexpected error happened while processing 'hooks' item at index '1':"
         )
