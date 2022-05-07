@@ -17,11 +17,11 @@ class Command(ABC):
 
     @abstractproperty
     def match_pattern(self) -> str:
-        pass
+        ...
 
     @abstractproperty
     def summary(self) -> List[str]:
-        pass
+        ...
 
     @property
     def is_default(self) -> bool:
@@ -32,12 +32,12 @@ class Command(ABC):
         self,
         settings: Settings,
         modules: Modules,
-        abort_interpreter: Callable,
+        abort_interpreter: Callable[[], None],
         renderer: Renderer,
         commands: List["Command"],
         parameters: Optional[List[str]] = None,
-    ):
-        pass
+    ) -> None:
+        ...
 
 
 class Commands:
@@ -81,10 +81,10 @@ class Commands:
     def process_input(
         self,
         raw_input: str,
-        abort_interpreter: Callable,
+        abort_interpreter: Callable[[], None],
         modules: Modules,
         renderer: Renderer,
-    ):
+    ) -> None:
         command_name, parameters = self._parse_raw_input(raw_input=raw_input)
 
         if not command_name:

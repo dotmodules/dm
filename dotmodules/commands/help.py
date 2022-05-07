@@ -8,7 +8,7 @@ from dotmodules.settings import Settings
 
 class HelpCommand(Command):
     @property
-    def match_pattern(self):
+    def match_pattern(self) -> str:
         return self._settings.hotkey_help
 
     @property
@@ -26,11 +26,11 @@ class HelpCommand(Command):
         self,
         settings: Settings,
         modules: Modules,
-        abort_interpreter: Callable,
+        abort_interpreter: Callable[[], None],
         renderer: Renderer,
         commands: List[Command],
         parameters: Optional[List[str]] = None,
-    ):
+    ) -> None:
         renderer.empty_line()
         for command in commands:
             renderer.table.add_row(*command.summary)

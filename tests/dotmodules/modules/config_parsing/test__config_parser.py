@@ -1,40 +1,50 @@
 from pathlib import Path
+from typing import Dict, List, cast
 
 import pytest
+from pytest_mock.plugin import MockerFixture
 
-from dotmodules.modules import ConfigError, ConfigParser, Module, Modules
+from dotmodules.modules import (
+    ConfigError,
+    ConfigParser,
+    LinkDeploymentHook,
+    Module,
+    Modules,
+    RawCommonConfigDataType,
+    ShellScriptHook,
+)
 
 
 class TestStringParsing:
-    def test__valid_string_can_be_parsed(self):
+    def test__valid_string_can_be_parsed(self) -> None:
         dummy_value = "some value"
         dummy_key = "key"
-        dummy_data = {
+        dummy_data: RawCommonConfigDataType = {
             dummy_key: dummy_value,
         }
         result = ConfigParser._parse_string(data=dummy_data, key=dummy_key)
         assert result == dummy_value
 
-    def test__missing_key__error_should_be_raised(self):
+    def test__missing_key__error_should_be_raised(self) -> None:
         dummy_key = "invalid_key"
-        dummy_data = {}
+        dummy_data: RawCommonConfigDataType = {}
         with pytest.raises(SyntaxError) as exception_info:
             ConfigParser._parse_string(data=dummy_data, key=dummy_key)
         expected = f"mandatory '{dummy_key}' section is missing"
         assert str(exception_info.value) == expected
 
-    def test__missing_key__but_not_mandatory__empty_should_be_returned(self):
+    def test__missing_key__but_not_mandatory__empty_should_be_returned(self) -> None:
         dummy_key = "invalid_key"
-        dummy_data = {}
+        dummy_data: RawCommonConfigDataType = {}
         result = ConfigParser._parse_string(
             data=dummy_data, key=dummy_key, mandatory=False
         )
         assert result == ""
 
-    def test__empty_value__error_should_be_raised(self):
+    def test__empty_value__error_should_be_raised(self) -> None:
         dummy_value = ""
         dummy_key = "key"
-        dummy_data = {
+        dummy_data: RawCommonConfigDataType = {
             dummy_key: dummy_value,
         }
         with pytest.raises(ValueError) as exception_info:
@@ -42,10 +52,10 @@ class TestStringParsing:
         expected = f"empty value for section '{dummy_key}'"
         assert str(exception_info.value) == expected
 
-    def test__empty_value__but_not_mandatory__empty_should_be_returned(self):
+    def test__empty_value__but_not_mandatory__empty_should_be_returned(self) -> None:
         dummy_value = ""
         dummy_key = "key"
-        dummy_data = {
+        dummy_data: RawCommonConfigDataType = {
             dummy_key: dummy_value,
         }
         result = ConfigParser._parse_string(
@@ -53,22 +63,25 @@ class TestStringParsing:
         )
         assert result == ""
 
-    def test__non_string_value__error_should_be_raised(self):
+    def test__non_string_value__error_should_be_raised(self) -> None:
         dummy_value = ["this", "is", "not", "a", "string"]
         dummy_key = "key"
-        dummy_data = {
+        dummy_data: Dict[str, List[str]] = {
             dummy_key: dummy_value,
         }
         with pytest.raises(ValueError) as exception_info:
-            ConfigParser._parse_string(data=dummy_data, key=dummy_key)
+            # This is an error case, typing will be ignored..
+            ConfigParser._parse_string(data=dummy_data, key=dummy_key)  # type: ignore
         expected = f"value for section '{dummy_key}' should be a string"
         assert str(exception_info.value) == expected
 
 
 class TestItemListParsing:
-    def test__missing_key_should_be_converted_to_an_empty_list(self, mocker):
+    def test__missing_key_should_be_converted_to_an_empty_list(
+        self, mocker: MockerFixture
+    ) -> None:
         dummy_key = "key"
-        dummy_data = {}
+        dummy_data: RawCommonConfigDataType = {}
         mock_item_class = mocker.Mock()
         result = ConfigParser._parse_item_list(
             data=dummy_data, key=dummy_key, item_class=mock_item_class
@@ -76,9 +89,11 @@ class TestItemListParsing:
         mock_item_class.assert_not_called()
         assert result == []
 
-    def test__none_value_should_be_converted_to_an_empty_list(self, mocker):
+    def test__none_value_should_be_converted_to_an_empty_list(
+        self, mocker: MockerFixture
+    ) -> None:
         dummy_key = "key"
-        dummy_data = {
+        dummy_data: RawCommonConfigDataType = {
             dummy_key: None,
         }
         mock_item_class = mocker.Mock()
@@ -88,9 +103,9 @@ class TestItemListParsing:
         mock_item_class.assert_not_called()
         assert result == []
 
-    def test__items_get_initialized(self, mocker):
+    def test__items_get_initialized(self, mocker: MockerFixture) -> None:
         dummy_key = "key"
-        dummy_data = {
+        dummy_data: RawCommonConfigDataType = {
             dummy_key: [
                 {
                     "field_1": "value_1",
@@ -107,9 +122,11 @@ class TestItemListParsing:
         mock_item_class.assert_called_with(field_1="value_1", field_2="value_2")
         assert result == [mock_item_object]
 
-    def test__error_during_instantiation_means_syntax_error(self, mocker):
+    def test__error_during_instantiation_means_syntax_error(
+        self, mocker: MockerFixture
+    ) -> None:
         dummy_key = "key"
-        dummy_data = {
+        dummy_data: RawCommonConfigDataType = {
             dummy_key: [
                 {
                     "field_1": "value_1",
@@ -128,29 +145,29 @@ class TestItemListParsing:
 
 
 class TestTopLevelStringBasedParsing:
-    def test__name_can_be_parsed_as_a_string(self):
-        dummy_data = {
+    def test__name_can_be_parsed_as_a_string(self) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "name": "my name",
         }
         result = ConfigParser.parse_name(data=dummy_data)
         assert result == "my name"
 
-    def test__version_can_be_parsed_as_a_string(self):
-        dummy_data = {
+    def test__version_can_be_parsed_as_a_string(self) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "version": "my version",
         }
         result = ConfigParser.parse_version(data=dummy_data)
         assert result == "my version"
 
-    def test__documentation_can_be_parsed_as_a_list_of_lines__single_line(self):
-        dummy_data = {
+    def test__documentation_can_be_parsed_as_a_list_of_lines__single_line(self) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "documentation": "line 1",
         }
         result = ConfigParser.parse_documentation(data=dummy_data)
         assert result == ["line 1"]
 
-    def test__documentation_can_be_parsed_as_a_list_of_lines__multiline(self):
-        dummy_data = {
+    def test__documentation_can_be_parsed_as_a_list_of_lines__multiline(self) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "documentation": "line 1\nline 2",
         }
         result = ConfigParser.parse_documentation(data=dummy_data)
@@ -158,20 +175,20 @@ class TestTopLevelStringBasedParsing:
 
 
 class TestVariablesParsing:
-    def test__missing_key_should_be_converted_to_dict(self):
-        dummy_data = {}
+    def test__missing_key_should_be_converted_to_dict(self) -> None:
+        dummy_data: RawCommonConfigDataType = {}
         result = ConfigParser.parse_variables(data=dummy_data)
         assert result == {}
 
-    def test__empty_value_should_be_left_as_is(self):
-        dummy_data = {
+    def test__empty_value_should_be_left_as_is(self) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "variables": {},
         }
         result = ConfigParser.parse_variables(data=dummy_data)
         assert result == {}
 
-    def test__scalar_value__error_should_be_raised(self):
-        dummy_data = {
+    def test__scalar_value__error_should_be_raised(self) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "variables": "I am a string",
         }
         with pytest.raises(SyntaxError) as exception_info:
@@ -179,30 +196,32 @@ class TestVariablesParsing:
         expected = "the 'variables' section should have the following syntax: 'VARIABLE_NAME' = ['var_1', 'var_2', ..]"
         assert str(exception_info.value) == expected
 
-    def test__non_string_key__error_should_be_raised(self):
+    def test__non_string_key__error_should_be_raised(self) -> None:
         dummy_data = {
             "variables": {
                 42: ["non", "string", "key"],
             },
         }
         with pytest.raises(SyntaxError) as exception_info:
-            ConfigParser.parse_variables(data=dummy_data)
+            # This is an error case, mypy cannot resolve this.
+            ConfigParser.parse_variables(data=dummy_data)  # type: ignore
         expected = "the 'variables' section should only have string variable names"
         assert str(exception_info.value) == expected
 
-    def test__non_compatible_variable__error_should_be_raised(self):
+    def test__non_compatible_variable__error_should_be_raised(self) -> None:
         dummy_data = {
             "variables": {
                 "VARIABLE": {"this is not a list": 42},
             },
         }
         with pytest.raises(ValueError) as exception_info:
-            ConfigParser.parse_variables(data=dummy_data)
+            # This is an error case, mypy cannot resolve this.
+            ConfigParser.parse_variables(data=dummy_data)  # type: ignore
         expected = "the 'variables' section should contain a single string or a list of strings for a variable name"
         assert str(exception_info.value) == expected
 
-    def test__non_list_variable_name__should_be_converted_to_a_list(self):
-        dummy_data = {
+    def test__non_list_variable_name__should_be_converted_to_a_list(self) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "variables": {
                 "VARIABLE": "I am not a list",
             },
@@ -212,45 +231,46 @@ class TestVariablesParsing:
             "VARIABLE": ["I am not a list"],
         }
 
-    def test__non_string_items__error_should_be_raised(self):
+    def test__non_string_items__error_should_be_raised(self) -> None:
         dummy_data = {
             "variables": {
                 "VARIABLE": ["I am a string", 42],
             },
         }
         with pytest.raises(ValueError) as exception_info:
-            ConfigParser.parse_variables(data=dummy_data)
+            # This is an error case, mypy cannot resolve this.
+            ConfigParser.parse_variables(data=dummy_data)  # type: ignore
         expected = "the 'variables' section should contain a single string or a list of strings for a variable name"
         assert str(exception_info.value) == expected
 
 
 class TestLinksParsing:
     @pytest.fixture
-    def module_root(self):
+    def module_root(self) -> Path:
         # Dummy module file path just to pass it but won't be used.
         return Path(__file__).parent
 
-    def test__missing_key_should_be_converted_to_list(self, module_root):
-        dummy_data = {}
+    def test__missing_key_should_be_converted_to_list(self, module_root: Path) -> None:
+        dummy_data: RawCommonConfigDataType = {}
         result = ConfigParser.parse_links(data=dummy_data, module_root=module_root)
         assert result == []
 
-    def test__none_value_should_be_left_as_is(self, module_root):
-        dummy_data = {
+    def test__none_value_should_be_left_as_is(self, module_root: Path) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "links": None,
         }
         result = ConfigParser.parse_links(data=dummy_data, module_root=module_root)
         assert result == []
 
-    def test__empty_value_should_be_left_as_is(self, module_root):
-        dummy_data = {
+    def test__empty_value_should_be_left_as_is(self, module_root: Path) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "links": [],
         }
         result = ConfigParser.parse_links(data=dummy_data, module_root=module_root)
         assert result == []
 
-    def test__valid_link_can_be_parsed(self, module_root):
-        dummy_data = {
+    def test__valid_link_can_be_parsed(self, module_root: Path) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "links": [
                 {
                     "path_to_file": "my_path_to_file",
@@ -266,8 +286,8 @@ class TestLinksParsing:
         assert link.path_to_symlink == "my_path_to_symlink"
         assert link.name == "my_name"
 
-    def test__name_is_optional(self, module_root):
-        dummy_data = {
+    def test__name_is_optional(self, module_root: Path) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "links": [
                 {
                     "path_to_file": "my_path_to_file",
@@ -282,8 +302,8 @@ class TestLinksParsing:
         assert link.path_to_symlink == "my_path_to_symlink"
         assert link.name == "link"
 
-    def test__invalid_data__error_should_be_raised(self, module_root):
-        dummy_data = {
+    def test__invalid_data__error_should_be_raised(self, module_root: Path) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "links": [
                 {
                     "invalid_key": "invalid_value",
@@ -302,19 +322,19 @@ class TestLinksParsing:
 
 class TestHooksParsing:
     @pytest.fixture
-    def module_root(self):
+    def module_root(self) -> Path:
         # Dummy module file path just to pass it but won't be used.
         return Path(__file__).parent
 
-    def test__missing_key_should_be_converted_to_list(self, module_root):
-        dummy_data = {}
+    def test__missing_key_should_be_converted_to_list(self, module_root: Path) -> None:
+        dummy_data: RawCommonConfigDataType = {}
         result = ConfigParser.parse_hooks(
             data=dummy_data, module_root=module_root, module_name=""
         )
         assert result == []
 
-    def test__none_value_should_be_left_as_is(self, module_root):
-        dummy_data = {
+    def test__none_value_should_be_left_as_is(self, module_root: Path) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "hooks": None,
         }
         result = ConfigParser.parse_hooks(
@@ -322,8 +342,8 @@ class TestHooksParsing:
         )
         assert result == []
 
-    def test__empty_value_should_be_left_as_is(self, module_root):
-        dummy_data = {
+    def test__empty_value_should_be_left_as_is(self, module_root: Path) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "hooks": [],
         }
         result = ConfigParser.parse_hooks(
@@ -331,8 +351,8 @@ class TestHooksParsing:
         )
         assert result == []
 
-    def test__valid_hook_can_be_parsed(self, module_root):
-        dummy_data = {
+    def test__valid_hook_can_be_parsed(self, module_root: Path) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "hooks": [
                 {
                     "name": "my_hook_name",
@@ -350,8 +370,8 @@ class TestHooksParsing:
         assert hook.name == "my_hook_name"
         assert hook.priority == 42
 
-    def test__priority_is_optional(self, module_root):
-        dummy_data = {
+    def test__priority_is_optional(self, module_root: Path) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "hooks": [
                 {
                     "name": "my_hook_name",
@@ -368,8 +388,8 @@ class TestHooksParsing:
         assert hook.name == "my_hook_name"
         assert hook.priority == 0
 
-    def test__invalid_data__error_should_be_raised(self, module_root):
-        dummy_data = {
+    def test__invalid_data__error_should_be_raised(self, module_root: Path) -> None:
+        dummy_data: RawCommonConfigDataType = {
             "hooks": [
                 {
                     "invalid_key": "invalid_value",
@@ -392,7 +412,7 @@ class TestHooksParsing:
 class TestEndToEndConfigParsingCases:
     SAMPLE_FILE_DIR = Path(__file__).parent / "sample_config_files"
 
-    def test__valid_file__full(self):
+    def test__valid_file__full(self) -> None:
         file_path = self.SAMPLE_FILE_DIR / "valid__full.toml"
         module = Module.from_path(path=file_path)
 
@@ -422,17 +442,17 @@ class TestEndToEndConfigParsingCases:
 
         assert len(module.hooks) == 2
 
-        hook = module.hooks[0]
+        hook = cast(ShellScriptHook, module.hooks[0])
         assert hook.name == "hook_name_1"
         assert hook.path_to_script == "path_to_script_1"
         assert hook.priority == 1
 
-        hook = module.hooks[1]
+        hook = cast(ShellScriptHook, module.hooks[1])
         assert hook.name == "hook_name_2"
         assert hook.path_to_script == "path_to_script_2"
         assert hook.priority == 2
 
-    def test__valid_file__minimal(self):
+    def test__valid_file__minimal(self) -> None:
         file_path = self.SAMPLE_FILE_DIR / "valid__minimal.toml"
         module = Module.from_path(path=file_path)
 
@@ -442,7 +462,7 @@ class TestEndToEndConfigParsingCases:
         assert module.links == []
         assert module.hooks == []
 
-    def test__invalid_file__non_existent_file(self):
+    def test__invalid_file__non_existent_file(self) -> None:
         file_path = self.SAMPLE_FILE_DIR / "NON_EXISTENT"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
@@ -453,28 +473,28 @@ class TestEndToEndConfigParsingCases:
         assert expected_section_1 in str(exception_info.value)
         assert expected_section_2 in str(exception_info.value)
 
-    def test__invalid_file__toml_syntax(self):
+    def test__invalid_file__toml_syntax(self) -> None:
         file_path = self.SAMPLE_FILE_DIR / "invalid__toml_syntax.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected = "configuration loading error: Found tokens after a closed string. Invalid TOML. (line 1 column 1 char 0)"
         assert str(exception_info.value) == expected
 
-    def test__invalid_file__name_missing(self):
+    def test__invalid_file__name_missing(self) -> None:
         file_path = self.SAMPLE_FILE_DIR / "invalid__name_missing.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected = "configuration syntax error: mandatory 'name' section is missing"
         assert str(exception_info.value) == expected
 
-    def test__invalid_file__name_empty(self):
+    def test__invalid_file__name_empty(self) -> None:
         file_path = self.SAMPLE_FILE_DIR / "invalid__name_empty.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected = "configuration value error: empty value for section 'name'"
         assert str(exception_info.value) == expected
 
-    def test__invalid_file__name_non_string(self):
+    def test__invalid_file__name_non_string(self) -> None:
         file_path = self.SAMPLE_FILE_DIR / "invalid__name_non_string.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
@@ -483,21 +503,21 @@ class TestEndToEndConfigParsingCases:
         )
         assert str(exception_info.value) == expected
 
-    def test__invalid_file__version_missing(self):
+    def test__invalid_file__version_missing(self) -> None:
         file_path = self.SAMPLE_FILE_DIR / "invalid__version_missing.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected = "configuration syntax error: mandatory 'version' section is missing"
         assert str(exception_info.value) == expected
 
-    def test__invalid_file__version_empty(self):
+    def test__invalid_file__version_empty(self) -> None:
         file_path = self.SAMPLE_FILE_DIR / "invalid__version_empty.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
         expected = "configuration value error: empty value for section 'version'"
         assert str(exception_info.value) == expected
 
-    def test__invalid_file__version_non_string(self):
+    def test__invalid_file__version_non_string(self) -> None:
         file_path = self.SAMPLE_FILE_DIR / "invalid__version_non_string.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
@@ -506,7 +526,7 @@ class TestEndToEndConfigParsingCases:
         )
         assert str(exception_info.value) == expected
 
-    def test__invalid_file__variables_structure(self):
+    def test__invalid_file__variables_structure(self) -> None:
         file_path = self.SAMPLE_FILE_DIR / "invalid__variables_structure.toml"
         with pytest.raises(ConfigError) as exception_info:
             Module.from_path(path=file_path)
@@ -516,7 +536,7 @@ class TestEndToEndConfigParsingCases:
         )
         assert str(exception_info.value) == expected
 
-    def test__unexpected_error_can_be_handled(self, mocker):
+    def test__unexpected_error_can_be_handled(self, mocker: MockerFixture) -> None:
         file_path = self.SAMPLE_FILE_DIR / "irrelevant_file.toml"
         mocker.patch("dotmodules.modules.ConfigLoader.load_raw_config_data")
         mocker.patch(
@@ -533,7 +553,7 @@ class TestEndToEndConfigParsingCases:
 
 @pytest.mark.integration
 class TestEndToEndModuleLoadingCases:
-    def test__modules_can_be_loaded_from_a_direcotry_structure(self):
+    def test__modules_can_be_loaded_from_a_directory_structure(self) -> None:
         modules_root_path = Path(__file__).parent / "dummy_modules_dir"
         config_file_name = "config.toml"
         modules = Modules.load(
@@ -547,6 +567,7 @@ class TestEndToEndModuleLoadingCases:
         # .../category_1/module_3
         # .../module_1
 
+        # =====================================================================
         module = modules.modules[0]
         assert isinstance(module, Module)
         assert module.name == "module_2"
@@ -562,12 +583,34 @@ class TestEndToEndModuleLoadingCases:
         assert link.path_to_file == "path_to_file_2"
         assert link.path_to_symlink == "path_to_symlink_2"
 
-        assert len(module.hooks) == 1
-        hook = module.hooks[0]
-        assert hook.name == "hook_name_2"
-        assert hook.path_to_script == "path_to_script_2"
-        assert hook.priority == 2
+        assert len(module.hooks) == 2
+        assert set([ShellScriptHook, LinkDeploymentHook]) == set(
+            [hook.__class__ for hook in module.hooks]
+        )
 
+        shell_script_hooks = [
+            hook for hook in module.hooks if hook.__class__ == ShellScriptHook
+        ]
+        assert len(shell_script_hooks) == 1
+        hook = shell_script_hooks[0]
+        assert hook.get_name() == "hook_name_2"
+        assert hook.get_priority() == 2
+        assert hook.get_details() == "path_to_script_2"
+        assert hook.get_module_name() == "module_2"
+
+        link_deployment_hooks = [
+            hook for hook in module.hooks if hook.__class__ == LinkDeploymentHook
+        ]
+        assert len(link_deployment_hooks) == 1
+        hook = cast(LinkDeploymentHook, link_deployment_hooks[0])
+        assert hook.get_name() == "DEPLOY_LINKS"
+        assert hook.get_priority() == 0
+        assert hook.get_details() == "Deploy 1 link"
+        assert hook.get_module_name() == "module_2"
+        assert hook.links == module.links
+
+        # =====================================================================
+        # MODULE 2
         module = modules.modules[1]
         assert isinstance(module, Module)
         assert module.name == "module_3"
@@ -583,12 +626,33 @@ class TestEndToEndModuleLoadingCases:
         assert link.path_to_file == "path_to_file_3"
         assert link.path_to_symlink == "path_to_symlink_3"
 
-        assert len(module.hooks) == 1
-        hook = module.hooks[0]
-        assert hook.name == "hook_name_3"
-        assert hook.path_to_script == "path_to_script_3"
-        assert hook.priority == 3
+        assert len(module.hooks) == 2
+        assert set([ShellScriptHook, LinkDeploymentHook]) == set(
+            [hook.__class__ for hook in module.hooks]
+        )
 
+        shell_script_hooks = [
+            hook for hook in module.hooks if hook.__class__ == ShellScriptHook
+        ]
+        assert len(shell_script_hooks) == 1
+        hook = shell_script_hooks[0]
+        assert hook.get_name() == "hook_name_3"
+        assert hook.get_priority() == 3
+        assert hook.get_details() == "path_to_script_3"
+        assert hook.get_module_name() == "module_3"
+
+        link_deployment_hooks = [
+            hook for hook in module.hooks if hook.__class__ == LinkDeploymentHook
+        ]
+        assert len(link_deployment_hooks) == 1
+        hook = cast(LinkDeploymentHook, link_deployment_hooks[0])
+        assert hook.get_name() == "DEPLOY_LINKS"
+        assert hook.get_priority() == 0
+        assert hook.get_details() == "Deploy 1 link"
+        assert hook.get_module_name() == "module_3"
+        assert hook.links == module.links
+
+        # =====================================================================
         module = modules.modules[2]
         assert isinstance(module, Module)
         assert module.name == "module_1"
@@ -604,13 +668,33 @@ class TestEndToEndModuleLoadingCases:
         assert link.path_to_file == "path_to_file_1"
         assert link.path_to_symlink == "path_to_symlink_1"
 
-        assert len(module.hooks) == 1
-        hook = module.hooks[0]
-        assert hook.name == "hook_name_1"
-        assert hook.path_to_script == "path_to_script_1"
-        assert hook.priority == 1
+        assert len(module.hooks) == 2
+        assert set([ShellScriptHook, LinkDeploymentHook]) == set(
+            [hook.__class__ for hook in module.hooks]
+        )
 
-    def test__error_during_loading(self):
+        shell_script_hooks = [
+            hook for hook in module.hooks if hook.__class__ == ShellScriptHook
+        ]
+        assert len(shell_script_hooks) == 1
+        hook = shell_script_hooks[0]
+        assert hook.get_name() == "hook_name_1"
+        assert hook.get_priority() == 1
+        assert hook.get_details() == "path_to_script_1"
+        assert hook.get_module_name() == "module_1"
+
+        link_deployment_hooks = [
+            hook for hook in module.hooks if hook.__class__ == LinkDeploymentHook
+        ]
+        assert len(link_deployment_hooks) == 1
+        hook = cast(LinkDeploymentHook, link_deployment_hooks[0])
+        assert hook.get_name() == "DEPLOY_LINKS"
+        assert hook.get_priority() == 0
+        assert hook.get_details() == "Deploy 1 link"
+        assert hook.get_module_name() == "module_1"
+        assert hook.links == module.links
+
+    def test__error_during_loading(self) -> None:
         modules_root_path = Path(__file__).parent / "dummy_modules_dir_error"
         config_file_name = "config.toml"
         with pytest.raises(ConfigError) as exception_info:

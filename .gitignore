@@ -1,5 +1,5 @@
 # Variables aggregation cache directory that is populated on every dm execution.
-dm_variables_cache/
+.dm_cache/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

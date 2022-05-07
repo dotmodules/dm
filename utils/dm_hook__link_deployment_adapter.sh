@@ -1,0 +1,63 @@
+#!/bin/sh
+
+#==============================================================================
+# SANE ENVIRONMENT
+#==============================================================================
+
+set -e  # exit on error
+set -u  # prevent unset variable expansion
+
+#==============================================================================
+# PATH HANDLING
+#==============================================================================
+
+# Changing the path is unnecesary for this script. The working directory will be
+# the given module's configuration root. If we want to reach the dotmodules
+# repository root, there is a handy relative prefix that is passed to this
+# script as the first argument.
+
+#==============================================================================
+# COMMON ARGUMENTS
+#==============================================================================
+
+# Argument 1 - Path prefix to the dotmodules repo root. This is the first
+# argument that is passed by this script. This script is only responsible to get
+# the this first argument, and then it should source the common script to load
+# the common functionality. The common script will handle the common arguments,
+# and after it, this script can handle the arguments intended to be parsed by
+# this script.
+DM_REPO_ROOT="$1"
+shift
+
+#==============================================================================
+# LOADING THE COMMON TOOLS SCRIPT
+#==============================================================================
+
+# shellcheck source=./dm_hook__common.sh
+. "${DM_REPO_ROOT}/utils/dm_hook__common.sh"
+
+#==============================================================================
+# HOOK SPECIFIC ARGUMENT PARSING
+#==============================================================================
+
+# NOTE: The common script parses 8 arguments. The next argument to be parsed is
+# the 9th that is intended to be parsed by the hook scripts.
+
+
+#==============================================================================
+# ENTRY POINT
+#==============================================================================
+
+dm__logger__header
+
+while [ $# -gt 0 ]
+do
+  path_to_file="$1"
+  path_to_symlink="$2"
+  shift
+  shift
+  echo "${path_to_file} - ${path_to_symlink}" | dm__logger__prefix_lines
+done
+
+
+dm__logger__footer

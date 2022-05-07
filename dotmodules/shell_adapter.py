@@ -1,6 +1,6 @@
-import os
+import subprocess  # nosec B404
 from dataclasses import dataclass, field
-from subprocess import PIPE, Popen  # nosec B404
+from pathlib import Path
 from typing import List, Optional
 
 
@@ -11,7 +11,7 @@ class ShellAdapterError(Exception):
 @dataclass
 class ShellResult:
     command: List[str]
-    cwd: Optional[os.PathLike]
+    cwd: Optional[Path]
     status_code: int
     stdout: List[str] = field(default_factory=list)
     stderr: List[str] = field(default_factory=list)
@@ -34,12 +34,16 @@ class ShellAdapter:
             raise ShellAdapterError("passed command should be a list of strings")
 
     @classmethod
-    def execute(
-        cls, command: List[str], cwd: Optional[os.PathLike] = None
+    def execute_and_capture(
+        cls, command: List[str], cwd: Optional[Path] = None
     ) -> ShellResult:
         cls.validate_command(command=command)
-        process = Popen(
-            command, stdout=PIPE, stderr=PIPE, cwd=cwd, shell=False  # nosec B603
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=cwd,
+            shell=False,  # nosec B603
         )
         stdout, stderr = process.communicate()
         status_code = process.wait()
@@ -59,3 +63,16 @@ class ShellAdapter:
                 result.stderr.append(line)
 
         return result
+
+    @classmethod
+    def execute_interactively(
+        cls, command: List[str], cwd: Optional[Path] = None
+    ) -> int:
+        cls.validate_command(command=command)
+        try:
+            status_code = subprocess.check_call(
+                command, cwd=cwd, shell=False  # nosec B603
+            )
+        except subprocess.CalledProcessError as e:
+            status_code = e.returncode
+        return status_code

@@ -1,28 +1,29 @@
 import pytest
+from pytest_mock.plugin import MockerFixture
 
 from dotmodules.renderer import Colors, HeaderRenderer
 from dotmodules.settings import Settings
 
 
 @pytest.fixture
-def settings():
+def settings() -> Settings:
     return Settings()
 
 
 @pytest.fixture
-def colors():
+def colors() -> Colors:
     return Colors()
 
 
 @pytest.fixture
-def header_renderer(settings, colors):
+def header_renderer(settings: Settings, colors: Colors) -> HeaderRenderer:
     return HeaderRenderer(settings=settings, colors=colors)
 
 
 class TestHeaderRenderingCases:
     def test__header_will_be_prepended_with_the_same_width(
-        self, header_renderer, mocker
-    ):
+        self, header_renderer: HeaderRenderer, mocker: MockerFixture
+    ) -> None:
         mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColorAdapter._load_color_for_tag",
@@ -58,8 +59,8 @@ class TestHeaderRenderingCases:
         )
 
     def test__header_will_be_right_aligned_for_longer_width(
-        self, header_renderer, mocker
-    ):
+        self, header_renderer: HeaderRenderer, mocker: MockerFixture
+    ) -> None:
         mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColorAdapter._load_color_for_tag",

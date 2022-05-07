@@ -13,3 +13,6 @@
 [submodule "dependencies/posix-adapter"]
 	path = dependencies/posix-adapter
 	url = https://github.com/posixtools/posix-adapter.git
+[submodule "dependencies/posix-test"]
+	path = dependencies/posix-test
+	url = https://github.com/posixtools/posix-test.git

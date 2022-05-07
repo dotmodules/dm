@@ -1,6 +1,7 @@
+import os
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Generator, List, Optional, Type, cast
 
@@ -19,10 +20,10 @@ class LinkItem:
     name: str = "link"
 
     # Additional fields.
-    module_root: Optional[Path] = None
+    module_root: Path = field(init=False)
 
     @property
-    def full_path_to_file(self):
+    def full_path_to_file(self) -> Path:
         """
         The path to file should be relative to the module root directory.
         """
@@ -34,7 +35,7 @@ class LinkItem:
         return full_path
 
     @property
-    def full_path_to_symlink(self):
+    def full_path_to_symlink(self) -> Path:
         """
         The path to symlink should be an absolute path with the the option to
         resolve the '$HOME' variable to the users home directory.
@@ -61,34 +62,54 @@ class LinkItem:
             and self.full_path_to_symlink.resolve() == self.full_path_to_file
         )
 
-    def validate_for_root(self, module_root: Path):
-        pass
-
-
-@dataclass
-class HookResult:
-    details_table: List[List[str]]
-
 
 class Hook(ABC):
     @abstractmethod
-    def execute(self, settings: Settings) -> HookResult:
+    def get_name(self) -> str:
+        pass
+
+    @abstractmethod
+    def get_priority(self) -> int:
+        pass
+
+    @abstractmethod
+    def get_details(self) -> str:
+        pass
+
+    @abstractmethod
+    def get_module_name(self) -> str:
+        pass
+
+    @abstractmethod
+    def execute(self, settings: Settings) -> int:
         pass
 
 
 @dataclass
-class HookItem(Hook):
+class ShellScriptHook(Hook):
     # From module config.
     path_to_script: str
     name: str = "hook"
     priority: int = 0
 
     # Additional fields.
-    module_name: Optional[str] = None
-    module_root: Optional[Path] = None
+    module_name: str = field(init=False)
+    module_root: Path = field(init=False)
+
+    def get_name(self) -> str:
+        return self.name
+
+    def get_priority(self) -> int:
+        return self.priority
+
+    def get_details(self) -> str:
+        return self.path_to_script
+
+    def get_module_name(self) -> str:
+        return self.module_name
 
     @property
-    def full_path_to_script(self):
+    def full_path_to_script(self) -> Path:
         """
         The path to script should be relative to the module root directory.
         """
@@ -99,68 +120,114 @@ class HookItem(Hook):
             )
         return full_path
 
-    def execute(self, settings: Settings) -> HookResult:
+    def execute(self, settings: Settings) -> int:
         adapter = ShellAdapter()
+        # Getting the absolute path for the hook adapter script.
+        absolute_hook_adapter_script = Path(
+            "./utils/dm_hook__shell_script_adapter.sh"
+        ).resolve()
+        # Calculating the relative path from the module's root the dm repository
+        # root which is the current working directory as the hook will be
+        # executed from the given module's root directory.
+        relative_dm_repo_root = os.path.relpath(os.getcwd(), self.module_root)
+
         command = [
-            str(self.full_path_to_script),
-            str(settings.variables_aggregation_directory),
+            str(absolute_hook_adapter_script),  # 0 - hook adapter script path
+            str(relative_dm_repo_root),  # 1 - DM_REPO_ROOT
+            str(self.name),  # 2 - dm__config__target_hook_name
+            str(self.priority),  # 3 - dm__config__target_hook_priority
+            str(self.module_name),  # 4 - dm__config__target_module_name
+            str(settings.dm_cache_root),  # 5 - dm__config__dm_cache_root
+            str(settings.dm_cache_variables),  # 6 - dm__config__dm_cache_variables
+            str(settings.indent),  # 7 - dm__config__indent
+            str(settings.text_wrap_limit),  # 8 - dm__config__wrap_limit
+            str(self.full_path_to_script),  # 9 - dm__config__target_hook_script
         ]
-        result = adapter.execute(command=command, cwd=self.module_root)
+        status_code = adapter.execute_interactively(
+            command=command, cwd=self.module_root
+        )
+        return status_code
 
-        color = "<<GREEN>>" if result.status_code == 0 else "<<RED>>"
 
-        details_table = []
-        details_table.append(
-            [
-                f"<<BOLD>>{color}HOOK<<RESET>>",
-                f"<<BOLD>>{color}{self.module_name} - {self.name}<<RESET>>",
-            ]
-        )
-        details_table.append(
-            [
-                f"<<BOLD>>{color}CMD<<RESET>>",
-                color + " ".join(result.command) + "<<RESET>>",
-            ]
-        )
-        details_table.append(
-            [
-                f"<<BOLD>>{color}CWD<<RESET>>",
-                f"{color}{result.cwd}<<RESET>>",
-            ]
-        )
-        details_table.append(
-            [
-                f"<<BOLD>>{color}STATUS<<RESET>>",
-                f"{color}{result.status_code}<<RESET>>",
-            ]
-        )
-        if result.stdout:
-            for line in result.stdout:
-                details_table.append(
-                    [
-                        f"<<BOLD>>{color}STDOUT<<RESET>>",
-                        f"{color}{line}<<RESET>>",
-                    ]
-                )
-        if result.stderr:
-            for line in result.stderr:
-                details_table.append(
-                    [
-                        f"<<BOLD>>{color}STDERR<<RESET>>",
-                        f"{color}{line}<<RESET>>",
-                    ]
-                )
+@dataclass
+class LinkDeploymentHook(Hook):
+    NAME = "DEPLOY_LINKS"
+    PRIORITY = 0
 
-        return HookResult(details_table=details_table)
+    links: List[LinkItem]
+    module_name: str
+    module_root: Path
+
+    def get_name(self) -> str:
+        return self.NAME
+
+    def get_priority(self) -> int:
+        return self.PRIORITY
+
+    def get_details(self) -> str:
+        link_count = len(self.links)
+        if link_count == 1:
+            return f"Deploy {len(self.links)} link"
+        else:
+            return f"Deploy {len(self.links)} links"
+
+    def get_module_name(self) -> str:
+        return self.module_name
+
+    def execute(self, settings: Settings) -> int:
+        adapter = ShellAdapter()
+        # Getting the absolute path for the hook adapter script.
+        absolute_hook_adapter_script = Path(
+            "./utils/dm_hook__link_deployment_adapter.sh"
+        ).resolve()
+        # Calculating the relative path from the module's root the dm repository
+        # root which is the current working directory as the hook will be
+        # executed from the given module's root directory.
+        relative_dm_repo_root = os.path.relpath(os.getcwd(), self.module_root)
+
+        command = [
+            str(absolute_hook_adapter_script),  # 0 - hook adapter script path
+            str(relative_dm_repo_root),  # 1 - DM_REPO_ROOT
+            str(self.get_name()),  # 2 - dm__config__target_hook_name
+            str(self.get_priority()),  # 3 - dm__config__target_hook_priority
+            str(self.get_module_name()),  # 4 - dm__config__target_module_name
+            str(settings.dm_cache_root),  # 5 - dm__config__dm_cache_root
+            str(settings.dm_cache_variables),  # 6 - dm__config__dm_cache_variables
+            str(settings.indent),  # 7 - dm__config__indent
+            str(settings.text_wrap_limit),  # 8 - dm__config__wrap_limit
+        ]
+        for link in self.links:
+            command.append(str(link.full_path_to_file))
+            command.append(str(link.full_path_to_symlink))
+        status_code = adapter.execute_interactively(
+            command=command, cwd=self.module_root
+        )
+        return status_code
 
 
 class ConfigError(Exception):
     pass
 
 
+RawSimpleConfigDataType = str
+RawVariablesConfigDataType = Dict[str, str | List[str]]
+RawObjectListConfigDataType = List[Dict[str, str | int]]
+RawCommonConfigDataType = Dict[
+    str,
+    Optional[
+        RawSimpleConfigDataType
+        | RawVariablesConfigDataType
+        | RawObjectListConfigDataType
+    ],
+]
+ParsedVariablesConfigDataType = Dict[str, List[str]]
+
+
 class ConfigLoader:
     @staticmethod
-    def load_raw_config_data(config_file_path: Path) -> dict:
+    def load_raw_config_data(
+        config_file_path: Path,
+    ) -> RawCommonConfigDataType:
         try:
             with open(config_file_path) as f:
                 return tomllib.load(f)
@@ -182,22 +249,25 @@ class ConfigParser:
     KEY__HOOKS = "hooks"
 
     @classmethod
-    def parse_name(cls, data: dict) -> str:
+    def parse_name(cls, data: RawCommonConfigDataType) -> str:
         return cls._parse_string(data=data, key=cls.KEY__NAME)
 
     @classmethod
-    def parse_version(cls, data: dict) -> str:
+    def parse_version(cls, data: RawCommonConfigDataType) -> str:
         return cls._parse_string(data=data, key=cls.KEY__VERSION)
 
     @classmethod
-    def parse_documentation(cls, data: dict) -> List[str]:
+    def parse_documentation(cls, data: RawCommonConfigDataType) -> List[str]:
         return cls._parse_string(
             data=data, key=cls.KEY__DOCUMENTATION, mandatory=False
         ).splitlines()
 
     @classmethod
-    def parse_variables(cls, data: dict) -> Dict[str, List[str]]:
+    def parse_variables(
+        cls, data: RawCommonConfigDataType
+    ) -> ParsedVariablesConfigDataType:
         variables = data.get(cls.KEY__VARIABLES) or {}
+        variables = cast(RawVariablesConfigDataType, variables)
 
         variables_is_a_dict = isinstance(variables, dict)
         if not variables_is_a_dict:
@@ -240,7 +310,9 @@ class ConfigParser:
         return validated_variables
 
     @classmethod
-    def parse_links(cls, data: dict, module_root: Path) -> List[LinkItem]:
+    def parse_links(
+        cls, data: RawCommonConfigDataType, module_root: Path
+    ) -> List[LinkItem]:
         links = cast(
             List[LinkItem],
             cls._parse_item_list(data=data, key=cls.KEY__LINKS, item_class=LinkItem),
@@ -251,11 +323,13 @@ class ConfigParser:
 
     @classmethod
     def parse_hooks(
-        cls, data: dict, module_root: Path, module_name: str
-    ) -> List[HookItem]:
+        cls, data: RawCommonConfigDataType, module_root: Path, module_name: str
+    ) -> List[ShellScriptHook]:
         hooks = cast(
-            List[HookItem],
-            cls._parse_item_list(data=data, key=cls.KEY__HOOKS, item_class=HookItem),
+            List[ShellScriptHook],
+            cls._parse_item_list(
+                data=data, key=cls.KEY__HOOKS, item_class=ShellScriptHook
+            ),
         )
         for hook in hooks:
             hook.module_name = module_name
@@ -263,7 +337,9 @@ class ConfigParser:
         return hooks
 
     @classmethod
-    def _parse_string(cls, data: dict, key: str, mandatory: bool = True) -> str:
+    def _parse_string(
+        cls, data: RawCommonConfigDataType, key: str, mandatory: bool = True
+    ) -> str:
         if key not in data:
             if not mandatory:
                 return ""
@@ -279,13 +355,19 @@ class ConfigParser:
 
     @classmethod
     def _parse_item_list(
-        cls, data: dict, key: str, item_class: Type[LinkItem] | Type[HookItem]
-    ) -> List[LinkItem | HookItem]:
+        cls,
+        data: RawCommonConfigDataType,
+        key: str,
+        item_class: Type[LinkItem] | Type[ShellScriptHook],
+    ) -> List[LinkItem | ShellScriptHook]:
         raw_items = data.get(key) or []
+        raw_items = cast(RawObjectListConfigDataType, raw_items)
         items = []
         for index, raw_item in enumerate(raw_items, start=1):
             try:
-                item = item_class(**raw_item)
+                # This solution is hard for mypy to understand. Ignoring the
+                # type checking here..
+                item = item_class(**raw_item)  # type: ignore
             except Exception as e:
                 message = "unexpected error happened while processing '{key}' item at index '{index}': '{reason}'".format(
                     key=key, index=index, reason=str(e)
@@ -302,7 +384,7 @@ class Module:
     documentation: List[str]
     variables: Dict[str, List[str]]
     links: List[LinkItem]
-    hooks: List[HookItem]
+    hooks: List[Hook]
     root: Path
 
     @classmethod
@@ -335,14 +417,39 @@ class Module:
             documentation=documentation,
             variables=variables,
             links=links,
-            hooks=hooks,
+            hooks=cast(List[Hook], hooks),
             root=module_root,
         )
         return ret
 
+    def validate(self) -> None:
+        """
+        The link deployment hook is an auto generated hook. Its name is
+        reserved.
+        """
+        for hook in self.hooks:
+            hook_name = hook.get_name()
+            if hook_name == LinkDeploymentHook.NAME:
+                raise ValueError(
+                    f"Cannot use reserved hook name '{LinkDeploymentHook.NAME}'!"
+                )
+
+    def add_link_deployment_hook(self) -> None:
+        """
+        Appending the link deplyment hook to the hooks if there are links to
+        deploy.
+        """
+        if self.links:
+            link_deployment_hook = LinkDeploymentHook(
+                links=self.links,
+                module_name=self.name,
+                module_root=self.root,
+            )
+            self.hooks.append(link_deployment_hook)
+
 
 class Modules:
-    def __init__(self):
+    def __init__(self) -> None:
         self.modules: List[Module] = []
 
     def __len__(self) -> int:
@@ -362,6 +469,8 @@ class Modules:
         )
         for config_file_path in config_file_paths:
             module = Module.from_path(path=config_file_path)
+            module.validate()
+            module.add_link_deployment_hook()
             modules.modules.append(module)
 
         # Sorting the modules in alphabetical path order.
@@ -369,7 +478,7 @@ class Modules:
         return modules
 
     @property
-    def variables(self):
+    def variables(self) -> Dict[str, List[str]]:
         vars = {}
         for module in self.modules:
             for name, values in module.variables.items():
@@ -382,14 +491,15 @@ class Modules:
         return vars
 
     @property
-    def hooks(self) -> OrderedDict:
-        hooks: OrderedDict = OrderedDict()
+    def hooks(self) -> OrderedDict[str, List[Hook]]:
+        hooks: OrderedDict[str, List[Hook]] = OrderedDict()
         for module in self.modules:
             for hook in module.hooks:
-                if hook.name not in hooks:
-                    hooks[hook.name] = []
-                hooks[hook.name].append(hook)
+                hook_name = hook.get_name()
+                if hook_name not in hooks:
+                    hooks[hook_name] = []
+                hooks[hook_name].append(hook)
         for _, values in hooks.items():
-            values.sort(key=lambda item: item.priority)
+            values.sort(key=lambda item: item.get_priority())
 
         return hooks

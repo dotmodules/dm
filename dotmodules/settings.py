@@ -28,7 +28,14 @@ class Settings:
     hotkey_variables: str = field(init=False)
     warning_wrapped_docs: bool = field(init=False)
     # The current working directory is the dm repository root.
-    variables_aggregation_directory: Path = Path.cwd() / "dm_variables_cache"
+    dm_cache_root: Path = (Path.cwd() / ".dm_cache").resolve()
+    dm_cache_variables: Path = (Path.cwd() / ".dm_cache" / "variables").resolve()
+    header_width: int = 10
+    header_separator: str = "  "
+
+    @property
+    def body_width(self) -> int:
+        return self.text_wrap_limit - self.header_width - len(self.column_padding)
 
 
 def _get_argument_list() -> List[str]:

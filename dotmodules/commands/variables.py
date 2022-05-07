@@ -8,7 +8,7 @@ from dotmodules.settings import Settings
 
 class VariablesCommand(Command):
     @property
-    def match_pattern(self):
+    def match_pattern(self) -> str:
         return self._settings.hotkey_variables
 
     @property
@@ -22,12 +22,11 @@ class VariablesCommand(Command):
         self,
         settings: Settings,
         modules: Modules,
-        abort_interpreter: Callable,
+        abort_interpreter: Callable[[], None],
         renderer: Renderer,
         commands: List[Command],
         parameters: Optional[List[str]] = None,
-    ):
-
+    ) -> None:
         renderer.empty_line()
 
         header_width = max([len(name) for name in modules.variables.keys()]) + len(
@@ -42,7 +41,7 @@ class VariablesCommand(Command):
             text = renderer.wrap.render(
                 string=" ".join(values),
                 wrap_limit=body_width,
-                return_lines=True,
+                print_lines=False,
                 indent=False,
             )
             renderer.header.render(

@@ -1,17 +1,18 @@
 from pathlib import Path
 
 import pytest
+from pytest_mock.plugin import MockerFixture
 
 from dotmodules.renderer import ColorAdapter, Colors
 
 
 @pytest.fixture
-def colors():
+def colors() -> Colors:
     return Colors()
 
 
 @pytest.fixture
-def coloring_tag_cache():
+def color_adapter() -> ColorAdapter:
     return ColorAdapter()
 
 
@@ -44,8 +45,8 @@ class TestColorTagRecognitionCases:
         ],
     )
     def test__tag_recognition_and_cleaning(
-        self, input_string: str, expected: str, colors
-    ):
+        self, input_string: str, expected: str, colors: Colors
+    ) -> None:
         result = colors.decolor_string(string=input_string)
         assert result == expected
 
@@ -76,13 +77,17 @@ class TestColorTagRecognitionCases:
             ["<<A>>hello<<B>>", ("A", "B")],  # Multiple tags are supported.
         ],
     )
-    def test__tag_list_collection(self, input_string: str, expected: str, colors):
+    def test__tag_list_collection(
+        self, input_string: str, expected: str, colors: Colors
+    ) -> None:
         result = colors._get_tag_list(string=input_string)
         assert result == expected
 
 
 class TestColorCacheHandlingCases:
-    def test__missing_color_can_be_filled(self, mocker, coloring_tag_cache):
+    def test__missing_color_can_be_filled(
+        self, mocker: MockerFixture, color_adapter: ColorAdapter
+    ) -> None:
         dummy_tag = "my_tag"
         dummy_color = "my_color"
         mock_load_color = mocker.patch(
@@ -90,74 +95,82 @@ class TestColorCacheHandlingCases:
         )
         mock_load_color.return_value = dummy_color
 
-        assert coloring_tag_cache._cache == {}
-        result = coloring_tag_cache.resolve_tag(tag=dummy_tag)
+        assert color_adapter._cache == {}
+        result = color_adapter.resolve_tag(tag=dummy_tag)
         assert result == dummy_color
-        assert coloring_tag_cache._cache == {dummy_tag: dummy_color}
+        assert color_adapter._cache == {dummy_tag: dummy_color}
 
         mock_load_color.assert_called_with(tag=dummy_tag)
 
-    def test__existing_tag_wont_be_resolved(self, mocker, coloring_tag_cache):
+    def test__existing_tag_wont_be_resolved(
+        self, mocker: MockerFixture, color_adapter: ColorAdapter
+    ) -> None:
         dummy_tag = "my_tag"
         dummy_color = "my_color"
         mock_load_color = mocker.patch(
             "dotmodules.renderer.ColorAdapter._load_color_for_tag"
         )
-        coloring_tag_cache._cache[dummy_tag] = dummy_color
+        color_adapter._cache[dummy_tag] = dummy_color
 
-        assert coloring_tag_cache._cache == {dummy_tag: dummy_color}
-        result = coloring_tag_cache.resolve_tag(tag=dummy_tag)
+        assert color_adapter._cache == {dummy_tag: dummy_color}
+        result = color_adapter.resolve_tag(tag=dummy_tag)
         assert result == dummy_color
-        assert coloring_tag_cache._cache == {dummy_tag: dummy_color}
+        assert color_adapter._cache == {dummy_tag: dummy_color}
 
         mock_load_color.assert_not_called
 
 
 class TestColorLoadingCommandAssemlingCases:
-    def test__mapped_tag__command_should_be_the_mapping(self, coloring_tag_cache):
+    def test__mapped_tag__command_should_be_the_mapping(
+        self, color_adapter: ColorAdapter
+    ) -> None:
         dummy_tag = "my_tag"
         dummy_mapped_tag = "my_mapped_tag"
-        coloring_tag_cache.TAG_MAPPING[dummy_tag] = dummy_mapped_tag
+        color_adapter.TAG_MAPPING[dummy_tag] = dummy_mapped_tag
 
         expected_command = ["utils/color_adapter.sh", dummy_mapped_tag]
 
-        result = coloring_tag_cache._assemble_color_loading_command(tag=dummy_tag)
+        result = color_adapter._assemble_color_loading_command(tag=dummy_tag)
 
         assert result == expected_command
 
     def test__unmapped_tag__gets_loaded_with_a_default_template(
-        self, coloring_tag_cache
-    ):
+        self, color_adapter: ColorAdapter
+    ) -> None:
         dummy_tag = "123"
 
         expected_command = ["utils/color_adapter.sh", "setaf", dummy_tag]
 
-        result = coloring_tag_cache._assemble_color_loading_command(tag=dummy_tag)
+        result = color_adapter._assemble_color_loading_command(tag=dummy_tag)
 
         assert result == expected_command
 
-    def test__unmapped_tag__has_to_be_a_number(self, coloring_tag_cache):
+    def test__unmapped_tag__has_to_be_a_number(
+        self, color_adapter: ColorAdapter
+    ) -> None:
         dummy_tag = "my_non_numeric_tag"
 
         with pytest.raises(ValueError) as e:
-            coloring_tag_cache._assemble_color_loading_command(tag=dummy_tag)
+            color_adapter._assemble_color_loading_command(tag=dummy_tag)
 
         expected = "unmapped tag has to be numeric: 'my_non_numeric_tag'"
         assert str(e.value) == expected
 
-    def test__mapped_tag__multiple_commands_can_be_generated(self, coloring_tag_cache):
+    def test__mapped_tag__multiple_commands_can_be_generated(
+        self, color_adapter: ColorAdapter
+    ) -> None:
         dummy_tag_1 = "my_tag"
         dummy_tag_2 = "my_tag"
         dummy_mapped_tag_1 = "my_mapped_tag"
         dummy_mapped_tag_2 = "my_mapped_tag"
-        coloring_tag_cache.TAG_MAPPING[dummy_tag_1] = dummy_mapped_tag_1
-        coloring_tag_cache.TAG_MAPPING[dummy_tag_2] = dummy_mapped_tag_2
+        color_adapter.TAG_MAPPING[dummy_tag_1] = dummy_mapped_tag_1
+        color_adapter.TAG_MAPPING[dummy_tag_2] = dummy_mapped_tag_2
 
         expected_command_1 = ["utils/color_adapter.sh", dummy_mapped_tag_1]
         expected_command_2 = ["utils/color_adapter.sh", dummy_mapped_tag_2]
 
-        result_1 = coloring_tag_cache._assemble_color_loading_command(tag=dummy_tag_1)
-        result_2 = coloring_tag_cache._assemble_color_loading_command(tag=dummy_tag_2)
+        result_1 = color_adapter._assemble_color_loading_command(tag=dummy_tag_1)
+        result_2 = color_adapter._assemble_color_loading_command(tag=dummy_tag_2)
 
         assert result_1 == expected_command_1
         assert result_2 == expected_command_2
@@ -178,8 +191,11 @@ class TestColorLoadingCases:
         return str(Path(__file__).parent / "dummy_color_adapter.sh")
 
     def test__colors_can_be_fetched__success(
-        self, dummy_color_adapter, mocker, coloring_tag_cache
-    ):
+        self,
+        dummy_color_adapter: str,
+        mocker: MockerFixture,
+        color_adapter: ColorAdapter,
+    ) -> None:
         dummy_tag = "my_tag"
         dummy_command = [dummy_color_adapter, "--success", dummy_tag]
         mock_assemble_command = mocker.patch(
@@ -187,14 +203,17 @@ class TestColorLoadingCases:
         )
         mock_assemble_command.return_value = dummy_command
 
-        result = coloring_tag_cache._load_color_for_tag(tag=dummy_tag)
+        result = color_adapter._load_color_for_tag(tag=dummy_tag)
 
         assert result == dummy_tag
         mock_assemble_command.assert_called_with(tag=dummy_tag)
 
     def test__colors_can_be_fetched__error__graceful_handling(
-        self, dummy_color_adapter, mocker, coloring_tag_cache
-    ):
+        self,
+        dummy_color_adapter: str,
+        mocker: MockerFixture,
+        color_adapter: ColorAdapter,
+    ) -> None:
         dummy_tag = "my_tag"
         dummy_command = [dummy_color_adapter, "--error"]
         mock_assemble_command = mocker.patch(
@@ -202,7 +221,7 @@ class TestColorLoadingCases:
         )
         mock_assemble_command.return_value = dummy_command
 
-        result = coloring_tag_cache._load_color_for_tag(tag=dummy_tag)
+        result = color_adapter._load_color_for_tag(tag=dummy_tag)
 
         # Cannot resolve tag -> returns no coloring.
         assert result == ""
@@ -210,13 +229,15 @@ class TestColorLoadingCases:
 
 
 class TestColororizeCases:
-    def test__no_color_tags(self, colors):
+    def test__no_color_tags(self, colors: Colors) -> None:
         dummy_string = "I am a dummy string with no colors"
         result = colors.colorize(string=dummy_string)
         assert result.colorized_string == dummy_string
         assert result.additional_width == 0
 
-    def test__color_tags_can_be_resolved(self, mocker, colors):
+    def test__color_tags_can_be_resolved(
+        self, mocker: MockerFixture, colors: Colors
+    ) -> None:
         dummy_string = "<<RED>>I am in color<<RESET>>"
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColorAdapter._load_color_for_tag",
@@ -235,7 +256,9 @@ class TestColororizeCases:
             ]
         )
 
-    def test__repeated_color_tags_can_be_resolved(self, mocker, colors):
+    def test__repeated_color_tags_can_be_resolved(
+        self, mocker: MockerFixture, colors: Colors
+    ) -> None:
         dummy_string = "<<RED>>I am in <<RED>>color<<RESET>>"
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColorAdapter._load_color_for_tag",

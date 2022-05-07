@@ -1,12 +1,14 @@
 from pathlib import Path
+from typing import Any, List
 
 import pytest
+from pytest_mock.plugin import MockerFixture
 
 from dotmodules.settings import _get_argument_list, load_settings
 
 
 class TestSettings:
-    def test__settings_can_be_parsed(self, mocker):
+    def test__settings_can_be_parsed(self, mocker: MockerFixture) -> None:
         dummy_args = []
         dummy_args += ["--debug", "1"]
         dummy_args += ["--relative-modules-path", "my/relative/modules/path"]
@@ -40,15 +42,15 @@ class TestSettings:
         assert settings.hotkey_variables == "my-hotkey-variables"
         assert settings.warning_wrapped_docs is False
 
-    def test__error_during_parsing(self, mocker):
+    def test__error_during_parsing(self, mocker: MockerFixture) -> None:
         # Not passing any paramteres..
-        dummy_args = []
+        dummy_args: List[Any] = []
         mocker.patch("dotmodules.settings._get_argument_list", return_value=dummy_args)
 
         with pytest.raises(SystemExit):
             load_settings()
 
-    def test__parameters_can_be_loaded_from_sys(self, mocker):
+    def test__parameters_can_be_loaded_from_sys(self, mocker: MockerFixture) -> None:
         dummy_args = [1, 2, 3, 4, 5]
         mocker.patch(
             "dotmodules.settings.sys.argv",

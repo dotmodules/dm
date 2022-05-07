@@ -1,3 +1,4 @@
+import os
 from typing import Callable, List, Optional
 
 from dotmodules.commands import Command
@@ -8,7 +9,7 @@ from dotmodules.settings import Settings
 
 class ModulesCommand(Command):
     @property
-    def match_pattern(self):
+    def match_pattern(self) -> str:
         return self._settings.hotkey_modules
 
     @property
@@ -22,7 +23,7 @@ class ModulesCommand(Command):
         self,
         settings: Settings,
         modules: Modules,
-        abort_interpreter: Callable,
+        abort_interpreter: Callable[[], None],
         renderer: Renderer,
         commands: List[Command],
         parameters: Optional[List[str]] = None,
@@ -38,46 +39,46 @@ class ModulesCommand(Command):
             )
             renderer.empty_line()
             for index, module in enumerate(modules.modules, start=1):
+                root = os.path.relpath(
+                    module.root, settings.relative_modules_path.resolve()
+                )
                 renderer.table.add_row(
                     f"<<BOLD>><<BLUE>>[{str(index)}]<<RESET>>",
                     f"<<BOLD>>{module.name}<<RESET>>",
                     f"{str(module.version)}",
                     "<<BOLD>><<GREEN>>deployed<<RESET>>",
-                    f"<<UNDERLINE>>{str(module.root)}<<RESET>>",
+                    f"<<UNDERLINE>>{str(root)}<<RESET>>",
                 )
             renderer.table.render()
 
         elif len(parameters) == 1:
-            header_width = 10
-            body_width = (
-                settings.text_wrap_limit - header_width - len(settings.column_padding)
-            )
-            header_separator = "  "
-
             index = int(parameters[0])
             module = modules.modules[index - 1]
 
-            section_data = {
-                "renderer": renderer,
-                "module": module,
-                "header_width": header_width,
-                "body_width": body_width,
-                "header_separator": header_separator,
-            }
-
-            self._render_module_name(section_data=section_data)
-            self._render_module_path(section_data=section_data)
-            self._render_module_version(section_data=section_data)
-            renderer.empty_line()
-            self._render_module_status(section_data=section_data)
-            renderer.empty_line()
-            self._render_module_documentation(section_data=section_data)
-            renderer.empty_line()
-            self._render_module_variables(section_data=section_data)
-            renderer.empty_line()
-            self._render_module_links(section_data=section_data)
-            renderer.empty_line()
-            self._render_module_hooks(section_data=section_data)
+            self._render_module_name(
+                renderer=renderer, module=module, settings=settings
+            )
+            self._render_module_version(
+                renderer=renderer, module=module, settings=settings
+            )
+            self._render_module_status(
+                renderer=renderer, module=module, settings=settings
+            )
+            self._render_module_documentation(
+                renderer=renderer, module=module, settings=settings
+            )
+            self._render_module_path(
+                renderer=renderer, module=module, settings=settings
+            )
+            self._render_module_variables(
+                renderer=renderer, module=module, settings=settings
+            )
+            self._render_module_links(
+                renderer=renderer, module=module, settings=settings
+            )
+            self._render_module_hooks(
+                renderer=renderer, module=module, settings=settings
+            )
 
         elif len(parameters) == 2:
             module_index = int(parameters[0]) - 1
@@ -86,117 +87,104 @@ class ModulesCommand(Command):
             module = modules.modules[module_index]
             hook = module.hooks[hook_index]
 
-            hook_result = hook.execute(settings=self._settings)
-            for row in hook_result.details_table:
-                renderer.table.add_row(*row)
-            renderer.table.render()
+            hook_status_code = hook.execute(settings=self._settings)
+
+            if hook_status_code != 0:
+                raise ValueError("hook failed")
 
         renderer.empty_line()
 
-    def _render_module_name(self, section_data: dict):
-        renderer: Renderer = section_data["renderer"]
-        module: Module = section_data["module"]
-        header_width: int = section_data["header_width"]
-        body_width: int = section_data["body_width"]
-        header_separator: str = section_data["header_separator"]
-
+    def _render_module_name(
+        self, renderer: Renderer, module: Module, settings: Settings
+    ) -> None:
         text = renderer.wrap.render(
             string=f"<<BOLD>>{module.name}<<RESET>>",
-            wrap_limit=body_width,
-            return_lines=True,
+            wrap_limit=settings.body_width,
+            print_lines=False,
             indent=False,
         )
         renderer.header.render(
             header="<<DIM>>Name<<RESET>>",
-            header_width=header_width,
+            header_width=settings.header_width,
             lines=text,
-            separator=header_separator,
+            separator=settings.header_separator,
         )
 
-    def _render_module_version(self, section_data: dict):
-        renderer: Renderer = section_data["renderer"]
-        module: Module = section_data["module"]
-        header_width: int = section_data["header_width"]
-        body_width: int = section_data["body_width"]
-        header_separator: str = section_data["header_separator"]
-
+    def _render_module_version(
+        self, renderer: Renderer, module: Module, settings: Settings
+    ) -> None:
+        renderer.empty_line()
         text = renderer.wrap.render(
             string=module.version,
-            wrap_limit=body_width,
-            return_lines=True,
+            wrap_limit=settings.body_width,
+            print_lines=False,
             indent=False,
         )
         renderer.header.render(
             header="<<DIM>>Version<<RESET>>",
-            header_width=header_width,
+            header_width=settings.header_width,
             lines=text,
-            separator=header_separator,
+            separator=settings.header_separator,
         )
 
-    def _render_module_status(self, section_data: dict):
-        renderer: Renderer = section_data["renderer"]
-        header_width: int = section_data["header_width"]
-        body_width: int = section_data["body_width"]
-        header_separator: str = section_data["header_separator"]
-
+    def _render_module_status(
+        self, renderer: Renderer, module: Module, settings: Settings
+    ) -> None:
+        renderer.empty_line()
         text = renderer.wrap.render(
             string="<<BOLD>><<GREEN>>deployed<<RESET>>",
-            wrap_limit=body_width,
-            return_lines=True,
+            wrap_limit=settings.body_width,
+            print_lines=False,
             indent=False,
         )
         renderer.header.render(
             header="<<DIM>>Status<<RESET>>",
-            header_width=header_width,
+            header_width=settings.header_width,
             lines=text,
-            separator=header_separator,
+            separator=settings.header_separator,
         )
 
-    def _render_module_documentation(self, section_data: dict):
-        renderer: Renderer = section_data["renderer"]
-        module: Module = section_data["module"]
-        header_width: int = section_data["header_width"]
-        body_width: int = section_data["body_width"]
-        header_separator: str = section_data["header_separator"]
-
+    def _render_module_documentation(
+        self, renderer: Renderer, module: Module, settings: Settings
+    ) -> None:
+        renderer.empty_line()
         text = renderer.wrap.render(
             string="\n".join(module.documentation),
-            wrap_limit=body_width,
-            return_lines=True,
+            wrap_limit=settings.body_width,
+            print_lines=False,
             indent=False,
         )
         renderer.header.render(
             header="<<DIM>>Docs<<RESET>>",
-            header_width=header_width,
+            header_width=settings.header_width,
             lines=text,
-            separator=header_separator,
+            separator=settings.header_separator,
         )
 
-    def _render_module_path(self, section_data: dict):
-        renderer: Renderer = section_data["renderer"]
-        module: Module = section_data["module"]
-        header_width: int = section_data["header_width"]
-        body_width: int = section_data["body_width"]
-        header_separator: str = section_data["header_separator"]
-
+    def _render_module_path(
+        self, renderer: Renderer, module: Module, settings: Settings
+    ) -> None:
+        renderer.empty_line()
         text = renderer.wrap.render(
             string=f"<<UNDERLINE>>{str(module.root)}<<RESET>>",
-            wrap_limit=body_width,
-            return_lines=True,
+            wrap_limit=settings.body_width,
+            print_lines=False,
             indent=False,
         )
         renderer.header.render(
             header="<<DIM>>Path<<RESET>>",
-            header_width=header_width,
+            header_width=settings.header_width,
             lines=text,
-            separator=header_separator,
+            separator=settings.header_separator,
         )
 
-    def _render_module_links(self, section_data: dict):
-        renderer: Renderer = section_data["renderer"]
-        module: Module = section_data["module"]
-        header_width: int = section_data["header_width"]
-        header_separator: str = section_data["header_separator"]
+    def _render_module_links(
+        self, renderer: Renderer, module: Module, settings: Settings
+    ) -> None:
+        if not module.links:
+            return
+
+        renderer.empty_line()
 
         for link in module.links:
             link_color = "RED"
@@ -216,50 +204,58 @@ class ModulesCommand(Command):
                 f"<<UNDERLINE>>{link.path_to_file}<<RESET>>",
                 f"<<UNDERLINE>>{link.path_to_symlink}<<RESET>>",
             )
-        text = renderer.table.render(return_lines=True, indent=False)
+        text = renderer.table.render(print_lines=False, indent=False)
         renderer.header.render(
             header="<<DIM>>Links<<RESET>>",
-            header_width=header_width,
+            header_width=settings.header_width,
             lines=text,
-            separator=header_separator,
+            separator=settings.header_separator,
         )
 
-    def _render_module_variables(self, section_data: dict):
-        renderer: Renderer = section_data["renderer"]
-        module: Module = section_data["module"]
-        header_width: int = section_data["header_width"]
-        header_separator: str = section_data["header_separator"]
+    def _render_module_variables(
+        self, renderer: Renderer, module: Module, settings: Settings
+    ) -> None:
+        if not module.variables:
+            return
+
+        renderer.empty_line()
 
         for name, values in module.variables.items():
             renderer.table.add_row(
                 f"<<BOLD>>{name}<<RESET>> " + " ".join(values),
             )
-        text = renderer.table.render(return_lines=True, indent=False)
+        text = renderer.table.render(print_lines=False, indent=False)
 
         renderer.header.render(
             header="<<DIM>>Variables<<RESET>>",
-            header_width=header_width,
+            header_width=settings.header_width,
             lines=text,
-            separator=header_separator,
+            separator=settings.header_separator,
         )
 
-    def _render_module_hooks(self, section_data: dict):
-        renderer: Renderer = section_data["renderer"]
-        module: Module = section_data["module"]
-        header_width: int = section_data["header_width"]
-        header_separator: str = section_data["header_separator"]
+    def _render_module_hooks(
+        self, renderer: Renderer, module: Module, settings: Settings
+    ) -> None:
+        if not module.hooks:
+            return
+
+        renderer.empty_line()
 
         for index, hook in enumerate(module.hooks, start=1):
+            hook_name = hook.get_name()
+            hook_priority = hook.get_priority()
+            hook_details = hook.get_details()
+
             renderer.table.add_row(
                 f"<<BOLD>><<BLUE>>[{index}]<<RESET>>",
-                f"<<BOLD>>{hook.name}<<RESET>> [{hook.priority}]",
-                f"<<UNDERLINE>>{hook.path_to_script}<<RESET>>",
+                f"<<BOLD>>{hook_name}<<RESET>> ({hook_priority})",
+                f"<<UNDERLINE>>{hook_details}<<RESET>>",
             )
-        text = renderer.table.render(return_lines=True, indent=False)
+        text = renderer.table.render(print_lines=False, indent=False)
 
         renderer.header.render(
             header="<<DIM>>Hooks<<RESET>>",
-            header_width=header_width,
+            header_width=settings.header_width,
             lines=text,
-            separator=header_separator,
+            separator=settings.header_separator,
         )

@@ -1,68 +1,75 @@
 import pytest
+from pytest_mock.plugin import MockerFixture
 
 from dotmodules.renderer import Colors, RenderError, TableRenderer
 from dotmodules.settings import Settings
 
 
 @pytest.fixture
-def settings():
+def settings() -> Settings:
     return Settings()
 
 
 @pytest.fixture
-def colors():
+def colors() -> Colors:
     return Colors()
 
 
 @pytest.fixture
-def row_renderer(settings, colors):
+def table_renderer(settings: Settings, colors: Colors) -> TableRenderer:
     return TableRenderer(settings=settings, colors=colors)
 
 
 class TestColumnWidthCalculationCases:
-    def test__column_width_can_be_calculated(self, row_renderer):
+    def test__column_width_can_be_calculated(
+        self, table_renderer: TableRenderer
+    ) -> None:
         dummy_buffer = [
             ["aaa", "a", "a"],
             ["a", "aaa", "a"],
             ["a", "a", "aaa"],
         ]
-        result = row_renderer._calculate_max_column_width(buffer=dummy_buffer)
+        result = table_renderer._calculate_max_column_width(buffer=dummy_buffer)
         assert result == [3, 3, 3]
 
-    def test__inconsistent_columns__error(self, row_renderer):
+    def test__inconsistent_columns__error(self, table_renderer: TableRenderer) -> None:
         dummy_buffer = [
             ["a", "a"],
             ["a"],
         ]
         with pytest.raises(RenderError) as exception_info:
-            row_renderer._calculate_max_column_width(buffer=dummy_buffer)
+            table_renderer._calculate_max_column_width(buffer=dummy_buffer)
         expected = "inconsistent column count"
         assert expected in str(exception_info.value)
 
 
 class TestRowRenderingCases:
-    def test__rendered_column_width_can_be_adjusted_1(self, settings, row_renderer):
+    def test__rendered_column_width_can_be_adjusted_1(
+        self, settings: Settings, table_renderer: TableRenderer
+    ) -> None:
         settings.indent = " " * 4
         settings.column_padding = " " * 2
 
-        row_renderer.add_row("a", "b")
-        row_renderer.add_row("aa", "b")
-        row_renderer.add_row("aaa", "b")
-        result = row_renderer.render(return_lines=True)
+        table_renderer.add_row("a", "b")
+        table_renderer.add_row("aa", "b")
+        table_renderer.add_row("aaa", "b")
+        result = table_renderer.render(print_lines=False)
         assert result == [
             "    a    b",
             "    aa   b",
             "    aaa  b",
         ]
 
-    def test__rendered_column_width_can_be_adjusted_2(self, settings, row_renderer):
+    def test__rendered_column_width_can_be_adjusted_2(
+        self, settings: Settings, table_renderer: TableRenderer
+    ) -> None:
         settings.indent = " " * 2
         settings.column_padding = " " * 1
 
-        row_renderer.add_row("a", "b")
-        row_renderer.add_row("aa", "b")
-        row_renderer.add_row("aaa", "b")
-        result = row_renderer.render(return_lines=True)
+        table_renderer.add_row("a", "b")
+        table_renderer.add_row("aa", "b")
+        table_renderer.add_row("aaa", "b")
+        result = table_renderer.render(print_lines=False)
         assert result == [
             "  a   b",
             "  aa  b",
@@ -70,15 +77,15 @@ class TestRowRenderingCases:
         ]
 
     def test__rendered_column_width_can_be_adjusted_without_indentation(
-        self, settings, row_renderer
-    ):
+        self, settings: Settings, table_renderer: TableRenderer
+    ) -> None:
         settings.indent = " " * 2
         settings.column_padding = " " * 1
 
-        row_renderer.add_row("a", "b")
-        row_renderer.add_row("aa", "b")
-        row_renderer.add_row("aaa", "b")
-        result = row_renderer.render(return_lines=True, indent=False)
+        table_renderer.add_row("a", "b")
+        table_renderer.add_row("aa", "b")
+        table_renderer.add_row("aaa", "b")
+        result = table_renderer.render(print_lines=False, indent=False)
         assert result == [
             "a   b",
             "aa  b",
@@ -86,8 +93,8 @@ class TestRowRenderingCases:
         ]
 
     def test__coloring_should_not_affect_the_width_adjustment(
-        self, settings, row_renderer, mocker
-    ):
+        self, settings: Settings, table_renderer: TableRenderer, mocker: MockerFixture
+    ) -> None:
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
@@ -96,10 +103,10 @@ class TestRowRenderingCases:
         settings.indent = " " * 4
         settings.column_padding = " " * 2
 
-        row_renderer.add_row("<<RED>>a<<RESET>>", "<<BLUE>>b<<RESET>>")
-        row_renderer.add_row("<<RED>>aa<<RESET>>", "<<BLUE>>b<<RESET>>")
-        row_renderer.add_row("<<RED>>aaa<<RESET>>", "<<BLUE>>b<<RESET>>")
-        result = row_renderer.render(return_lines=True)
+        table_renderer.add_row("<<RED>>a<<RESET>>", "<<BLUE>>b<<RESET>>")
+        table_renderer.add_row("<<RED>>aa<<RESET>>", "<<BLUE>>b<<RESET>>")
+        table_renderer.add_row("<<RED>>aaa<<RESET>>", "<<BLUE>>b<<RESET>>")
+        result = table_renderer.render(print_lines=False)
 
         assert result == [
             "    redareset    bluebreset",
@@ -116,8 +123,8 @@ class TestRowRenderingCases:
         )
 
     def test__coloring_can_be_added_to_multiple_items_with_indentation(
-        self, settings, row_renderer, mocker
-    ):
+        self, settings: Settings, table_renderer: TableRenderer, mocker: MockerFixture
+    ) -> None:
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
@@ -126,29 +133,29 @@ class TestRowRenderingCases:
         settings.indent = " " * 2
         settings.column_padding = " " * 1
 
-        row_renderer.add_row(
+        table_renderer.add_row(
             "<<BOLD>>[<<RED>>1<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>a<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        row_renderer.add_row(
+        table_renderer.add_row(
             "<<BOLD>>[<<RED>>2<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>aa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        row_renderer.add_row(
+        table_renderer.add_row(
             "<<BOLD>>[<<RED>>3<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>aaa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        result = row_renderer.render(
+        result = table_renderer.render(
             column_alignments=[
-                row_renderer.ALIGN__LEFT,
-                row_renderer.ALIGN__RIGHT,
-                row_renderer.ALIGN__LEFT,
+                table_renderer.ALIGN__LEFT,
+                table_renderer.ALIGN__RIGHT,
+                table_renderer.ALIGN__LEFT,
             ],
             indent=True,
-            return_lines=True,
+            print_lines=False,
         )
 
         assert result == [
@@ -168,8 +175,8 @@ class TestRowRenderingCases:
         )
 
     def test__coloring_can_be_added_to_multiple_items_without_indentation(
-        self, settings, row_renderer, mocker
-    ):
+        self, settings: Settings, table_renderer: TableRenderer, mocker: MockerFixture
+    ) -> None:
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColorAdapter._load_color_for_tag",
             wraps=lambda tag: tag.lower(),
@@ -178,29 +185,29 @@ class TestRowRenderingCases:
         settings.indent = " " * 2
         settings.column_padding = " " * 1
 
-        row_renderer.add_row(
+        table_renderer.add_row(
             "<<BOLD>>[<<RED>>1<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>a<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        row_renderer.add_row(
+        table_renderer.add_row(
             "<<BOLD>>[<<RED>>2<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>aa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        row_renderer.add_row(
+        table_renderer.add_row(
             "<<BOLD>>[<<RED>>3<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>aaa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        result = row_renderer.render(
+        result = table_renderer.render(
             column_alignments=[
-                row_renderer.ALIGN__LEFT,
-                row_renderer.ALIGN__RIGHT,
-                row_renderer.ALIGN__LEFT,
+                table_renderer.ALIGN__LEFT,
+                table_renderer.ALIGN__RIGHT,
+                table_renderer.ALIGN__LEFT,
             ],
             indent=False,
-            return_lines=True,
+            print_lines=False,
         )
 
         assert result == [
@@ -222,8 +229,8 @@ class TestRowRenderingCases:
 
 class TestRowRenderingPrintOutputCases:
     def test__coloring_can_be_added_to_multiple_items_without_indentation(
-        self, settings, row_renderer, mocker
-    ):
+        self, settings: Settings, table_renderer: TableRenderer, mocker: MockerFixture
+    ) -> None:
         mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColorAdapter._load_color_for_tag",
@@ -233,26 +240,26 @@ class TestRowRenderingPrintOutputCases:
         settings.indent = " " * 2
         settings.column_padding = " " * 1
 
-        row_renderer.add_row(
+        table_renderer.add_row(
             "<<BOLD>>[<<RED>>1<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>a<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        row_renderer.add_row(
+        table_renderer.add_row(
             "<<BOLD>>[<<RED>>2<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>aa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        row_renderer.add_row(
+        table_renderer.add_row(
             "<<BOLD>>[<<RED>>3<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>aaa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        row_renderer.render(
+        table_renderer.render(
             column_alignments=[
-                row_renderer.ALIGN__LEFT,
-                row_renderer.ALIGN__RIGHT,
-                row_renderer.ALIGN__LEFT,
+                table_renderer.ALIGN__LEFT,
+                table_renderer.ALIGN__RIGHT,
+                table_renderer.ALIGN__LEFT,
             ],
             indent=False,
         )
@@ -276,8 +283,8 @@ class TestRowRenderingPrintOutputCases:
         )
 
     def test__coloring_can_be_added_to_multiple_items_with_indentation(
-        self, settings, row_renderer, mocker
-    ):
+        self, settings: Settings, table_renderer: TableRenderer, mocker: MockerFixture
+    ) -> None:
         mock_print = mocker.patch("dotmodules.renderer.print")
         mock_load_color_for_tag = mocker.patch(
             "dotmodules.renderer.ColorAdapter._load_color_for_tag",
@@ -287,26 +294,26 @@ class TestRowRenderingPrintOutputCases:
         settings.indent = " " * 2
         settings.column_padding = " " * 1
 
-        row_renderer.add_row(
+        table_renderer.add_row(
             "<<BOLD>>[<<RED>>1<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>a<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        row_renderer.add_row(
+        table_renderer.add_row(
             "<<BOLD>>[<<RED>>2<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>aa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        row_renderer.add_row(
+        table_renderer.add_row(
             "<<BOLD>>[<<RED>>3<<RESET>><<BOLD>>]<<RESET>>",
             "<<YELLOW>>aaa<<RESET>>",
             "<<DIM>>b<<RESET>>",
         )
-        row_renderer.render(
+        table_renderer.render(
             column_alignments=[
-                row_renderer.ALIGN__LEFT,
-                row_renderer.ALIGN__RIGHT,
-                row_renderer.ALIGN__LEFT,
+                table_renderer.ALIGN__LEFT,
+                table_renderer.ALIGN__RIGHT,
+                table_renderer.ALIGN__LEFT,
             ],
             indent=True,
         )

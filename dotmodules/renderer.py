@@ -45,7 +45,7 @@ class ColorAdapter:
 
     COLOR_ADAPTER_SCRIPT_PATH = "utils/color_adapter.sh"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._cache: Dict[str, str] = {}
 
     def resolve_tag(self, tag: str) -> str:
@@ -67,7 +67,7 @@ class ColorAdapter:
 
     def _load_color_for_tag(self, tag: str) -> str:
         command = self._assemble_color_loading_command(tag=tag)
-        shell_result = ShellAdapter.execute(command=command)
+        shell_result = ShellAdapter.execute_and_capture(command=command)
         if shell_result.status_code == 0:
             return shell_result.stdout[0]
         else:
@@ -98,7 +98,7 @@ class Colors:
     # given string.
     tag_template = "<<{tag}>>"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._color_adapter = ColorAdapter()
 
     def decolor_string(self, string: str) -> str:
@@ -156,12 +156,12 @@ class TableRenderer:
     ALIGN__CENTER = "{{value:^{width}}}"
     ALIGN__RIGHT = "{{value:>{width}}}"
 
-    def __init__(self, settings: Settings, colors: Colors):
+    def __init__(self, settings: Settings, colors: Colors) -> None:
         self._settings = settings
         self._colors = colors
         self._row_buffer: List[List[str]] = []
 
-    def add_row(self, *cell_values: str):
+    def add_row(self, *cell_values: str) -> None:
         """
         Adding a row to the row cache to render them later on into a uniform
         table.
@@ -173,8 +173,8 @@ class TableRenderer:
         self,
         column_alignments: Optional[List[str]] = None,
         indent: bool = True,
-        return_lines: bool = False,
-    ):
+        print_lines: bool = True,
+    ) -> List[str]:
         """
         Rendering the registered rows, then freeing up the internal cache to be
         able to render a new table.
@@ -216,12 +216,11 @@ class TableRenderer:
         # Resetting the row buffer for the next table rendering.
         self._row_buffer = []
 
-        # Returning or printing out the lines.
-        if return_lines:
-            return output_lines
+        if print_lines:
+            for line in output_lines:
+                print(line)
 
-        for line in output_lines:
-            print(line)
+        return output_lines
 
     def _render_cell(self, cell: str, width: int, alignment_template: str) -> str:
         """
@@ -249,7 +248,7 @@ class TableRenderer:
         ANSI escape sequences.
         """
         if len(set([len(row) for row in buffer])) != 1:
-            raise RenderError("inconsistent column count")
+            raise RenderError(f"inconsistent column count in buffer: '{buffer}'")
 
         column_widths = [
             [self._colors.decolored_width(string=item) for item in row]
@@ -266,7 +265,7 @@ class PromptRenderer:
     too.
     """
 
-    def __init__(self, settings: Settings, colors: Colors):
+    def __init__(self, settings: Settings, colors: Colors) -> None:
         self._colors = colors
         self._settings = settings
 
@@ -300,7 +299,7 @@ class WrapRenderer:
        indentation mode is active.
     """
 
-    def __init__(self, settings: Settings, colors: Colors):
+    def __init__(self, settings: Settings, colors: Colors) -> None:
         self._colors = colors
         self._settings = settings
 
@@ -309,8 +308,8 @@ class WrapRenderer:
         string: str,
         indent: bool = True,
         wrap_limit: Optional[int] = None,
-        return_lines: bool = False,
-    ):
+        print_lines: bool = True,
+    ) -> List[str]:
         # Defaulting to the global text wrapping and indenting values if needed.
         if wrap_limit is None:
             wrap_limit = self._settings.text_wrap_limit
@@ -335,12 +334,11 @@ class WrapRenderer:
                     ]
                 output_lines += wrapped_lines
 
-        # Returning or printing out the lines.
-        if return_lines:
-            return output_lines
+        if print_lines:
+            for line in output_lines:
+                print(line)
 
-        for line in output_lines:
-            print(line)
+        return output_lines
 
     def _render_line(self, line: str, wrap_limit: int) -> List[str]:
         """
@@ -449,7 +447,7 @@ class HeaderRenderer:
     to it.
     """
 
-    def __init__(self, settings: Settings, colors: Colors):
+    def __init__(self, settings: Settings, colors: Colors) -> None:
         self._colors = colors
         self._settings = settings
 
@@ -476,7 +474,7 @@ class HeaderRenderer:
 
 
 class Renderer:
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self._colors = Colors()
         self._table_renderer = TableRenderer(settings=settings, colors=self._colors)
@@ -484,21 +482,21 @@ class Renderer:
         self._wrap_renderer = WrapRenderer(settings=settings, colors=self._colors)
         self._header_renderer = HeaderRenderer(settings=settings, colors=self._colors)
 
-    def empty_line(self):
+    def empty_line(self) -> None:
         print("")
 
     @property
-    def table(self):
+    def table(self) -> TableRenderer:
         return self._table_renderer
 
     @property
-    def prompt(self):
+    def prompt(self) -> PromptRenderer:
         return self._prompt_renderer
 
     @property
-    def wrap(self):
+    def wrap(self) -> WrapRenderer:
         return self._wrap_renderer
 
     @property
-    def header(self):
+    def header(self) -> HeaderRenderer:
         return self._header_renderer

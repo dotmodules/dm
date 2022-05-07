@@ -1,13 +1,13 @@
 from pathlib import Path
-from typing import List
+from typing import Callable, List
 
 import pytest
 
-from dotmodules.modules import HookItem, LinkItem, Module, Modules
+from dotmodules.modules import LinkItem, Module, Modules, ShellScriptHook
 
 
 @pytest.fixture
-def module_factory():
+def module_factory() -> Callable[..., List[Module]]:
     def factory(count: int) -> List[Module]:
         module_objetcs = []
         for index in range(1, count + 1):
@@ -27,12 +27,12 @@ def module_factory():
                     )
                 ],
                 hooks=[
-                    HookItem(
+                    ShellScriptHook(
                         name=f"HOOK_{index}",
                         path_to_script=f"/path/to/script_{index}",
                         priority=index,
                     ),
-                    HookItem(
+                    ShellScriptHook(
                         name="COMMON_HOOK",
                         path_to_script=f"/path/to/common_script_{index}",
                         priority=index,
@@ -47,7 +47,7 @@ def module_factory():
 
 
 @pytest.fixture
-def modules(module_factory):
+def modules(module_factory: Callable[..., List[Module]]) -> Modules:
     module_objects = module_factory(count=5)
     modules = Modules()
     modules.modules = module_objects
@@ -55,7 +55,7 @@ def modules(module_factory):
 
 
 class TestModuleAggregationCases:
-    def test__variables_can_be_aggregated(self, modules):
+    def test__variables_can_be_aggregated(self, modules: Modules) -> None:
         result = modules.variables
         expected = {
             "var_1": ["value_1"],
@@ -74,7 +74,7 @@ class TestModuleAggregationCases:
 
         assert result == expected
 
-    def test__hooks_can_be_aggregated(self, modules):
+    def test__hooks_can_be_aggregated(self, modules: Modules) -> None:
         result = modules.hooks
         expected = {
             "COMMON_HOOK": [

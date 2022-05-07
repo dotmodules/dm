@@ -8,7 +8,7 @@ from dotmodules.settings import Settings
 
 class ExitCommand(Command):
     @property
-    def match_pattern(self):
+    def match_pattern(self) -> str:
         return self._settings.hotkey_exit
 
     @property
@@ -22,9 +22,9 @@ class ExitCommand(Command):
         self,
         settings: Settings,
         modules: Modules,
-        abort_interpreter: Callable,
+        abort_interpreter: Callable[[], None],
         renderer: Renderer,
         commands: List[Command],
         parameters: Optional[List[str]] = None,
-    ):
+    ) -> None:
         abort_interpreter()

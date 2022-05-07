@@ -1,7 +1,7 @@
 from dotmodules.interpreter import CommandLineInterpreter
 
 
-def main():
+def main() -> None:
     interpreter = CommandLineInterpreter()
     interpreter.run()
 

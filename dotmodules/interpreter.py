@@ -13,7 +13,7 @@ class InterpreterFinished(Exception):
 
 
 class CommandLineInterpreter:
-    def __init__(self):
+    def __init__(self) -> None:
         self._settings = load_settings()
         self._commands = Commands(settings=self._settings)
         self._renderer = Renderer(settings=self._settings)
@@ -21,25 +21,29 @@ class CommandLineInterpreter:
             modules_root_path=self._settings.relative_modules_path,
             config_file_name=self._settings.config_file_name,
         )
+        self._delete_cache()
         self._populate_variables_cache(self._modules.variables)
 
-    def _populate_variables_cache(self, variables: Dict[str, List[str]]):
-        cache_directory = self._settings.variables_aggregation_directory
+    def _delete_cache(self) -> None:
+        cache_directory = self._settings.dm_cache_root
         shutil.rmtree(cache_directory, ignore_errors=True)
-        cache_directory.mkdir()
+
+    def _populate_variables_cache(self, variables: Dict[str, List[str]]) -> None:
+        variables_cache_directory = self._settings.dm_cache_variables
+        variables_cache_directory.mkdir(parents=True)
         for name, values in variables.items():
             if re.search(r"\s", name):
                 raise ValueError(
                     f"varibale name should not contain whitespace: '{name}'"
                 )
-            with open(cache_directory / name, "w+") as f:
+            with open(variables_cache_directory / name, "w+") as f:
                 for value in values:
                     f.write(f"{value}\n")
 
-    def _abort_interpreter(self):
+    def _abort_interpreter(self) -> None:
         raise InterpreterFinished()
 
-    def run(self):
+    def run(self) -> None:
         prompt = self._renderer.prompt.render(
             prompt_template=self._settings.prompt_template
         )
