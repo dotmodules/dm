@@ -151,12 +151,12 @@ dm__utils__repeat_character() {
 #   Returns the given hook's status.
 #==============================================================================
 _dm__utils__indent_line() {
-  line="$1"
-  posix_adapter__echo "${dm__config__indent}${line}"
+  ___line="$1"
+  posix_adapter__echo "${dm__config__indent}${___line}"
 }
 
 #==============================================================================
-# VARIABLES
+# PRETTY LOGGING
 #==============================================================================
 
 #==============================================================================
@@ -181,10 +181,10 @@ _dm__utils__indent_line() {
 #   0 - Other status is not expected.
 #==============================================================================
 dm__logger__header() {
-  header="HOOK ${BOLD}${dm__config__target_hook_name}${RESET} (${dm__config__target_hook_priority}) - ${dm__config__target_module_name}"
+  ___header="HOOK ${BOLD}${dm__config__target_hook_name}${RESET} (${dm__config__target_hook_priority}) - ${dm__config__target_module_name}"
 
   _dm__utils__indent_line "${DIM}╒$(dm__utils__repeat_character '═' $(("$DM__HEADER_LENGTH" - 1)))${RESET}"
-  _dm__utils__indent_line "│ ${header}"
+  _dm__utils__indent_line "${DIM}│${RESET} ${___header}"
   _dm__utils__indent_line "${DIM}╞════╤$(dm__utils__repeat_character '═' $(("$DM__HEADER_LENGTH" - 6)))${RESET}"
 }
 
@@ -237,8 +237,34 @@ dm__logger__prefix_lines() {
 #   0 - Other status is not expected.
 #==============================================================================
 dm__logger__task() {
-  message="$1"
-  _dm__utils__indent_line "${DIM}│${RESET}${BOLD}${GREEN} >> ${RESET}${DIM}│${RESET} ${message}"
+  ___message="$1"
+  _dm__utils__indent_line "${DIM}│${RESET}${BOLD}${GREEN} >> ${RESET}${DIM}│${RESET} ${___message}"
+}
+
+#==============================================================================
+# Prints out a log message without any eyecandy.
+#------------------------------------------------------------------------------
+# Globals:
+#   DIM
+#   CYAN
+#   RESET
+# Arguments:
+#   [1] message - The log message that should be printed.
+# STDIN:
+#   None
+#------------------------------------------------------------------------------
+# Output variables:
+#   None
+# STDOUT:
+#   Prints out the info message.
+# STDERR:
+#   None
+# Status:
+#   0 - Other status is not expected.
+#==============================================================================
+dm__logger__log() {
+  ___message="$1"
+  _dm__utils__indent_line "${DIM}│${RESET}    ${DIM}│${RESET} ${___message}"
 }
 
 #==============================================================================
@@ -263,8 +289,8 @@ dm__logger__task() {
 #   0 - Other status is not expected.
 #==============================================================================
 dm__logger__info() {
-  message="$1"
-  _dm__utils__indent_line "${DIM}│${RESET}${BOLD}${CYAN} .. ${RESET}${DIM}│${RESET} ${message}"
+  ___message="$1"
+  _dm__utils__indent_line "${DIM}│${RESET}${BOLD}${CYAN} .. ${RESET}${DIM}│${RESET} ${___message}"
 }
 
 #==============================================================================
@@ -289,8 +315,8 @@ dm__logger__info() {
 #   0 - Other status is not expected.
 #==============================================================================
 dm__logger__success() {
-  message="$1"
-  _dm__utils__indent_line "${DIM}│${RESET}${BOLD}${GREEN} ok ${RESET}${DIM}│${RESET} ${message}"
+  ___message="$1"
+  _dm__utils__indent_line "${DIM}│${RESET}${BOLD}${GREEN} ok ${RESET}${DIM}│${RESET} ${___message}"
 }
 
 #==============================================================================
@@ -315,8 +341,8 @@ dm__logger__success() {
 #   0 - Other status is not expected.
 #==============================================================================
 dm__logger__warning() {
-  message="$1"
-  _dm__utils__indent_line "${DIM}│${RESET}${BOLD}${YELLOW} !! ${RESET}${DIM}│${RESET} ${message}"
+  ___message="$1"
+  _dm__utils__indent_line "${DIM}│${RESET}${BOLD}${YELLOW} !! ${RESET}${DIM}│${RESET} ${___message}"
 }
 
 #==============================================================================
@@ -341,8 +367,8 @@ dm__logger__warning() {
 #   0 - Other status is not expected.
 #==============================================================================
 dm__logger__error() {
-  message="$1"
-  _dm__utils__indent_line "${DIM}│${RESET}${BOLD}${RED} !! ${RESET}${DIM}│${RESET} ${message}"
+  ___message="$1"
+  _dm__utils__indent_line "${DIM}│${RESET}${BOLD}${RED} !! ${RESET}${DIM}│${RESET} ${___message}"
 }
 
 #==============================================================================
@@ -359,7 +385,7 @@ dm__logger__error() {
 #   None
 #------------------------------------------------------------------------------
 # Output variables:
-#   dm_response - The response the user typed into the question
+#   dm_user_response - The response the user typed into the question
 # STDOUT:
 #   Prints out the prompt.
 # STDERR:
@@ -368,10 +394,10 @@ dm__logger__error() {
 #   0 - Other status is not expected.
 #==============================================================================
 dm__logger__user_input() {
-  prompt="$1"
-  posix_adapter__printf "${dm__config__indent}${DIM}│${RESET}${BOLD}${MAGENTA} ?? ${RESET}${DIM}│${RESET} ${prompt} "
+  ___prompt="$1"
+  posix_adapter__printf "${dm__config__indent}${DIM}│${RESET}${BOLD}${MAGENTA} ?? ${RESET}${DIM}│${RESET} ${___prompt} "
   # shellcheck disable=SC2034
-  read -r dm_response
+  read -r dm_user_response
 }
 
 #==============================================================================
@@ -397,6 +423,31 @@ dm__logger__user_input() {
 #==============================================================================
 dm__logger__separator() {
   _dm__utils__indent_line "${DIM}├────┼$(dm__utils__repeat_character '─' $(("$DM__HEADER_LENGTH" - 6)))${RESET}"
+}
+
+#==============================================================================
+# Prints out a double separator.
+#------------------------------------------------------------------------------
+# Globals:
+#   DIM
+#   RESET
+#   DM__HEADER_LENGTH
+# Arguments:
+#   None
+# STDIN:
+#   None
+#------------------------------------------------------------------------------
+# Output variables:
+#   None
+# STDOUT:
+#   Prints out a separator.
+# STDERR:
+#   None
+# Status:
+#   0 - Other status is not expected.
+#==============================================================================
+dm__logger__double_separator() {
+  _dm__utils__indent_line "${DIM}╞════╪$(dm__utils__repeat_character '═' $(("$DM__HEADER_LENGTH" - 6)))${RESET}"
 }
 
 #==============================================================================
@@ -483,12 +534,13 @@ dm__execute_with_privilege() {
   dm__logger__warning "${YELLOW}About to run command with elevated privilege:${RESET}"
   dm__logger__warning "${BOLD}${YELLOW}${HIGHLIGHT}${*}${RESET}"
   posix_adapter__printf "${dm__config__indent}${DIM}│${RESET}${BOLD}${YELLOW} ?? ${RESET}${DIM}│${RESET} ${YELLOW}Do you want to continue? ${BOLD}[y/N] ${RESET}"
-  read -r response
-  if [ 'y' = "$response" ]
+  read -r ___response
+  if [ 'y' = "$___response" ]
   then
+    # Removing existing timestamp if there is any.
+    sudo --reset-timestamp
     sudo \
       --preserve-env \
-      --shell \
       --prompt="${dm__config__indent}${DIM}│${RESET}${BOLD}${YELLOW} >> ${RESET}${DIM}│${RESET} ${BOLD}${YELLOW}[sudo] password for ${USER}${RESET}: " \
       "$@" | dm__logger__prefix_lines
     sudo --reset-timestamp
@@ -505,7 +557,8 @@ dm__execute_with_privilege() {
 #==============================================================================
 
 # The dotmodules system collects the registered variables from every modules and
-# provides an interface to get those variables in a global level.
+# provides an interface to get those variables in an aggregated way written into
+# cache files.
 
 #==============================================================================
 # Function that return the given variable's registered values.
@@ -528,12 +581,247 @@ dm__execute_with_privilege() {
 #   1 - Variable cannot be found.
 #==============================================================================
 dm__get_variable() {
-  variable_name="$1"
-  target_file="${dm__config__dm_cache_variables}/${variable_name}"
+  ___variable_name="$1"
+  target_file="${dm__config__dm_cache_variables}/${___variable_name}"
   if [ ! -f "$target_file" ]
   then
-    dm__logger__error "Invalid variable '${variable_name}'!"
+    dm__logger__error "Invalid variable '${___variable_name}'!"
     exit 1
   fi
   posix_adapter__cat "$target_file"
+}
+
+#==============================================================================
+# LINK MANAGEMENT
+#==============================================================================
+
+#==============================================================================
+# Function that attempts to create a symlink in the targeted path for the given
+# file.
+#------------------------------------------------------------------------------
+# Globals:
+#   None
+# Arguments:
+#   [1] path_to_file - Absolute path to the linkable file.
+#   [2] path_to_symlink - Absolute path to the creatable symlink.
+# STDIN:
+#   None
+#------------------------------------------------------------------------------
+# Output variables:
+#   None
+# STDOUT:
+#   Displays the inner workings via the logger interface.
+# STDERR:
+#   None
+# Status:
+#   0 - Other status is not expected.
+#==============================================================================
+dm__create_symlink() {
+  ___path_to_file="$1"
+  ___path_to_symlink="$2"
+
+  dm__logger__task "${BOLD}Linking symlink..${RESET}"
+  dm__logger__log "Path to file:    ${UNDERLINE}${___path_to_file}${RESET}"
+  dm__logger__log "Path to symlink: ${UNDERLINE}${___path_to_symlink}${RESET}"
+
+  if [ -L "$___path_to_symlink" ]
+  then
+    ___existing_target="$(readlink -f "$___path_to_symlink")"
+    if [ "$___path_to_file" = "$___existing_target" ]
+    then
+      dm__logger__success "${BOLD}Required symlink already exists. Nothing to do.${RESET}"
+      return 0
+    fi
+    dm__logger__separator
+    dm__logger__warning "${BOLD}${YELLOW}Symlink already exists with a different target!${RESET}"
+    dm__logger__log "${YELLOW}Existing target: ${UNDERLINE}${___existing_target}${RESET}"
+    dm__logger__log "${YELLOW}You have several options to resolve the situation:${RESET}"
+    dm__logger__log " ${YELLOW}- ${BOLD}[o]${RESET} ${YELLOW}override${RESET}"
+    dm__logger__log " ${YELLOW}- ${BOLD}[b]${RESET} ${YELLOW}backup${RESET}"
+    dm__logger__log " ${YELLOW}- ${BOLD}[s]${RESET} ${YELLOW}skip${RESET}"
+
+    while :
+    do
+      dm__logger__user_input "${YELLOW}What do you want to do? ${BOLD}[o|b|s]${RESET}"
+      case "$dm_user_response" in
+        o)
+          # Removing the existing symlink to be able to create the new one.
+          _dm__symlink__delete_symlink "$___path_to_symlink"
+          dm__logger__separator
+          break
+          ;;
+        b)
+          # Backing up the existing symlink.
+          _dm__symlink__backup_symlink "$___path_to_symlink"
+          dm__logger__separator
+          break
+          ;;
+        s)
+          # Skipping the linking of the current symlink.
+          dm__logger__separator
+          dm__logger__success "${BOLD}Skipped linking for the current target link${RESET}"
+          return 0
+          ;;
+        *)
+          ;;
+      esac
+    done
+  else
+    _dm__symlink__create_link_parent_directory "$___path_to_symlink"
+  fi
+
+  _dm__symlink__create_symlink "$___path_to_file" "$___path_to_symlink"
+
+  dm__logger__success "${BOLD}Symlink created${RESET}"
+}
+
+#==============================================================================
+# Makes sure that the parent directories are present for the passed symlink
+# path. It will ask for elevated privileges if needed.
+#------------------------------------------------------------------------------
+# Globals:
+#   None
+# Arguments:
+#   [1] path_to_symlink - Absolute path to the creatable symlink.
+# STDIN:
+#   None
+#------------------------------------------------------------------------------
+# Output variables:
+#   None
+# STDOUT:
+#   Asks for elevated privileges if needed.
+# STDERR:
+#   None
+# Status:
+#   0 - Other status is not expected.
+#==============================================================================
+_dm__symlink__create_link_parent_directory() {
+  ___path_to_symlink="$1"
+  ___symlink_dir="$(posix_adapter__dirname "$___path_to_symlink")"
+
+  dm__logger__info "Creating the parent directory of the symlink.."
+
+  if [ -d "$___symlink_dir" ]
+  then
+    dm__logger__log "Directory already exists"
+    return 0
+  fi
+  if [ -w "$___symlink_dir" ]
+  then
+    mkdir --parent "$___symlink_dir"
+  else
+    dm__logger__warning "You don't have sufficient enough privileges to prepare the symlink's directory.."
+    dm__execute_with_privilege mkdir --parent "$___symlink_dir"
+  fi
+
+  dm__logger__log "Symlink parent directory created"
+}
+
+#==============================================================================
+# Creates a backup for the given symlink by moving it to another file. It will
+# ask for elevated privileges if needed.
+#------------------------------------------------------------------------------
+# Globals:
+#   None
+# Arguments:
+#   [1] path_to_symlink - Absolute path to the backupable symlink.
+# STDIN:
+#   None
+#------------------------------------------------------------------------------
+# Output variables:
+#   None
+# STDOUT:
+#   Asks for elevated privileges if needed.
+# STDERR:
+#   None
+# Status:
+#   0 - Other status is not expected.
+#==============================================================================
+_dm__symlink__backup_symlink() {
+  ___path_to_symlink="$1"
+  ___path_to_backup_symlink="${___path_to_symlink}.backup_$(date +"%s")"
+
+  dm__logger__info "${YELLOW}Backing up the existing symlink..${RESET}"
+
+  if [ -w "$___path_to_backup_symlink" ]
+  then
+    mv "$___path_to_symlink" "$___path_to_backup_symlink"
+  else
+    dm__logger__warning "${YELLOW}You don't have sufficient enough privileges to backup the existing symlink..${RESET}"
+    dm__execute_with_privilege mv "$___path_to_symlink" "$___path_to_backup_symlink"
+  fi
+
+  dm__logger__log " ${YELLOW}Existing link backed up: ${UNDERLINE}${___path_to_backup_symlink}${RESET}"
+}
+
+#==============================================================================
+# Removes the existing symlink. It will ask for elevated privileges if needed.
+#------------------------------------------------------------------------------
+# Globals:
+#   None
+# Arguments:
+#   [1] path_to_symlink - Absolute path to the deletable symlink.
+# STDIN:
+#   None
+#------------------------------------------------------------------------------
+# Output variables:
+#   None
+# STDOUT:
+#   Asks for elevated privileges if needed.
+# STDERR:
+#   None
+# Status:
+#   0 - Other status is not expected.
+#==============================================================================
+_dm__symlink__delete_symlink() {
+  ___path_to_symlink="$1"
+  ___symlink_dir="$(posix_adapter__dirname "$___path_to_symlink")"
+
+  dm__logger__info "${YELLOW}Removing the existing symlink..${RESET}"
+
+  if [ -w "$___symlink_dir" ]
+  then
+    rm -f "$___path_to_symlink"
+  else
+    dm__logger__warning "${YELLOW}You don't have sufficient enough privileges to delete the existing symlink..${RESET}"
+    dm__execute_with_privilege rm -f "$___path_to_symlink"
+  fi
+
+  dm__logger__log "${YELLOW}Existing symlink removed${RESET}"
+}
+
+#==============================================================================
+# Creates the symlink for the given file path. It will ask for elevated
+# privileges if needed.
+#------------------------------------------------------------------------------
+# Globals:
+#   None
+# Arguments:
+#   [1] path_to_file - Absolute path to the linkable file.
+#   [2] path_to_symlink - Absolute path to the creatable symlink.
+# STDIN:
+#   None
+#------------------------------------------------------------------------------
+# Output variables:
+#   None
+# STDOUT:
+#   Asks for elevated privileges if needed.
+# STDERR:
+#   None
+# Status:
+#   0 - Other status is not expected.
+#==============================================================================
+_dm__symlink__create_symlink() {
+  ___path_to_file="$1"
+  ___path_to_symlink="$2"
+
+  dm__logger__info "Creating the symlink for the given target file.."
+
+  if [ -w "$___path_to_symlink" ]
+  then
+    ln -s "$___path_to_file" "$___path_to_symlink"
+  else
+    dm__logger__warning "You don't have sufficient enough privileges to create the symlink.."
+    dm__execute_with_privilege ln -s "$___path_to_file" "$___path_to_symlink"
+  fi
 }

@@ -50,13 +50,25 @@ shift
 
 dm__logger__header
 
+___first_item_processed='0'
+
 while [ $# -gt 0 ]
 do
+
   path_to_file="$1"
   path_to_symlink="$2"
   shift
   shift
-  echo "${path_to_file} - ${path_to_symlink}" | dm__logger__prefix_lines
+
+  if [ "$___first_item_processed" = '0' ]
+  then
+    ___first_item_processed='1'
+  else
+    dm__logger__double_separator
+  fi
+
+  dm__create_symlink "$path_to_file" "$path_to_symlink"
+
 done
 
 
