@@ -56,7 +56,7 @@ DEFAULT_MODULES_DIR='modules'
 MAKEFILE_TEMPLATE_PATH='templates/Makefile.template'
 MAKEFILE_NAME='Makefile'
 
-if posix_adapter__tput__is_available
+if posix_adapter__tput --is-available
 then
   RED=$(posix_adapter__tput setaf 1)
   RED_BG=$(posix_adapter__tput setab 1)
@@ -197,17 +197,17 @@ done
 # ENTRY POINT
 #==============================================================================
 
-posix_adapter__echo ''
-posix_adapter__echo "  ${BOLD}DOTMODULES INSTALLER SCRIPT${RESET}"
-posix_adapter__echo ''
+echo ''
+echo "  ${BOLD}DOTMODULES INSTALLER SCRIPT${RESET}"
+echo ''
 
 relative_modules_path="$(calculate_relative_path_for "${DM_REPO_ROOT}" "$(pwd)/${MODULES_DIR}")"
 relative_dm_repo_root_path="$(calculate_relative_path_for "$(pwd)" "${DM_REPO_ROOT}")"
 
-posix_adapter__echo "    Current working directory: ${BLUE}$(pwd)${RESET}"
-posix_adapter__echo "    Dotmodules repository root: ${BLUE}${DM_REPO_ROOT}${RESET}"
-posix_adapter__echo "    Modules directory path: ${BLUE}$(pwd)/${MODULES_DIR}${RESET}"
-posix_adapter__echo "    Calculated relative modules directory path: ${GREEN}${relative_modules_path}${RESET}"
+echo "    Current working directory: ${BLUE}$(pwd)${RESET}"
+echo "    Dotmodules repository root: ${BLUE}${DM_REPO_ROOT}${RESET}"
+echo "    Modules directory path: ${BLUE}$(pwd)/${MODULES_DIR}${RESET}"
+echo "    Calculated relative modules directory path: ${GREEN}${relative_modules_path}${RESET}"
 
 # Substitute calculated variables to the Makefile template and place it to the
 # invocation's directory.
@@ -219,5 +219,5 @@ posix_adapter__sed \
   --expression "s#__RELATIVE_MODULES_PATH__#${relative_modules_path}#" \
   "${MAKEFILE_NAME}"
 
-posix_adapter__echo ''
-posix_adapter__echo "    ${BOLD}Makefile template generated.${RESET}"
+echo ''
+echo "    ${BOLD}Makefile template generated.${RESET}"

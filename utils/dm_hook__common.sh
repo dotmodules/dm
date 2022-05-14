@@ -63,7 +63,7 @@ shift
 # COLOR HANDLING
 #==============================================================================
 
-if posix_adapter__tput__is_available
+if posix_adapter__tput --is-available
 then
   RED="$(posix_adapter__tput setaf 1)"
   GREEN="$(posix_adapter__tput setaf 2)"
@@ -122,11 +122,9 @@ DM__HEADER_LENGTH="$(
 dm__utils__repeat_character() {
   ___char="$1"
   ___count="$2"
-  posix_adapter__echo "$(
-    python -c 'import sys;print(sys.argv[1]*int(sys.argv[2]))' \
+  python -c 'import sys;print(sys.argv[1]*int(sys.argv[2]))' \
     "$___char" \
     "$___count" \
-  )"
 
 }
 
@@ -152,7 +150,7 @@ dm__utils__repeat_character() {
 #==============================================================================
 _dm__utils__indent_line() {
   ___line="$1"
-  posix_adapter__echo "${dm__config__indent}${___line}"
+  echo "${dm__config__indent}${___line}"
 }
 
 #==============================================================================
@@ -395,7 +393,7 @@ dm__logger__error() {
 #==============================================================================
 dm__logger__user_input() {
   ___prompt="$1"
-  posix_adapter__printf "${dm__config__indent}${DIM}│${RESET}${BOLD}${MAGENTA} ?? ${RESET}${DIM}│${RESET} ${___prompt} "
+  printf '%s' "${dm__config__indent}${DIM}│${RESET}${BOLD}${MAGENTA} ?? ${RESET}${DIM}│${RESET} ${___prompt} "
   # shellcheck disable=SC2034
   read -r dm_user_response
 }
@@ -533,7 +531,7 @@ dm__execute_with_privilege() {
   dm__logger__separator
   dm__logger__warning "${YELLOW}About to run command with elevated privilege:${RESET}"
   dm__logger__warning "${BOLD}${YELLOW}${HIGHLIGHT}${*}${RESET}"
-  posix_adapter__printf "${dm__config__indent}${DIM}│${RESET}${BOLD}${YELLOW} ?? ${RESET}${DIM}│${RESET} ${YELLOW}Do you want to continue? ${BOLD}[y/N] ${RESET}"
+  printf '%s' "${dm__config__indent}${DIM}│${RESET}${BOLD}${YELLOW} ?? ${RESET}${DIM}│${RESET} ${YELLOW}Do you want to continue? ${BOLD}[y/N] ${RESET}"
   read -r ___response
   if [ 'y' = "$___response" ]
   then
@@ -626,7 +624,7 @@ dm__create_symlink() {
 
   if [ -L "$___path_to_symlink" ]
   then
-    ___existing_target="$(readlink -f "$___path_to_symlink")"
+    ___existing_target="$(posix_adapter__readlink --canonicalize "$___path_to_symlink")"
     if [ "$___path_to_file" = "$___existing_target" ]
     then
       dm__logger__success "${BOLD}Required symlink already exists. Nothing to do.${RESET}"
@@ -707,12 +705,12 @@ _dm__symlink__create_parent_directory() {
     dm__logger__log "Directory already exists"
     return 0
   fi
-  if mkdir --parent "$___symlink_dir"
+  if posix_adapter__mkdir --parent "$___symlink_dir"
   then
     :
   else
     dm__logger__warning "You don't have sufficient enough privileges to prepare the symlink's directory.."
-    dm__execute_with_privilege mkdir --parent "$___symlink_dir"
+    dm__execute_with_privilege posix_adapter__mkdir --parent "$___symlink_dir"
   fi
 
   dm__logger__log "Symlink parent directory created"
@@ -782,10 +780,10 @@ _dm__symlink__delete_symlink() {
 
   if [ -w "$___symlink_dir" ]
   then
-    rm -f "$___path_to_symlink"
+    posix_adapter__rm --force "$___path_to_symlink"
   else
     dm__logger__warning "${YELLOW}You don't have sufficient enough privileges to delete the existing symlink..${RESET}"
-    dm__execute_with_privilege rm -f "$___path_to_symlink"
+    dm__execute_with_privilege posix_adapter__rm --force "$___path_to_symlink"
   fi
 }
 
@@ -819,10 +817,10 @@ _dm__symlink__create_symlink() {
 
   if [ -w "$___symlink_dir" ]
   then
-    ln -s "$___path_to_file" "$___path_to_symlink"
+    posix_adapter__ln --symbolic --path-to-file "$___path_to_file" --path-to-link "$___path_to_symlink"
   else
     dm__logger__warning "You don't have sufficient enough privileges to create the symlink.."
-    dm__execute_with_privilege ln -s "$___path_to_file" "$___path_to_symlink"
+    dm__execute_with_privilege posix_adapter__ln --symbolic --path-to-file "$___path_to_file" --path-to-link "$___path_to_symlink"
   fi
 }
 

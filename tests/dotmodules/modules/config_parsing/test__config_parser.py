@@ -7,6 +7,7 @@ from pytest_mock.plugin import MockerFixture
 from dotmodules.modules import (
     ConfigError,
     ConfigParser,
+    LinkCleanUpHook,
     LinkDeploymentHook,
     Module,
     Modules,
@@ -561,8 +562,8 @@ class TestEndToEndModuleLoadingCases:
         assert link.path_to_file == "path_to_file_2"
         assert link.path_to_symlink == "path_to_symlink_2"
 
-        assert len(module.hooks) == 2
-        assert set([ShellScriptHook, LinkDeploymentHook]) == set(
+        assert len(module.hooks) == 3
+        assert set([ShellScriptHook, LinkDeploymentHook, LinkCleanUpHook]) == set(
             [hook.__class__ for hook in module.hooks]
         )
 
@@ -587,6 +588,17 @@ class TestEndToEndModuleLoadingCases:
         assert hook.get_module_name() == "module_2"
         assert hook.links == module.links
 
+        link_deployment_hooks = [
+            hook for hook in module.hooks if hook.__class__ == LinkCleanUpHook
+        ]
+        assert len(link_deployment_hooks) == 1
+        hook = cast(LinkDeploymentHook, link_deployment_hooks[0])
+        assert hook.get_name() == "CLEAN_UP_LINKS"
+        assert hook.get_priority() == 0
+        assert hook.get_details() == "Clean up 1 link"
+        assert hook.get_module_name() == "module_2"
+        assert hook.links == module.links
+
         # =====================================================================
         # MODULE 2
         module = modules.modules[1]
@@ -604,8 +616,8 @@ class TestEndToEndModuleLoadingCases:
         assert link.path_to_file == "path_to_file_3"
         assert link.path_to_symlink == "path_to_symlink_3"
 
-        assert len(module.hooks) == 2
-        assert set([ShellScriptHook, LinkDeploymentHook]) == set(
+        assert len(module.hooks) == 3
+        assert set([ShellScriptHook, LinkDeploymentHook, LinkCleanUpHook]) == set(
             [hook.__class__ for hook in module.hooks]
         )
 
@@ -630,6 +642,17 @@ class TestEndToEndModuleLoadingCases:
         assert hook.get_module_name() == "module_3"
         assert hook.links == module.links
 
+        link_deployment_hooks = [
+            hook for hook in module.hooks if hook.__class__ == LinkCleanUpHook
+        ]
+        assert len(link_deployment_hooks) == 1
+        hook = cast(LinkDeploymentHook, link_deployment_hooks[0])
+        assert hook.get_name() == "CLEAN_UP_LINKS"
+        assert hook.get_priority() == 0
+        assert hook.get_details() == "Clean up 1 link"
+        assert hook.get_module_name() == "module_3"
+        assert hook.links == module.links
+
         # =====================================================================
         module = modules.modules[2]
         assert isinstance(module, Module)
@@ -646,8 +669,8 @@ class TestEndToEndModuleLoadingCases:
         assert link.path_to_file == "path_to_file_1"
         assert link.path_to_symlink == "path_to_symlink_1"
 
-        assert len(module.hooks) == 2
-        assert set([ShellScriptHook, LinkDeploymentHook]) == set(
+        assert len(module.hooks) == 3
+        assert set([ShellScriptHook, LinkDeploymentHook, LinkCleanUpHook]) == set(
             [hook.__class__ for hook in module.hooks]
         )
 
@@ -669,6 +692,17 @@ class TestEndToEndModuleLoadingCases:
         assert hook.get_name() == "DEPLOY_LINKS"
         assert hook.get_priority() == 0
         assert hook.get_details() == "Deploy 1 link"
+        assert hook.get_module_name() == "module_1"
+        assert hook.links == module.links
+
+        link_deployment_hooks = [
+            hook for hook in module.hooks if hook.__class__ == LinkCleanUpHook
+        ]
+        assert len(link_deployment_hooks) == 1
+        hook = cast(LinkDeploymentHook, link_deployment_hooks[0])
+        assert hook.get_name() == "CLEAN_UP_LINKS"
+        assert hook.get_priority() == 0
+        assert hook.get_details() == "Clean up 1 link"
         assert hook.get_module_name() == "module_1"
         assert hook.links == module.links
 

@@ -27,9 +27,9 @@ set -u  # prevent unset variable expansion
 # COLOR AND FORMATTING
 #==============================================================================
 
-if posix_adapter__tput__is_available
+if posix_adapter__tput --is-available
 then
   posix_adapter__tput "$@"
 else
-  posix_adapter__echo ''
+  echo ''
 fi

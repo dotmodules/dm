@@ -22,7 +22,7 @@ CLI__TEXT_WRAP_LIMIT := 90
 CLI__INDENT := 2
 
 # Indentation size in the interpreter as number of spaces.
-CLI__COLUMN_PADDING := 1
+CLI__COLUMN_PADDING := 2
 
 # Prompt template that can be constructed from the following variables:
 #   <<INDENT>>  - Indentation block you previously defined.
@@ -38,7 +38,7 @@ CLI__COLUMN_PADDING := 1
 #   <<CYAN>>    - Format the text after it as cyan.
 # Note that Makefile specific characters line dollar signs and hashmarks needs
 # to be escaped in order to be assigned properly.
-CLI__PROMPT_TEMPLATE := <<BOLD>>dm<<RESET>><<SPACE>>\#<<SPACE>>
+CLI__PROMPT_TEMPLATE := <<SPACE>><<BOLD>>dm<<RESET>><<SPACE>>\#<<SPACE>>
 
 # Hotkey definitions for the cli as a pipe separated list.
 CLI__HOTKEYS__EXIT      := q|quit|exit
