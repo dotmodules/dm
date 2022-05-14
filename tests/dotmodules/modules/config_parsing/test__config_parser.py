@@ -245,31 +245,26 @@ class TestVariablesParsing:
 
 
 class TestLinksParsing:
-    @pytest.fixture
-    def module_root(self) -> Path:
-        # Dummy module file path just to pass it but won't be used.
-        return Path(__file__).parent
-
-    def test__missing_key_should_be_converted_to_list(self, module_root: Path) -> None:
+    def test__missing_key_should_be_converted_to_list(self) -> None:
         dummy_data: RawCommonConfigDataType = {}
-        result = ConfigParser.parse_links(data=dummy_data, module_root=module_root)
+        result = ConfigParser.parse_links(data=dummy_data)
         assert result == []
 
-    def test__none_value_should_be_left_as_is(self, module_root: Path) -> None:
+    def test__none_value_should_be_left_as_is(self) -> None:
         dummy_data: RawCommonConfigDataType = {
             "links": None,
         }
-        result = ConfigParser.parse_links(data=dummy_data, module_root=module_root)
+        result = ConfigParser.parse_links(data=dummy_data)
         assert result == []
 
-    def test__empty_value_should_be_left_as_is(self, module_root: Path) -> None:
+    def test__empty_value_should_be_left_as_is(self) -> None:
         dummy_data: RawCommonConfigDataType = {
             "links": [],
         }
-        result = ConfigParser.parse_links(data=dummy_data, module_root=module_root)
+        result = ConfigParser.parse_links(data=dummy_data)
         assert result == []
 
-    def test__valid_link_can_be_parsed(self, module_root: Path) -> None:
+    def test__valid_link_can_be_parsed(self) -> None:
         dummy_data: RawCommonConfigDataType = {
             "links": [
                 {
@@ -279,14 +274,14 @@ class TestLinksParsing:
                 },
             ],
         }
-        result = ConfigParser.parse_links(data=dummy_data, module_root=module_root)
+        result = ConfigParser.parse_links(data=dummy_data)
         assert len(result) == 1
         link = result[0]
         assert link.path_to_file == "my_path_to_file"
         assert link.path_to_symlink == "my_path_to_symlink"
         assert link.name == "my_name"
 
-    def test__name_is_optional(self, module_root: Path) -> None:
+    def test__name_is_optional(self) -> None:
         dummy_data: RawCommonConfigDataType = {
             "links": [
                 {
@@ -295,14 +290,14 @@ class TestLinksParsing:
                 },
             ],
         }
-        result = ConfigParser.parse_links(data=dummy_data, module_root=module_root)
+        result = ConfigParser.parse_links(data=dummy_data)
         assert len(result) == 1
         link = result[0]
         assert link.path_to_file == "my_path_to_file"
         assert link.path_to_symlink == "my_path_to_symlink"
         assert link.name == "link"
 
-    def test__invalid_data__error_should_be_raised(self, module_root: Path) -> None:
+    def test__invalid_data__error_should_be_raised(self) -> None:
         dummy_data: RawCommonConfigDataType = {
             "links": [
                 {
@@ -311,7 +306,7 @@ class TestLinksParsing:
             ],
         }
         with pytest.raises(SyntaxError) as exception_info:
-            ConfigParser.parse_links(data=dummy_data, module_root=module_root)
+            ConfigParser.parse_links(data=dummy_data)
         expected_section_1 = (
             "unexpected error happened while processing 'links' item at index '1':"
         )
@@ -321,37 +316,26 @@ class TestLinksParsing:
 
 
 class TestHooksParsing:
-    @pytest.fixture
-    def module_root(self) -> Path:
-        # Dummy module file path just to pass it but won't be used.
-        return Path(__file__).parent
-
-    def test__missing_key_should_be_converted_to_list(self, module_root: Path) -> None:
+    def test__missing_key_should_be_converted_to_list(self) -> None:
         dummy_data: RawCommonConfigDataType = {}
-        result = ConfigParser.parse_hooks(
-            data=dummy_data, module_root=module_root, module_name=""
-        )
+        result = ConfigParser.parse_hooks(data=dummy_data)
         assert result == []
 
-    def test__none_value_should_be_left_as_is(self, module_root: Path) -> None:
+    def test__none_value_should_be_left_as_is(self) -> None:
         dummy_data: RawCommonConfigDataType = {
             "hooks": None,
         }
-        result = ConfigParser.parse_hooks(
-            data=dummy_data, module_root=module_root, module_name=""
-        )
+        result = ConfigParser.parse_hooks(data=dummy_data)
         assert result == []
 
-    def test__empty_value_should_be_left_as_is(self, module_root: Path) -> None:
+    def test__empty_value_should_be_left_as_is(self) -> None:
         dummy_data: RawCommonConfigDataType = {
             "hooks": [],
         }
-        result = ConfigParser.parse_hooks(
-            data=dummy_data, module_root=module_root, module_name=""
-        )
+        result = ConfigParser.parse_hooks(data=dummy_data)
         assert result == []
 
-    def test__valid_hook_can_be_parsed(self, module_root: Path) -> None:
+    def test__valid_hook_can_be_parsed(self) -> None:
         dummy_data: RawCommonConfigDataType = {
             "hooks": [
                 {
@@ -361,16 +345,14 @@ class TestHooksParsing:
                 },
             ],
         }
-        result = ConfigParser.parse_hooks(
-            data=dummy_data, module_root=module_root, module_name=""
-        )
+        result = ConfigParser.parse_hooks(data=dummy_data)
         assert len(result) == 1
         hook = result[0]
         assert hook.path_to_script == "my_path_to_script"
         assert hook.name == "my_hook_name"
         assert hook.priority == 42
 
-    def test__priority_is_optional(self, module_root: Path) -> None:
+    def test__priority_is_optional(self) -> None:
         dummy_data: RawCommonConfigDataType = {
             "hooks": [
                 {
@@ -379,16 +361,14 @@ class TestHooksParsing:
                 },
             ],
         }
-        result = ConfigParser.parse_hooks(
-            data=dummy_data, module_root=module_root, module_name=""
-        )
+        result = ConfigParser.parse_hooks(data=dummy_data)
         assert len(result) == 1
         hook = result[0]
         assert hook.path_to_script == "my_path_to_script"
         assert hook.name == "my_hook_name"
         assert hook.priority == 0
 
-    def test__invalid_data__error_should_be_raised(self, module_root: Path) -> None:
+    def test__invalid_data__error_should_be_raised(self) -> None:
         dummy_data: RawCommonConfigDataType = {
             "hooks": [
                 {
@@ -397,9 +377,7 @@ class TestHooksParsing:
             ],
         }
         with pytest.raises(SyntaxError) as exception_info:
-            ConfigParser.parse_hooks(
-                data=dummy_data, module_root=module_root, module_name=""
-            )
+            ConfigParser.parse_hooks(data=dummy_data)
         expected_section_1 = (
             "unexpected error happened while processing 'hooks' item at index '1':"
         )

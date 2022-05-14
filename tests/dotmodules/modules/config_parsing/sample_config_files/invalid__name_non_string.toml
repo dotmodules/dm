@@ -1,5 +1,6 @@
 name = ["I am not a string"]
 version = "v1.2.3"
+enabled = true
 
 documentation = """
 line 1

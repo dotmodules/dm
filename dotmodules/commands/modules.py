@@ -2,7 +2,7 @@ import os
 from typing import Callable, List, Optional
 
 from dotmodules.commands import Command
-from dotmodules.modules import Module, Modules
+from dotmodules.modules import Module, Modules, ModuleStatus
 from dotmodules.renderer import Renderer
 from dotmodules.settings import Settings
 
@@ -33,7 +33,7 @@ class ModulesCommand(Command):
 
         if not parameters:
             renderer.wrap.render(
-                "<<DIM>>These are the modules available in your configuration. "
+                "<<DIM>><<CYAN>>These are the modules available in your configuration. "
                 "You can select a module by appending its index to the modules "
                 f"command like {settings.hotkey_modules} 42.<<RESET>>"
             )
@@ -42,11 +42,22 @@ class ModulesCommand(Command):
                 root = os.path.relpath(
                     module.root, settings.relative_modules_path.resolve()
                 )
+
+                match module.status:
+                    case ModuleStatus.DISABLED:
+                        status = "<<BOLD>><<RED>>disabled<<RESET>>"
+                    case ModuleStatus.PENDING:
+                        status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
+                    case ModuleStatus.DEPLOYED:
+                        status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
+                    case _:
+                        pass
+
                 renderer.table.add_row(
                     f"<<BOLD>><<BLUE>>[{str(index)}]<<RESET>>",
                     f"<<BOLD>>{module.name}<<RESET>>",
                     f"{str(module.version)}",
-                    "<<BOLD>><<GREEN>>deployed<<RESET>>",
+                    status,
                     f"<<UNDERLINE>>{str(root)}<<RESET>>",
                 )
             renderer.table.render()

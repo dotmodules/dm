@@ -1,6 +1,5 @@
-name = "name_1"
-version = ""
-enabled = true
+name = ""
+version = "v1.2.3"
 
 documentation = """
 line 1

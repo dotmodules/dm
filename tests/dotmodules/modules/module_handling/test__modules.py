@@ -14,31 +14,34 @@ def module_factory() -> Callable[..., List[Module]]:
             module = Module(
                 name=f"module_{index}",
                 version=f"v{index}",
+                enabled=True,
                 documentation=[f"doc_{index}"],
                 variables={
                     f"var_{index}": [f"value_{index}"],
                     "common": [f"common_{index}"],
                 },
-                links=[
-                    LinkItem(
-                        name=f"link_{index}",
-                        path_to_file=f"/path/to/file/{index}",
-                        path_to_symlink=f"/path/to/symlink/{index}",
-                    )
-                ],
-                hooks=[
-                    ShellScriptHook(
-                        name=f"HOOK_{index}",
-                        path_to_script=f"/path/to/script_{index}",
-                        priority=index,
-                    ),
-                    ShellScriptHook(
-                        name="COMMON_HOOK",
-                        path_to_script=f"/path/to/common_script_{index}",
-                        priority=index,
-                    ),
-                ],
                 root=Path(f"/module/root/{index}"),
+            )
+            module.add_link(
+                link=LinkItem(
+                    name=f"link_{index}",
+                    path_to_file=f"/path/to/file/{index}",
+                    path_to_symlink=f"/path/to/symlink/{index}",
+                )
+            )
+            module.add_hook(
+                hook=ShellScriptHook(
+                    name=f"HOOK_{index}",
+                    path_to_script=f"/path/to/script_{index}",
+                    priority=index,
+                )
+            )
+            module.add_hook(
+                hook=ShellScriptHook(
+                    name="COMMON_HOOK",
+                    path_to_script=f"/path/to/common_script_{index}",
+                    priority=index,
+                )
             )
             module_objetcs.append(module)
         return module_objetcs
@@ -67,6 +70,27 @@ class TestModuleAggregationCases:
                 "common_1",
                 "common_2",
                 "common_3",
+                "common_4",
+                "common_5",
+            ],
+        }
+
+        assert result == expected
+
+    def test__variables_gets_aggregated_only_for_enabled_modules(
+        self, modules: Modules
+    ) -> None:
+        # Disabling the 3rd module.
+        modules.modules[2].enabled = False
+        result = modules.variables
+        expected = {
+            "var_1": ["value_1"],
+            "var_2": ["value_2"],
+            "var_4": ["value_4"],
+            "var_5": ["value_5"],
+            "common": [
+                "common_1",
+                "common_2",
                 "common_4",
                 "common_5",
             ],

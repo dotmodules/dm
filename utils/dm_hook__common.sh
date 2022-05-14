@@ -542,7 +542,7 @@ dm__execute_with_privilege() {
     sudo \
       --preserve-env \
       --prompt="${dm__config__indent}${DIM}│${RESET}${BOLD}${YELLOW} >> ${RESET}${DIM}│${RESET} ${BOLD}${YELLOW}[sudo] password for ${USER}${RESET}: " \
-      "$@" | dm__logger__prefix_lines
+      "$@" 2>&1 | dm__logger__prefix_lines
     sudo --reset-timestamp
   else
     dm__logger__warning "${YELLOW}Aborted by user..${RESET}"
@@ -647,6 +647,7 @@ dm__create_symlink() {
         o)
           # Removing the existing symlink to be able to create the new one.
           _dm__symlink__delete_symlink "$___path_to_symlink"
+          dm__logger__log "${YELLOW}Existing symlink removed${RESET}"
           dm__logger__separator
           break
           ;;
@@ -667,7 +668,7 @@ dm__create_symlink() {
       esac
     done
   else
-    _dm__symlink__create_link_parent_directory "$___path_to_symlink"
+    _dm__symlink__create_parent_directory "$___path_to_symlink"
   fi
 
   _dm__symlink__create_symlink "$___path_to_file" "$___path_to_symlink"
@@ -695,7 +696,7 @@ dm__create_symlink() {
 # Status:
 #   0 - Other status is not expected.
 #==============================================================================
-_dm__symlink__create_link_parent_directory() {
+_dm__symlink__create_parent_directory() {
   ___path_to_symlink="$1"
   ___symlink_dir="$(posix_adapter__dirname "$___path_to_symlink")"
 
@@ -706,9 +707,9 @@ _dm__symlink__create_link_parent_directory() {
     dm__logger__log "Directory already exists"
     return 0
   fi
-  if [ -w "$___symlink_dir" ]
+  if mkdir --parent "$___symlink_dir"
   then
-    mkdir --parent "$___symlink_dir"
+    :
   else
     dm__logger__warning "You don't have sufficient enough privileges to prepare the symlink's directory.."
     dm__execute_with_privilege mkdir --parent "$___symlink_dir"
@@ -786,8 +787,6 @@ _dm__symlink__delete_symlink() {
     dm__logger__warning "${YELLOW}You don't have sufficient enough privileges to delete the existing symlink..${RESET}"
     dm__execute_with_privilege rm -f "$___path_to_symlink"
   fi
-
-  dm__logger__log "${YELLOW}Existing symlink removed${RESET}"
 }
 
 #==============================================================================
@@ -814,14 +813,58 @@ _dm__symlink__delete_symlink() {
 _dm__symlink__create_symlink() {
   ___path_to_file="$1"
   ___path_to_symlink="$2"
+  ___symlink_dir="$(posix_adapter__dirname "$___path_to_symlink")"
 
   dm__logger__info "Creating the symlink for the given target file.."
 
-  if [ -w "$___path_to_symlink" ]
+  if [ -w "$___symlink_dir" ]
   then
     ln -s "$___path_to_file" "$___path_to_symlink"
   else
     dm__logger__warning "You don't have sufficient enough privileges to create the symlink.."
     dm__execute_with_privilege ln -s "$___path_to_file" "$___path_to_symlink"
+  fi
+}
+
+#==============================================================================
+# Function that attempts to remove a symlink from a given path.
+#------------------------------------------------------------------------------
+# Globals:
+#   None
+# Arguments:
+#   [1] path_to_symlink - Absolute path to the creatable symlink.
+# STDIN:
+#   None
+#------------------------------------------------------------------------------
+# Output variables:
+#   None
+# STDOUT:
+#   Displays the inner workings via the logger interface.
+# STDERR:
+#   None
+# Status:
+#   0 - Other status is not expected.
+#==============================================================================
+dm__remove_symlink() {
+  ___path_to_symlink="$1"
+
+  dm__logger__task "${BOLD}Removing symlink..${RESET}"
+  dm__logger__log "Path to symlink: ${UNDERLINE}${___path_to_symlink}${RESET}"
+
+  if [ -L "$___path_to_symlink" ]
+  then
+    ___existing_target="$(readlink -f "$___path_to_symlink")"
+    dm__logger__log "${YELLOW}Existing target: ${UNDERLINE}${___existing_target}${RESET}"
+
+    dm__logger__user_input "${YELLOW}Are you sure you want to remove the link? ${BOLD}[y|N]${RESET}"
+    if [ "$dm_user_response" = 'y' ]
+    then
+      _dm__symlink__delete_symlink "$___path_to_symlink"
+      dm__logger__success "${BOLD}Symlink removed${RESET}"
+    else
+      dm__logger__success "${BOLD}Aborted by user${RESET}"
+    fi
+  else
+    dm__logger__success "${BOLD}Link was already removed${RESET}"
   fi
 }

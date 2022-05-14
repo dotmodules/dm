@@ -1,5 +1,6 @@
 name = "module_3"
 version = "version_3"
+enabled = true
 
 documentation = "docs_3"
 

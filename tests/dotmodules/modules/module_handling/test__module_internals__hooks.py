@@ -2,28 +2,36 @@ from pathlib import Path
 
 import pytest
 
-from dotmodules.modules import ShellScriptHook
+from dotmodules.modules import Module, ShellScriptHook
 
 
 @pytest.fixture
-def module_root() -> Path:
-    return Path(__file__).parent / "hook_testing_assets"
+def module() -> Module:
+    module = Module(
+        name="dummy_module",
+        version="dummy_version",
+        enabled=True,
+        documentation=[""],
+        variables={},
+        root=Path(__file__).parent / "hook_testing_assets",
+    )
+    return module
 
 
-class TestLinkPathToFilePreparing:
-    def test__full_path_to_file_can_be_resolved(self, module_root: Path) -> None:
+class TestShellScriptHookPathHandling:
+    def test__full_path_to_file_can_be_resolved(self, module: Module) -> None:
         hook = ShellScriptHook(
             path_to_script="./dummy_file.txt",
         )
-        hook.module_root = module_root
+        module.add_hook(hook=hook)
 
         assert hook.full_path_to_script
 
-    def test__non_existing__path_to_file__error(self, module_root: Path) -> None:
+    def test__non_existing__path_to_file__error(self, module: Module) -> None:
         hook = ShellScriptHook(
             path_to_script="./non_existent_file",
         )
-        hook.module_root = module_root
+        module.add_hook(hook=hook)
 
         with pytest.raises(ValueError) as e:
             hook.full_path_to_script
