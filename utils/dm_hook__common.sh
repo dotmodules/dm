@@ -705,7 +705,7 @@ _dm__symlink__create_parent_directory() {
     dm__logger__log "Directory already exists"
     return 0
   fi
-  if posix_adapter__mkdir --parent "$___symlink_dir"
+  if posix_adapter__mkdir --parents "$___symlink_dir"
   then
     :
   else

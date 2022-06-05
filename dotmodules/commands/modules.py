@@ -38,6 +38,12 @@ class ModulesCommand(Command):
                 f"command like {settings.hotkey_modules} 42.<<RESET>>"
             )
             renderer.empty_line()
+
+            if not modules.modules:
+                renderer.wrap.render("<<DIM>>You have no modules registered.<<RESET>>")
+                renderer.empty_line()
+                return
+
             for index, module in enumerate(modules.modules, start=1):
                 root = os.path.relpath(
                     module.root, settings.relative_modules_path.resolve()
@@ -50,6 +56,8 @@ class ModulesCommand(Command):
                         status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
                     case ModuleStatus.DEPLOYED:
                         status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
+                    case ModuleStatus.ERROR:
+                        status = "<<BOLD>><<RED>>error<<RESET>>"
                     case _:
                         pass
 
@@ -63,6 +71,12 @@ class ModulesCommand(Command):
             renderer.table.render()
 
         elif len(parameters) == 1:
+
+            if not modules.modules:
+                renderer.wrap.render("<<DIM>>You have no modules registered.<<RESET>>")
+                renderer.empty_line()
+                return
+
             index = int(parameters[0])
             module = modules.modules[index - 1]
 
@@ -73,6 +87,9 @@ class ModulesCommand(Command):
                 renderer=renderer, module=module, settings=settings
             )
             self._render_module_status(
+                renderer=renderer, module=module, settings=settings
+            )
+            self._render_module_errors(
                 renderer=renderer, module=module, settings=settings
             )
             self._render_module_documentation(
@@ -98,7 +115,11 @@ class ModulesCommand(Command):
             module = modules.modules[module_index]
             hook = module.hooks[hook_index]
 
-            hook_status_code = hook.execute(settings=self._settings)
+            hook_status_code = hook.execute(
+                module_root=module.root,
+                module_name=module.name,
+                settings=self._settings,
+            )
 
             if hook_status_code != 0:
                 raise ValueError("hook failed")
@@ -142,8 +163,19 @@ class ModulesCommand(Command):
         self, renderer: Renderer, module: Module, settings: Settings
     ) -> None:
         renderer.empty_line()
+        match module.status:
+            case ModuleStatus.DISABLED:
+                status = "<<BOLD>><<RED>>disabled<<RESET>>"
+            case ModuleStatus.PENDING:
+                status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
+            case ModuleStatus.DEPLOYED:
+                status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
+            case ModuleStatus.ERROR:
+                status = "<<BOLD>><<RED>>error<<RESET>>"
+            case _:
+                pass
         text = renderer.wrap.render(
-            string="<<BOLD>><<GREEN>>deployed<<RESET>>",
+            string=status,
             wrap_limit=settings.body_width,
             print_lines=False,
             indent=False,
@@ -154,6 +186,26 @@ class ModulesCommand(Command):
             lines=text,
             separator=settings.header_separator,
         )
+
+    def _render_module_errors(
+        self, renderer: Renderer, module: Module, settings: Settings
+    ) -> None:
+        if module.errors:
+            renderer.empty_line()
+            text = []
+            for error in module.errors:
+                text += renderer.wrap.render(
+                    string=f"<<BOLD>><<RED>>{error}<<RESET>>",
+                    wrap_limit=settings.body_width,
+                    print_lines=False,
+                    indent=False,
+                )
+            renderer.header.render(
+                header="<<DIM>>Errors<<RESET>>",
+                header_width=settings.header_width,
+                lines=text,
+                separator=settings.header_separator,
+            )
 
     def _render_module_documentation(
         self, renderer: Renderer, module: Module, settings: Settings
@@ -200,15 +252,17 @@ class ModulesCommand(Command):
         for link in module.links:
             link_color = "RED"
             target_color = "RED"
-            if link.present:
-                link_color = "GREEN"
-                if link.target_matched:
-                    target_color = "GREEN"
 
-            link_status = f"<<BOLD>><<{link_color}>>link<<RESET>>"
-            target_status = f"<<BOLD>><<{target_color}>>target<<RESET>>"
-
-            status = f"<<DIM>>[<<RESET>>{link_status}<<DIM>>|<<RESET>>{target_status}<<DIM>>]<<RESET>>"
+            try:
+                if link.present:
+                    link_color = "GREEN"
+                    if link.target_matched:
+                        target_color = "GREEN"
+                link_status = f"<<BOLD>><<{link_color}>>link<<RESET>>"
+                target_status = f"<<BOLD>><<{target_color}>>target<<RESET>>"
+                status = f"<<DIM>>[<<RESET>>{link_status}<<DIM>>|<<RESET>>{target_status}<<DIM>>]<<RESET>>"
+            except ValueError:
+                status = "<<DIM>>[<<RESET>>   <<BOLD>><<RED>>error<<RESET>>   <<DIM>>]<<RESET>>"
 
             renderer.table.add_row(
                 status,
@@ -253,14 +307,10 @@ class ModulesCommand(Command):
         renderer.empty_line()
 
         for index, hook in enumerate(module.hooks, start=1):
-            hook_name = hook.get_name()
-            hook_priority = hook.get_priority()
-            hook_details = hook.get_details()
-
             renderer.table.add_row(
                 f"<<BOLD>><<BLUE>>[{index}]<<RESET>>",
-                f"<<BOLD>>{hook_name}<<RESET>> ({hook_priority})",
-                f"<<UNDERLINE>>{hook_details}<<RESET>>",
+                f"<<BOLD>>{hook.hook_name}<<RESET>> ({hook.hook_priority})",
+                f"<<UNDERLINE>>{hook.hook_description}<<RESET>>",
             )
         text = renderer.table.render(print_lines=False, indent=False)
 

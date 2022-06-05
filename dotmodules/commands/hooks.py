@@ -29,6 +29,11 @@ class HooksCommand(Command):
     ) -> None:
         renderer.empty_line()
 
+        if not modules.modules:
+            renderer.wrap.render("<<DIM>>You have no modules registered.<<RESET>>")
+            renderer.empty_line()
+            return
+
         if not parameters:
             index = 1
             for name, hooks in modules.hooks.items():

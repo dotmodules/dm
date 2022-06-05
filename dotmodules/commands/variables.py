@@ -29,6 +29,11 @@ class VariablesCommand(Command):
     ) -> None:
         renderer.empty_line()
 
+        if not modules.modules:
+            renderer.wrap.render("<<DIM>>You have no modules registered.<<RESET>>")
+            renderer.empty_line()
+            return
+
         header_width = max([len(name) for name in modules.variables.keys()]) + len(
             settings.column_padding
         )
