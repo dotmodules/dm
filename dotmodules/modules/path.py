@@ -26,12 +26,17 @@ class PathManager:
         local_path = Path(local_path)
         return self.root_path / local_path
 
-    def resolve_absolute_path(self, absolute_path: str | Path) -> Path:
+    def resolve_absolute_path(
+        self, absolute_path: str | Path, resolve_symlinks: bool = False
+    ) -> Path:
         """
         Resolves an absolute path by replacing the optional '$HOME' literal into
         the users home directory. Partial paths will be assumed to originated
         from the current working directory and will be resolved as an absolute
         path.
+
+        By default it won't resolve symbolic links, but there is an option to do
+        that if it is necessary.
         """
         home_directory = str(Path.home())
         absolute_path = str(absolute_path)
@@ -41,7 +46,11 @@ class PathManager:
         absolute_path = absolute_path.replace(
             self.HOME_LITERAL__GUARDED, home_directory
         )
-        return Path(absolute_path).resolve()
+        if resolve_symlinks:
+            return Path(absolute_path).resolve()
+        else:
+            absolute_path = os.path.abspath(absolute_path)
+            return Path(absolute_path)
 
     def get_relative_path(self, from_path: str | Path, to_path: str | Path) -> Path:
         """

@@ -1,6 +1,8 @@
 from dataclasses import dataclass
-from pathlib import Path
 from typing import List
+
+from dotmodules.modules.errors import ErrorListProvider
+from dotmodules.modules.path import PathManager
 
 
 class LinkError(Exception):
@@ -8,52 +10,34 @@ class LinkError(Exception):
 
 
 @dataclass
-class LinkItem:
+class LinkItem(ErrorListProvider):
     path_to_file: str
     path_to_symlink: str
     name: str = "link"
 
-    @property
-    def full_path_to_symlink(self) -> Path:
-        """
-        The path to symlink should be an absolute path with the the option to
-        resolve the '$HOME' variable to the users home directory.
-        """
+    def check_if_link_exists(self, path_manager: PathManager) -> bool:
+        full_path_to_symlink = path_manager.resolve_absolute_path(self.path_to_symlink)
+        return full_path_to_symlink.is_symlink()
 
-    @property
-    def link_exists(self) -> bool:
-        return self.full_path_to_symlink.is_symlink()
-
-    @property
-    def target_matched(self) -> bool:
+    def check_if_target_matched(self, path_manager: PathManager) -> bool:
+        """
+        Checks if the given link exists and its target matches the given file.
+        """
+        full_path_to_file = path_manager.resolve_local_path(self.path_to_file)
+        full_path_to_symlink = path_manager.resolve_absolute_path(self.path_to_symlink)
         return (
-            self.link_exists
-            and self.full_path_to_symlink.resolve() == self.full_path_to_file
+            full_path_to_symlink.is_symlink()
+            and full_path_to_symlink.resolve() == full_path_to_file
         )
 
-    @property
-    def deployed(self) -> bool:
-        return self.link_exists and self.target_matched
-
-    def validate(self) -> List[str]:
+    # Abstract ErrorListProvider base class implementations.
+    def report_errors(self, path_manager: PathManager) -> List[str]:
         errors = []
-        try:
-            self.full_path_to_file
-        except ValueError as e:
-            errors.append(str(e))
-        try:
-            self.full_path_to_symlink
-        except ValueError as e:
-            errors.append(str(e))
+
+        full_path_to_file = path_manager.resolve_local_path(self.path_to_file)
+
+        if not full_path_to_file.is_file():
+            message = f"Link[{self.name}]: path_to_file '{self.path_to_file}' does not name a file!"
+            errors.append(message)
 
         return errors
-        # """
-        # The path to file should be relative to the module root directory.
-        # """
-
-        # full_path = self.module_root / self.path_to_file
-        # if not full_path.is_file():
-        #     raise LinkError(
-        #         f"Link[{self.name}]: path_to_file '{self.path_to_file}' does not name a file!"
-        #     )
-        # return full_path

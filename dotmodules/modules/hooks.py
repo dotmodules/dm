@@ -1,5 +1,5 @@
 import os
-from abc import ABC, abstractmethod, abstractproperty
+from abc import abstractmethod, abstractproperty
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -23,7 +23,7 @@ class HookAdapterScript(str, Enum):
     LINK_CLEAN_UP: str = "./utils/dm_hook__link_clean_up_adapter.sh"
 
 
-class Hook(ABC):
+class Hook(ErrorListProvider):
     """
     Abstract hook base class that defines the standard hook interface and
     implements the call to the hook adapter scripts.
@@ -69,9 +69,12 @@ class Hook(ABC):
         settings: Settings,
     ) -> List[str]:
         # Getting the absolute path to the selected hook adapter script. This
-        # value will be the 0th parameter for the shell adapter.
+        # value will be the 0th parameter for the shell adapter. We are
+        # resolving symlinks here to support the use case if the dm repository
+        # is in a symlinked path.
         absolute_hook_adapter_script = path_manager.resolve_absolute_path(
-            self.hook_adapter_script.value  # accessing the enum string value
+            self.hook_adapter_script.value,  # accessing the enum string value
+            resolve_symlinks=True,
         )
 
         # Calculating the relative path from the module's root to the dm
@@ -138,33 +141,14 @@ class Hook(ABC):
 
 
 @dataclass
-class ShellScriptHook(Hook, ErrorListProvider):
+class ShellScriptHook(Hook):
     """
     Specialized hook that can execute an external shell script.
     """
 
     path_to_script: str
-    name: str = "hook"
+    name: str
     priority: int = 0
-
-    # Abstract ErrorListProvider base class implementations.
-    def report_errors(self, path_manager: PathManager) -> List[str]:
-        return []
-        # errors = []
-        # try:
-        #     self.full_path_to_script
-        # except ValueError as e:
-        #     errors.append(str(e))
-        # return errors
-        """
-        The path to script should be relative to the module root directory.
-        """
-        full_path = self.module_root / self.path_to_script
-        if not full_path.is_file():
-            raise ValueError(
-                f"Hook[{self.name}]: path_to_script '{self.path_to_script}' does not name a file!"
-            )
-        return full_path
 
     # Abstract Hook base class implementations.
     @property
@@ -189,25 +173,30 @@ class ShellScriptHook(Hook, ErrorListProvider):
             str(path_manager.resolve_local_path(self.path_to_script)),
         ]
 
+    # Abstract ErrorListProvider base class implementations.
+    def report_errors(self, path_manager: PathManager) -> List[str]:
+        """
+        The path to script should be relative to the module root directory.
+        """
+        errors = []
+        full_path = path_manager.resolve_local_path(self.path_to_script)
+        if not full_path.is_file():
+            message = f"Hook[{self.name}]: path_to_script '{self.path_to_script}' does not name a file!"
+            errors.append(message)
+        return errors
+
 
 @dataclass
-class LinkDeploymentHook(Hook, ErrorListProvider):
+class LinkDeploymentHook(Hook):
     """
-    Hook that can deploy the given symlinks. This class is only responsible to
-    start the external shell script that will do the actual deployment.
+    Hook that can deploy the given symlinks. This class is only responsible for
+    starting the external shell script that will do the actual deployment.
     """
 
     # Constant values for this class.
     NAME = "DEPLOY_LINKS"
 
     links: List["LinkItem"]
-
-    # Abstract ErrorListProvider base class implementations.
-    def report_errors(self, path_manager: PathManager) -> List[str]:
-        """
-        This hook won't report any issue.
-        """
-        return []
 
     # Abstract Hook base class implementations.
     @property
@@ -216,6 +205,9 @@ class LinkDeploymentHook(Hook, ErrorListProvider):
 
     @property
     def hook_priority(self) -> int:
+        """
+        Link deployment hooks has the same priority.
+        """
         return 0
 
     @property
@@ -239,24 +231,24 @@ class LinkDeploymentHook(Hook, ErrorListProvider):
             args.append(str(path_manager.resolve_absolute_path(link.path_to_symlink)))
         return args
 
+    # Abstract ErrorListProvider base class implementations.
+    def report_errors(self, path_manager: PathManager) -> List[str]:
+        """
+        This hook won't report any errors.
+        """
+        return []
+
 
 @dataclass
-class LinkCleanUpHook(Hook, ErrorListProvider):
+class LinkCleanUpHook(Hook):
     """
-    Hook that can clean up the given symlinks. This class is only responsible to
-    start the external shell script that will do the actual clean up.
+    Hook that can clean up the given symlinks. This class is only responsible
+    for starting the external shell script that will do the actual clean up.
     """
 
     NAME = "CLEAN_UP_LINKS"
 
     links: List["LinkItem"]
-
-    # Abstract ErrorListProvider base class implementations.
-    def report_errors(self, path_manager: PathManager) -> List[str]:
-        """
-        This hook won't report any issue.
-        """
-        return []
 
     # Abstract Hook base class implementations.
     @property
@@ -265,6 +257,9 @@ class LinkCleanUpHook(Hook, ErrorListProvider):
 
     @property
     def hook_priority(self) -> int:
+        """
+        Link cleanup hooks has the same priority.
+        """
         return 0
 
     @property
@@ -285,3 +280,10 @@ class LinkCleanUpHook(Hook, ErrorListProvider):
             # 9..10..11.. - path_to_symlink
             args.append(str(path_manager.resolve_absolute_path(link.path_to_symlink)))
         return args
+
+    # Abstract ErrorListProvider base class implementations.
+    def report_errors(self, path_manager: PathManager) -> List[str]:
+        """
+        This hook won't report any errors.
+        """
+        return []

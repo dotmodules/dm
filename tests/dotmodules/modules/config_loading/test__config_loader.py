@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Any, Dict, List, cast
 
 import pytest
 from pytest_mock.plugin import MockerFixture
@@ -9,7 +8,7 @@ from dotmodules.modules.loader import ConfigLoader, LoaderError, TomlLoader
 
 class TestConfigLoaderInternals:
     def test__selecting_multiple_loaders_raises_error(
-        self, mocker: MockerFixture
+        self, mocker: MockerFixture, tmp_path: Path
     ) -> None:
         class DummyLoader1:
             @staticmethod
@@ -28,10 +27,13 @@ class TestConfigLoaderInternals:
             return_value=[DummyLoader1, DummyLoader2],
         )
 
-        with pytest.raises(LoaderError) as error_context:
-            ConfigLoader.get_loader_for_config_file(Path("dummy/path"))
+        dummy_config_path = tmp_path / "dummy.config"
+        dummy_config_path.touch()
 
-        expected = "Multiple loaders (DummyLoader1, DummyLoader2) were selected for path 'dummy/path'!"
+        with pytest.raises(LoaderError) as error_context:
+            ConfigLoader.get_loader_for_config_file(config_file_path=dummy_config_path)
+
+        expected = f"Multiple loaders (DummyLoader1, DummyLoader2) were selected for path '{dummy_config_path}'!"
         assert str(error_context.value) == expected
 
 
@@ -54,7 +56,7 @@ class TestTomlLoaderCases:
         with pytest.raises(LoaderError) as error_context:
             TomlLoader(config_file_path=config_file_path)
 
-        assert str(error_context.value).startswith("Configuration loading error: ")
+        assert str(error_context.value).startswith("Toml loading error: ")
 
 
 class TestConfigLoaderEndToEndCases:

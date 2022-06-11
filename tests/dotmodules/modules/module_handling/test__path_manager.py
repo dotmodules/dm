@@ -8,7 +8,7 @@ from dotmodules.modules.path import PathManager
 
 
 @pytest.fixture
-def path_manager(tmp_path) -> PathManager:
+def path_manager(tmp_path: Path) -> PathManager:
     return PathManager(root_path=tmp_path)
 
 
@@ -35,15 +35,77 @@ class TestLocalPathResolvingCases:
 
 
 class TestAbsolutePathResolvingCases:
-    def test__absolute_path_can_be_resolved_for_file_name(
+    def test__absolute_path_can_be_resolved_for_file_name__without_resolving_symlinks(
         self, path_manager: PathManager
     ) -> None:
         dummy_file = path_manager.root_path / "my_file"
+
         old_cwd = os.getcwd()
         os.chdir(path_manager.root_path)
+
         # Would be resolved as a file in the root path.
-        result = path_manager.resolve_absolute_path("./my_file")
+        result = path_manager.resolve_absolute_path("./my_file", resolve_symlinks=False)
+
+        # The result should be the file regardless of the symlink resolution.
         assert result == dummy_file
+
+        os.chdir(old_cwd)
+
+    def test__absolute_path_can_be_resolved_for_file_name__with_resolving_symlinks(
+        self, path_manager: PathManager
+    ) -> None:
+        dummy_file = path_manager.root_path / "my_file"
+
+        old_cwd = os.getcwd()
+        os.chdir(path_manager.root_path)
+
+        # Would be resolved as a file in the root path.
+        result = path_manager.resolve_absolute_path("./my_file", resolve_symlinks=True)
+
+        # The result should be the file regardless of the symlink resolution.
+        assert result == dummy_file
+
+        os.chdir(old_cwd)
+
+    def test__absolute_path_can_be_resolved_for_symlink__without_resolving_symlinks(
+        self, path_manager: PathManager
+    ) -> None:
+        dummy_file = path_manager.root_path / "my_file"
+        dummy_symlink = path_manager.root_path / "my_symlink"
+
+        os.symlink(src=dummy_file, dst=dummy_symlink)
+
+        old_cwd = os.getcwd()
+        os.chdir(path_manager.root_path)
+
+        result = path_manager.resolve_absolute_path(
+            "./my_symlink", resolve_symlinks=False
+        )
+
+        # The symlink should not be resolved, so the resolve call should return
+        # the full path to the symlink.
+        assert result == dummy_symlink
+
+        os.chdir(old_cwd)
+
+    def test__absolute_path_can_be_resolved_for_symlink__with_resolving_symlinks(
+        self, path_manager: PathManager
+    ) -> None:
+        dummy_file = path_manager.root_path / "my_file"
+        dummy_symlink = path_manager.root_path / "my_symlink"
+        os.symlink(src=dummy_file, dst=dummy_symlink)
+
+        old_cwd = os.getcwd()
+        os.chdir(path_manager.root_path)
+
+        result = path_manager.resolve_absolute_path(
+            "./my_symlink", resolve_symlinks=True
+        )
+
+        # The symlink should be resolved this time, so the resulved absolute
+        # path should be the symlinked file.
+        assert result == dummy_file
+
         os.chdir(old_cwd)
 
     @pytest.mark.parametrize(

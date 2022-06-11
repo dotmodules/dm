@@ -1,17 +1,30 @@
-import os
-from abc import ABC, abstractmethod, abstractproperty, abstractstaticmethod
 from collections import OrderedDict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional, Type, cast
+from typing import Dict, Generator, List, Sequence
 
-from dotmodules.settings import Settings
-from dotmodules.shell_adapter import ShellAdapter
+from dotmodules.modules.hooks import (
+    Hook,
+    LinkCleanUpHook,
+    LinkDeploymentHook,
+    ShellScriptHook,
+)
+from dotmodules.modules.links import LinkItem
+from dotmodules.modules.loader import ConfigLoader, LoaderError
+from dotmodules.modules.parser import (
+    ConfigParser,
+    HookItemDict,
+    LinkItemDict,
+    ParserError,
+)
+from dotmodules.modules.path import PathManager
 
-from .hooks import Hook, LinkCleanUpHook, LinkDeploymentHook, ShellScriptHook
-from .links import LinkItem
-from .loader import ConfigLoader
+
+class ModuleError(Exception):
+    """
+    Exception that will be raised on module level errors.
+    """
 
 
 class ModuleStatus(str, Enum):
@@ -27,32 +40,41 @@ class Module:
     name: str
     version: str
     enabled: bool
-    documentation: List[str]
+    documentation: Sequence[str]
     variables: Dict[str, List[str]]
-    links: List[LinkItem]
-    hooks: List[Hook]
+    links: Sequence[LinkItem]
+    hooks: Sequence[Hook]
 
     @classmethod
     def from_path(cls, path: Path) -> "Module":
         module_root = path.parent.resolve()
 
-        loader = ConfigLoader.load_raw_config_data(config_file_path=path)
-
         try:
-            name = ConfigParser.parse_name(data=data)
-            version = ConfigParser.parse_version(data=data)
-            enabled = ConfigParser.parse_enabled(data=data)
-            documentation = ConfigParser.parse_documentation(data=data)
-            variables = ConfigParser.parse_variables(data=data)
-            links = ConfigParser.parse_links(data=data)
-            hooks = ConfigParser.parse_hooks(data=data)
-        except SyntaxError as e:
-            raise ConfigError(f"configuration syntax error: {e}") from e
-        except ValueError as e:
-            raise ConfigError(f"configuration value error: {e}") from e
+            loader = ConfigLoader.get_loader_for_config_file(config_file_path=path)
+            parser = ConfigParser(loader=loader)
+
+            name = parser.parse_name()
+            version = parser.parse_version()
+            enabled = parser.parse_enabled()
+            documentation = parser.parse_documentation()
+            variables = parser.parse_variables()
+            link_items = parser.parse_links()
+            hook_items = parser.parse_hooks()
+
+            links = cls._create_links(link_items=link_items)
+            hooks = cls._create_hooks(hook_items=hook_items)
+            cls._validate_hooks(hooks=hooks)
+
+            if links:
+                hooks += cls._create_default_link_hooks(links=links)
+
+        except LoaderError as e:
+            raise ModuleError(f"Configuration loading error: {e}") from e
+        except ParserError as e:
+            raise ModuleError(f"Configuration syntax error: {e}") from e
         except Exception as e:
-            raise ConfigError(
-                f"unexpected error happened during configuration parsing: {e}"
+            raise ModuleError(
+                f"Unexpected error happened during module loading: {e}"
             ) from e
 
         module = cls(
@@ -65,50 +87,91 @@ class Module:
             links=links,
             hooks=hooks,
         )
-        module.add_default_hooks()
         return module
 
-    def add_default_hooks(self) -> None:
-        """
-        Adding the default hooks to the modules.
-        """
-        for hook in self.hooks:
-            hook_name = hook.hook_name
+    @staticmethod
+    def _create_links(link_items: List[LinkItemDict]) -> List[LinkItem]:
+        links = []
+        for link_item in link_items:
+            link = LinkItem(
+                path_to_file=link_item["path_to_file"],
+                path_to_symlink=link_item["path_to_symlink"],
+                name=link_item["name"],
+            )
+            links.append(link)
+        return links
+
+    @staticmethod
+    def _create_hooks(
+        hook_items: List[HookItemDict],
+    ) -> List[ShellScriptHook | LinkDeploymentHook | LinkCleanUpHook]:
+        hooks: List[ShellScriptHook | LinkDeploymentHook | LinkCleanUpHook] = []
+        for hook_item in hook_items:
+            hook = ShellScriptHook(
+                path_to_script=hook_item["path_to_script"],
+                priority=hook_item["priority"],
+                name=hook_item["name"],
+            )
+            hooks.append(hook)
+        return hooks
+
+    @staticmethod
+    def _validate_hooks(
+        hooks: List[ShellScriptHook | LinkDeploymentHook | LinkCleanUpHook],
+    ) -> None:
+        for index, _hook in enumerate(hooks, start=1):
+            hook_name = _hook.hook_name
             if hook_name in [LinkDeploymentHook.NAME, LinkCleanUpHook.NAME]:
-                raise ValueError(f"Cannot use reserved hook name '{hook_name}'!")
+                raise ParserError(
+                    f"Cannot use reserved hook name '{hook_name}' in section "
+                    f"'hooks' at index {index}!"
+                )
 
-        if self.links:
-            link_deployment_hook = LinkDeploymentHook(links=self.links)
-            self.hooks.append(link_deployment_hook)
-
-            link_clean_up_hook = LinkCleanUpHook(links=self.links)
-            self.hooks.append(link_clean_up_hook)
+    @staticmethod
+    def _create_default_link_hooks(
+        links: List[LinkItem],
+    ) -> List[ShellScriptHook | LinkDeploymentHook | LinkCleanUpHook]:
+        return [
+            LinkDeploymentHook(links=links),
+            LinkCleanUpHook(links=links),
+        ]
 
     @property
     def status(self) -> ModuleStatus:
         if self.errors:
             return ModuleStatus.ERROR
+
         if not self.enabled:
             return ModuleStatus.DISABLED
-        if all([link.deployed for link in self.links]):
+
+        path_manager = PathManager(root_path=self.root)
+        if all(
+            [
+                link.check_if_link_exists(path_manager=path_manager)
+                and link.check_if_target_matched(path_manager=path_manager)
+                for link in self.links
+            ]
+        ):
             return ModuleStatus.DEPLOYED
+
         return ModuleStatus.PENDING
 
     @property
     def errors(self) -> List[str]:
+        path_manager = PathManager(root_path=self.root)
         errors = []
         for link in self.links:
-            errors += link.validate()
+            errors += link.report_errors(path_manager=path_manager)
         for hook in self.hooks:
-            errors += hook.validate()
+            errors += hook.report_errors(path_manager=path_manager)
         return errors
 
 
 class Modules:
     """
-    Aggregation class that contains all the parsed modules. It provides an
-    interface to load the modules, and to collect the aggregated variables and
-    hooks from them.
+    Aggregation class that contains the loaded modules. It provides an interface
+    to load the modules, and to collect the aggregated variables and hooks from
+    them.
     """
 
     def __init__(self) -> None:
@@ -164,6 +227,6 @@ class Modules:
                     hooks[hook_name] = []
                 hooks[hook_name].append(hook)
         for _, values in hooks.items():
-            values.sort(key=lambda item: item.get_priority())
+            values.sort(key=lambda item: item.hook_priority)
 
         return hooks

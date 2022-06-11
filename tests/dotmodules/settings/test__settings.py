@@ -42,6 +42,13 @@ class TestSettings:
         assert settings.hotkey_variables == "my-hotkey-variables"
         assert settings.warning_wrapped_docs is False
 
+        assert (
+            settings.body_width
+            == settings.text_wrap_limit
+            - settings.header_width
+            - len(settings.column_padding)
+        )
+
     def test__error_during_parsing(self, mocker: MockerFixture) -> None:
         # Not passing any paramteres..
         dummy_args: List[Any] = []

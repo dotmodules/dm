@@ -40,6 +40,11 @@ class ConfigLoader(ABC):
     def get_loader_for_config_file(cls, config_file_path: Path) -> "ConfigLoader":
         selected_loaders: List[Type["ConfigLoader"]] = []
 
+        if not config_file_path.is_file():
+            raise LoaderError(
+                f"Config file at path '{config_file_path}' does not exist!"
+            )
+
         for loader_class in cls.__subclasses__():
             if loader_class.can_load(config_file_path=config_file_path):
                 selected_loaders.append(loader_class)
@@ -60,7 +65,7 @@ class TomlLoader(ConfigLoader):
             with open(config_file_path) as f:
                 self.data: Dict[str, Any] = tomllib.load(f)
         except Exception as e:
-            raise LoaderError(f"Configuration loading error: {e}") from e
+            raise LoaderError(f"Toml loading error: {e}") from e
 
     @staticmethod
     def can_load(config_file_path: Path) -> bool:
