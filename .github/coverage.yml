@@ -1,0 +1,49 @@
+name: coverage
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  tests:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.10"
+    - name: Update pip to the latest version
+      run: |
+        python -m pip install --upgrade pip
+    - name: Set up virtual a environment
+      run: |
+        python -m venv env
+        source env/bin/activate
+        echo "VIRTUAL_ENV='${VIRTUAL_ENV}'"
+    - name: Initialize testing system
+      run: |
+        source env/bin/activate
+        echo "VIRTUAL_ENV='${VIRTUAL_ENV}'"
+        make init
+        make dev_init
+    - name: Run test suite and calculate coverage
+      run: |
+        source env/bin/activate
+        echo "VIRTUAL_ENV='${VIRTUAL_ENV}'"
+        make test
+        coverage_percentage="$(coverage report | tail -n 1 | tr -s '[:blank:]' | cut -d' ' -f 4)"
+        echo "COVERAGE_PERCENTAGE=${coverage_percentage)" >> $GITHUB_ENV
+    - name: Create coverage badge
+      uses: schneegans/dynamic-badges-action@v1.1.0
+      with:
+        auth: ${{ secrets.GIST_SECRET }}
+        gistID: 9833ecfffdc05a161a3aec6f6b072ceb
+        filename: coverage.json
+        label: coverage
+        message: ${{ env.COVERAGE_PERCENTAGE }}
+        color: green
