@@ -37,7 +37,7 @@ jobs:
         echo "VIRTUAL_ENV='${VIRTUAL_ENV}'"
         make test
         coverage_percentage="$(coverage report | tail -n 1 | tr -s '[:blank:]' | cut -d' ' -f 4)"
-        echo "COVERAGE_PERCENTAGE=${coverage_percentage)" >> $GITHUB_ENV
+        echo "COVERAGE_PERCENTAGE=${coverage_percentage}" >> $GITHUB_ENV
     - name: Create coverage badge
       uses: schneegans/dynamic-badges-action@v1.1.0
       with:
