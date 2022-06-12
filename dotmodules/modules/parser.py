@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, TypedDict, TypeVar, Union
+from typing import Any, Dict, List, TypedDict, TypeVar, Union
 
 from dotmodules.modules.loader import ConfigLoader, LoaderError
 
@@ -177,6 +177,60 @@ class ConfigParser:
         if not raw_items:
             return []
 
+        self._assert_raw_items_type(key=key, raw_items=raw_items)
+
+        items = []
+        for index, raw_item in enumerate(raw_items, start=1):
+            self._assert_for_mandatory_keys(
+                key=key, expected_item=expected_item, index=index, raw_item=raw_item
+            )
+            self._assert_no_additional_keys(
+                key=key, expected_item=expected_item, index=index, raw_item=raw_item
+            )
+            self._assert_value_types(
+                key=key, expected_item=expected_item, index=index, raw_item=raw_item
+            )
+            items.append(raw_item)
+        return items
+
+    def _assert_value_types(
+        self, key: str, expected_item: T, index: int, raw_item: Any
+    ) -> None:
+        for value_key, value in expected_item.items():
+            if not isinstance(raw_item[value_key], type(value)):
+                raise ParserError(
+                    f"The value for field '{value_key}' should be an {type(value).__name__} in section '{key}' item at index {index}!"
+                )
+
+    def _assert_no_additional_keys(
+        self, key: str, expected_item: T, index: int, raw_item: Any
+    ) -> None:
+        additional_keys = list(
+            set(raw_item.keys()).difference(set(expected_item.keys()))
+        )
+        if len(additional_keys) == 1:
+            raise ParserError(
+                f"Unexpected field '{additional_keys[0]}' found for section '{key}' item at index {index}!"
+            )
+        if len(additional_keys) > 1:
+            formatted_keys = ", ".join([f"'{key}'" for key in sorted(additional_keys)])
+            raise ParserError(
+                f"Unexpected fields {formatted_keys} found for section '{key}' item at index {index}!"
+            )
+
+    def _assert_for_mandatory_keys(
+        self, key: str, expected_item: T, index: int, raw_item: Any
+    ) -> None:
+        """
+        Assert if every mandatory key exists.
+        """
+        for mandatory_key in expected_item.keys():
+            if mandatory_key not in raw_item:
+                raise ParserError(
+                    f"Missing mandatory field '{mandatory_key}' from section '{key}' item at index {index}!"
+                )
+
+    def _assert_raw_items_type(self, key: str, raw_items: Any) -> None:
         if not isinstance(raw_items, list):
             raise ParserError(
                 f"Invalid value for '{key}'! It should contain a list of objects!"
@@ -186,38 +240,3 @@ class ConfigParser:
                 raise ParserError(
                     f"Invalid value for '{key}'! It should contain a list of objects!"
                 )
-
-        items = []
-        for index, raw_item in enumerate(raw_items, start=1):
-            # Assert if every mandatory key exists.
-            for mandatory_key in expected_item.keys():
-                if mandatory_key not in raw_item:
-                    raise ParserError(
-                        f"Missing mandatory field '{mandatory_key}' from section '{key}' item at index {index}!"
-                    )
-
-            # Assert for additional keys.
-            additional_keys = list(
-                set(raw_item.keys()).difference(set(expected_item.keys()))
-            )
-            if len(additional_keys) == 1:
-                raise ParserError(
-                    f"Unexpected field '{additional_keys[0]}' found for section '{key}' item at index {index}!"
-                )
-            if len(additional_keys) > 1:
-                formatted_keys = ", ".join(
-                    [f"'{key}'" for key in sorted(additional_keys)]
-                )
-                raise ParserError(
-                    f"Unexpected fields {formatted_keys} found for section '{key}' item at index {index}!"
-                )
-
-            # Assert value types.
-            for value_key, value in expected_item.items():
-                if not isinstance(raw_item[value_key], type(value)):
-                    raise ParserError(
-                        f"The value for field '{value_key}' should be an {type(value).__name__} in section '{key}' item at index {index}!"
-                    )
-
-            items.append(raw_item)
-        return items

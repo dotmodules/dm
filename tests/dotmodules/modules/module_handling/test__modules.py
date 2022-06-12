@@ -5,7 +5,7 @@ import pytest
 
 from dotmodules.modules.hooks import ShellScriptHook
 from dotmodules.modules.links import LinkItem
-from dotmodules.modules.modules import Module, Modules
+from dotmodules.modules.modules import HookAggregate, Module, Modules
 
 
 @pytest.fixture
@@ -109,17 +109,47 @@ class TestModuleAggregationCases:
             "COMMON_HOOK": [
                 # The second hook is the common hook in the modules hooks, the
                 # lower indexed module has the higher priority.
-                modules.modules[0].hooks[1],
-                modules.modules[1].hooks[1],
-                modules.modules[2].hooks[1],
-                modules.modules[3].hooks[1],
-                modules.modules[4].hooks[1],
+                HookAggregate(
+                    module=modules.modules[0], hook=modules.modules[0].hooks[1]
+                ),
+                HookAggregate(
+                    module=modules.modules[1], hook=modules.modules[1].hooks[1]
+                ),
+                HookAggregate(
+                    module=modules.modules[2], hook=modules.modules[2].hooks[1]
+                ),
+                HookAggregate(
+                    module=modules.modules[3], hook=modules.modules[3].hooks[1]
+                ),
+                HookAggregate(
+                    module=modules.modules[4], hook=modules.modules[4].hooks[1]
+                ),
             ],
-            "HOOK_1": [modules.modules[0].hooks[0]],
-            "HOOK_2": [modules.modules[1].hooks[0]],
-            "HOOK_3": [modules.modules[2].hooks[0]],
-            "HOOK_4": [modules.modules[3].hooks[0]],
-            "HOOK_5": [modules.modules[4].hooks[0]],
+            "HOOK_1": [
+                HookAggregate(
+                    module=modules.modules[0], hook=modules.modules[0].hooks[0]
+                )
+            ],
+            "HOOK_2": [
+                HookAggregate(
+                    module=modules.modules[1], hook=modules.modules[1].hooks[0]
+                )
+            ],
+            "HOOK_3": [
+                HookAggregate(
+                    module=modules.modules[2], hook=modules.modules[2].hooks[0]
+                )
+            ],
+            "HOOK_4": [
+                HookAggregate(
+                    module=modules.modules[3], hook=modules.modules[3].hooks[0]
+                )
+            ],
+            "HOOK_5": [
+                HookAggregate(
+                    module=modules.modules[4], hook=modules.modules[4].hooks[0]
+                )
+            ],
         }
 
         assert result == expected

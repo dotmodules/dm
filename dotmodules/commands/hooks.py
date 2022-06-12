@@ -2,6 +2,7 @@ from typing import Callable, List, Optional
 
 from dotmodules.commands import Command
 from dotmodules.modules import Modules
+from dotmodules.modules.path import PathManager
 from dotmodules.renderer import Renderer
 from dotmodules.settings import Settings
 
@@ -36,12 +37,12 @@ class HooksCommand(Command):
 
         if not parameters:
             index = 1
-            for name, hooks in modules.hooks.items():
+            for name, hook_aggregates in modules.hooks.items():
                 name_printed = False
-                for hook in hooks:
-                    hook_priority = hook.get_priority()
-                    hook_module_name = hook.get_module_name()
-                    hook_details = hook.get_details()
+                for hook_aggregate in hook_aggregates:
+                    hook_priority = hook_aggregate.hook.hook_priority
+                    hook_module_name = hook_aggregate.module.name
+                    hook_details = hook_aggregate.hook.hook_description
 
                     renderer.table.add_row(
                         f"<<BOLD>><<BLUE>>[{str(index)}]<<RESET>>"
@@ -60,8 +61,14 @@ class HooksCommand(Command):
         else:
             hook_index = int(parameters[0]) - 1
             hook_name = list(modules.hooks.keys())[hook_index]
-            hooks = modules.hooks[hook_name]
-            for hook in hooks:
-                hook.execute(settings=settings)
+            hook_aggregates = modules.hooks[hook_name]
+            for hook_aggregate in hook_aggregates:
+                path_manager = PathManager(root_path=hook_aggregate.module.root)
+                hook_aggregate.hook.execute(
+                    module_name=hook_aggregate.module.name,
+                    module_root=hook_aggregate.module.root,
+                    path_manager=path_manager,
+                    settings=settings,
+                )
 
         renderer.empty_line()

@@ -167,6 +167,12 @@ class Module:
         return errors
 
 
+@dataclass
+class HookAggregate:
+    module: Module
+    hook: Hook
+
+
 class Modules:
     """
     Aggregation class that contains the loaded modules. It provides an interface
@@ -193,7 +199,12 @@ class Modules:
             modules_root_path=modules_root_path, config_file_name=config_file_name
         )
         for config_file_path in config_file_paths:
-            module = Module.from_path(path=config_file_path)
+            try:
+                module = Module.from_path(path=config_file_path)
+            except ModuleError as e:
+                raise ModuleError(
+                    f"Error while loading module at path '{config_file_path}': {e}"
+                ) from e
             modules.modules.append(module)
 
         # Sorting the modules in alphabetical path order.
@@ -216,8 +227,8 @@ class Modules:
         return vars
 
     @property
-    def hooks(self) -> OrderedDict[str, List[Hook]]:
-        hooks: OrderedDict[str, List[Hook]] = OrderedDict()
+    def hooks(self) -> OrderedDict[str, List[HookAggregate]]:
+        hooks: OrderedDict[str, List[HookAggregate]] = OrderedDict()
         for module in self.modules:
             if not module.enabled:
                 continue
@@ -225,8 +236,8 @@ class Modules:
                 hook_name = hook.hook_name
                 if hook_name not in hooks:
                     hooks[hook_name] = []
-                hooks[hook_name].append(hook)
+                hooks[hook_name].append(HookAggregate(module=module, hook=hook))
         for _, values in hooks.items():
-            values.sort(key=lambda item: item.hook_priority)
+            values.sort(key=lambda item: item.hook.hook_priority)
 
         return hooks

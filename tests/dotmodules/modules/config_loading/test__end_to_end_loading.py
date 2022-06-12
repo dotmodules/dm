@@ -549,8 +549,12 @@ class TestEndToEndModuleLoadingCases:
             Modules.load(
                 modules_root_path=modules_root_path, config_file_name=config_file_name
             )
+        failed_module_path = (
+            modules_root_path / "category_1" / "module_3" / "config.toml"
+        )
         expected = (
+            f"Error while loading module at path '{failed_module_path}': "
             "Configuration syntax error: Missing mandatory field 'name' from section "
             "'links' item at index 1!"
         )
-        assert expected in str(exception_info.value)
+        assert str(exception_info.value) == expected

@@ -3,6 +3,7 @@ from typing import Callable, List, Optional
 
 from dotmodules.commands import Command
 from dotmodules.modules import Module, Modules, ModuleStatus
+from dotmodules.modules.path import PathManager
 from dotmodules.renderer import Renderer
 from dotmodules.settings import Settings
 
@@ -114,10 +115,12 @@ class ModulesCommand(Command):
 
             module = modules.modules[module_index]
             hook = module.hooks[hook_index]
+            path_manager = PathManager(root_path=module.root)
 
             hook_status_code = hook.execute(
-                module_root=module.root,
                 module_name=module.name,
+                module_root=module.root,
+                path_manager=path_manager,
                 settings=self._settings,
             )
 
@@ -248,15 +251,16 @@ class ModulesCommand(Command):
             return
 
         renderer.empty_line()
+        path_manager = PathManager(root_path=module.root)
 
         for link in module.links:
             link_color = "RED"
             target_color = "RED"
 
             try:
-                if link.present:
+                if link.check_if_link_exists(path_manager=path_manager):
                     link_color = "GREEN"
-                    if link.target_matched:
+                    if link.check_if_target_matched(path_manager=path_manager):
                         target_color = "GREEN"
                 link_status = f"<<BOLD>><<{link_color}>>link<<RESET>>"
                 target_status = f"<<BOLD>><<{target_color}>>target<<RESET>>"

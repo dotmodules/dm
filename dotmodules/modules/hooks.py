@@ -61,6 +61,28 @@ class Hook(ErrorListProvider):
         returned as a list of strings.
         """
 
+    def execute(
+        self,
+        module_name: str,
+        module_root: Path,
+        path_manager: PathManager,
+        settings: Settings,
+    ) -> int:
+        """
+        Executes the given external hook command.
+        """
+        command = self._assemble_command(
+            module_name=module_name,
+            module_root=module_root,
+            path_manager=path_manager,
+            settings=settings,
+        )
+
+        adapter = ShellAdapter()
+        status_code = adapter.execute_interactively(command=command, cwd=module_root)
+
+        return status_code
+
     def _assemble_command(
         self,
         module_name: str,
@@ -116,28 +138,6 @@ class Hook(ErrorListProvider):
         command += self.get_additional_hook_arguments(path_manager=path_manager)
 
         return command
-
-    def execute(
-        self,
-        module_name: str,
-        module_root: Path,
-        path_manager: PathManager,
-        settings: Settings,
-    ) -> int:
-        """
-        Executes the given external hook command.
-        """
-        command = self._assemble_command(
-            module_name=module_name,
-            module_root=module_root,
-            path_manager=path_manager,
-            settings=settings,
-        )
-
-        adapter = ShellAdapter()
-        status_code = adapter.execute_interactively(command=command, cwd=module_root)
-
-        return status_code
 
 
 @dataclass
