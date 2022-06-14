@@ -36,8 +36,8 @@ class LinkItem(ErrorListProvider):
 
         full_path_to_file = path_manager.resolve_local_path(self.path_to_file)
 
-        if not full_path_to_file.is_file():
-            message = f"Link[{self.name}]: path_to_file '{self.path_to_file}' does not name a file!"
+        if not full_path_to_file.is_file() and not full_path_to_file.is_dir():
+            message = f"Link[{self.name}]: path_to_file '{self.path_to_file}' does not name a file or directory!"
             errors.append(message)
 
         return errors

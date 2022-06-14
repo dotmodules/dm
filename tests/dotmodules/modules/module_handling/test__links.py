@@ -8,13 +8,34 @@ from dotmodules.modules.path import PathManager
 
 
 class TestLinkErrorReportingCases:
-    def test__path_to_file_exists__no_errors(self, tmp_path: Path) -> None:
+    def test__path_to_file_exists__file__no_errors(self, tmp_path: Path) -> None:
         dummy_module_root = tmp_path
 
         dummy_path_to_file = "./dummy.file"
 
         dummy_full_path_to_file = dummy_module_root / dummy_path_to_file
         dummy_full_path_to_file.touch()
+
+        dummy_path_to_symlink = "irrelevant"
+        dummy_name = "my_link"
+
+        link_item = LinkItem(
+            path_to_file=dummy_path_to_file,
+            path_to_symlink=dummy_path_to_symlink,
+            name=dummy_name,
+        )
+
+        path_manager = PathManager(root_path=dummy_module_root)
+
+        assert link_item.report_errors(path_manager=path_manager) == []
+
+    def test__path_to_file_exists__directory__no_errors(self, tmp_path: Path) -> None:
+        dummy_module_root = tmp_path
+
+        dummy_path_to_file = "./dummy.directory"
+
+        dummy_full_path_to_file = dummy_module_root / dummy_path_to_file
+        dummy_full_path_to_file.mkdir()
 
         dummy_path_to_symlink = "irrelevant"
         dummy_name = "my_link"
@@ -50,7 +71,7 @@ class TestLinkErrorReportingCases:
         path_manager = PathManager(root_path=dummy_module_root)
 
         expected_errors = [
-            f"Link[{dummy_name}]: path_to_file '{dummy_path_to_file}' does not name a file!",
+            f"Link[{dummy_name}]: path_to_file '{dummy_path_to_file}' does not name a file or directory!",
         ]
         assert link_item.report_errors(path_manager=path_manager) == expected_errors
 

@@ -221,7 +221,9 @@ class Modules:
                 if name not in vars:
                     vars[name] = list(values)
                 else:
-                    vars[name] += values
+                    for value in values:
+                        if value not in vars[name]:
+                            vars[name] += values
                     vars[name].sort()
 
         return vars

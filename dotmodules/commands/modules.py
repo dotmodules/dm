@@ -125,7 +125,10 @@ class ModulesCommand(Command):
             )
 
             if hook_status_code != 0:
-                raise ValueError("hook failed")
+                renderer.empty_line()
+                renderer.wrap.render(
+                    f"<<RED>>Hook failed with status code <<BOLD>>{hook_status_code}<<RESET>><<RED>>!<<RESET>>"
+                )
 
         renderer.empty_line()
 
@@ -314,7 +317,7 @@ class ModulesCommand(Command):
             renderer.table.add_row(
                 f"<<BOLD>><<BLUE>>[{index}]<<RESET>>",
                 f"<<BOLD>>{hook.hook_name}<<RESET>> ({hook.hook_priority})",
-                f"<<UNDERLINE>>{hook.hook_description}<<RESET>>",
+                f"{hook.hook_description}",
             )
         text = renderer.table.render(print_lines=False, indent=False)
 

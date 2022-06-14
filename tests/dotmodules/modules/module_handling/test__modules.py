@@ -103,6 +103,26 @@ class TestModuleAggregationCases:
 
         assert result == expected
 
+    def test__variables_are_deduplicated(self, modules: Modules) -> None:
+        modules.modules[0].variables["common"] = ["common"]
+        modules.modules[1].variables["common"] = ["common"]
+        modules.modules[2].variables["common"] = ["common"]
+        modules.modules[3].variables["common"] = ["common"]
+        modules.modules[4].variables["common"] = ["common"]
+        result = modules.variables
+        expected = {
+            "var_1": ["value_1"],
+            "var_2": ["value_2"],
+            "var_3": ["value_3"],
+            "var_4": ["value_4"],
+            "var_5": ["value_5"],
+            "common": [
+                "common",
+            ],
+        }
+
+        assert result == expected
+
     def test__hooks_can_be_aggregated(self, modules: Modules) -> None:
         result = modules.hooks
         expected = {
