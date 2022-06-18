@@ -1,6 +1,7 @@
 #!/bin/sh
 
 pwd
+ls -la ../../..
 
 # shellcheck source=../../../utils/hooks/lib/logger.sh
 . ../../../utils/hooks/lib/logger.sh
