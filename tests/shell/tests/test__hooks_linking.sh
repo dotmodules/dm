@@ -1,7 +1,16 @@
 #!/bin/sh
 
 pwd
+echo "ls -la ../../.."
 ls -la ../../..
+echo "ls -la ../../../utils"
+ls -la ../../../utils
+echo "ls -la ../../../utils/hooks"
+ls -la ../../../utils/hooks
+echo "ls -la ../../../utils/hooks/lib"
+ls -la ../../../utils/hooks/lib
+
+file ../../../utils/hooks/lib/logger.sh
 
 # shellcheck source=../../../utils/hooks/lib/logger.sh
 . ../../../utils/hooks/lib/logger.sh
