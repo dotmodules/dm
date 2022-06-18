@@ -66,6 +66,4 @@ POSIX_TEST__CONFIG__OPTIONAL__DEBUG_ENABLED=0
 # ENTRY POINT
 #==============================================================================
 
-pwd
-
 posix_test__run_suite
