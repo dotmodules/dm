@@ -24,13 +24,15 @@ help:
 	@echo "   $(BOLD)$(NAME)$(RESET) make interface"
 	@echo "$(BOLD)$(BLUE)=================================================================================$(RESET)"
 	@echo ""
-	@echo "   $(BOLD)$(BLUE)help$(RESET)       Prints out this help message."
-	@echo "   $(BOLD)$(BLUE)docs$(RESET)       Generates the documentation for the project."
-	@echo "   $(BOLD)$(GREEN)init$(RESET)       Initializes the dev environment (python3 required)."
-	@echo "   $(BOLD)$(GREEN)test$(RESET)       Runs the unit test suite."
-	@echo "   $(BOLD)$(YELLOW)check$(RESET)      Checks for formatting issues."
-	@echo "   $(BOLD)$(YELLOW)fix$(RESET)        Auto formats the code base."
-	@echo "   $(BOLD)$(RED)clean$(RESET)      Cleans up all build/running artifacts."
+	@echo "   $(BOLD)$(BLUE)help$(RESET)          Prints out this help message."
+	@echo "   $(BOLD)$(BLUE)docs$(RESET)          Generates the documentation for the project."
+	@echo "   $(BOLD)$(GREEN)init$(RESET)          Initializes the dev environment (python3 required)."
+	@echo "   $(BOLD)$(GREEN)test$(RESET)          Runs every test suite."
+	@echo "   $(BOLD)$(GREEN)test_python$(RESET)   Runs the python test suite."
+	@echo "   $(BOLD)$(GREEN)test_shell$(RESET)    Runs the shell test suite."
+	@echo "   $(BOLD)$(YELLOW)check$(RESET)         Checks for formatting issues."
+	@echo "   $(BOLD)$(YELLOW)fix$(RESET)           Auto formats the code base."
+	@echo "   $(BOLD)$(RED)clean$(RESET)         Cleans up all build/running artifacts."
 	@echo ""
 
 # =============================================================================
@@ -57,9 +59,17 @@ fix: virtualenv_activated
 	@isort --color --profile black dotmodules tests dm.py 2>&1 | sed 's/^/isort | /'
 	@black dotmodules tests dm.py 2>&1 | sed 's/^/black | /'
 
+.PHONY: test_python
+test_python: virtualenv_activated
+	@python -m pytest -vv -c pytest.ini --cov=dotmodules/ --cov=tests/python tests/python dotmodules
+
+.PHONY: test_shell
+test_shell:
+	@./tests/shell/run.sh
+
 .PHONY: test
-test: virtualenv_activated
-	@python -m pytest -vv -c pytest.ini --cov=dotmodules/ --cov=tests/ tests dotmodules
+test: test_python test_shell
+	@echo 'Running the test suites..'
 
 .PHONY: virtualenv_activated
 virtualenv_activated:

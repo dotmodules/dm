@@ -5,7 +5,7 @@ from dotmodules.modules.loader import ConfigLoader, LoaderError
 
 
 class LinkItemDict(TypedDict):
-    path_to_file: str
+    path_to_target: str
     path_to_symlink: str
     name: str
 
@@ -44,7 +44,7 @@ class ConfigParser:
         KEY__HOOKS = "hooks"
 
         EXPECTED_LINK_ITEM: LinkItemDict = {
-            "path_to_file": "string",
+            "path_to_target": "string",
             "path_to_symlink": "string",
             "name": "string",
         }

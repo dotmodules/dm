@@ -94,7 +94,7 @@ class Module:
         links = []
         for link_item in link_items:
             link = LinkItem(
-                path_to_file=link_item["path_to_file"],
+                path_to_target=link_item["path_to_target"],
                 path_to_symlink=link_item["path_to_symlink"],
                 name=link_item["name"],
             )

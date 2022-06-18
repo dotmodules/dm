@@ -18,9 +18,9 @@ class HookAdapterScript(str, Enum):
     of the scripts has to be relative to the repository root.
     """
 
-    SHELL_SCRIPT: str = "./utils/dm_hook__shell_script_adapter.sh"
-    LINK_DEPLOYMENT: str = "./utils/dm_hook__link_deployment_adapter.sh"
-    LINK_CLEAN_UP: str = "./utils/dm_hook__link_clean_up_adapter.sh"
+    SHELL_SCRIPT: str = "./utils/hooks/dm_hook__shell_script_adapter.sh"
+    LINK_DEPLOYMENT: str = "./utils/hooks/dm_hook__link_deployment_adapter.sh"
+    LINK_CLEAN_UP: str = "./utils/hooks/dm_hook__link_clean_up_adapter.sh"
 
 
 class Hook(ErrorListProvider):
@@ -225,8 +225,8 @@ class LinkDeploymentHook(Hook):
     def get_additional_hook_arguments(self, path_manager: PathManager) -> List[str]:
         args = []
         for link in self.links:
-            # 9..11.. - path_to_file
-            args.append(str(path_manager.resolve_local_path(link.path_to_file)))
+            # 9..11.. - path_to_target
+            args.append(str(path_manager.resolve_local_path(link.path_to_target)))
             # 10..12.. - path_to_symlink
             args.append(str(path_manager.resolve_absolute_path(link.path_to_symlink)))
         return args

@@ -273,7 +273,7 @@ class ModulesCommand(Command):
 
             renderer.table.add_row(
                 status,
-                f"<<UNDERLINE>>{link.path_to_file}<<RESET>>",
+                f"<<UNDERLINE>>{link.path_to_target}<<RESET>>",
                 f"<<UNDERLINE>>{link.path_to_symlink}<<RESET>>",
             )
         text = renderer.table.render(print_lines=False, indent=False)
