@@ -7,7 +7,6 @@ from dotmodules.modules import Modules
 from dotmodules.renderer import Renderer
 from dotmodules.settings import load_settings
 
-
 DM_LOGO = """
       ██│
       ██│
@@ -64,8 +63,7 @@ class CommandLineInterpreter:
 
         for line in DM_LOGO.splitlines():
             self._renderer.wrap.render(
-                string=f" <<{DM_LOGO_COLOR_CODE}>>{line}<<RESET>>",
-                indent=False
+                string=f" <<{DM_LOGO_COLOR_CODE}>>{line}<<RESET>>", indent=False
             )
         self._renderer.empty_line()
 
