@@ -8,6 +8,20 @@ from dotmodules.renderer import Renderer
 from dotmodules.settings import load_settings
 
 
+DM_LOGO = """
+      ██│
+      ██│
+      ██│
+      ██│
+      ██│
+████████████████████│
+██│   ██│   ██│   ██│
+████████│   ██│   ██│
+"""
+
+DM_LOGO_COLOR_CODE = 106
+
+
 class InterpreterFinished(Exception):
     pass
 
@@ -47,6 +61,14 @@ class CommandLineInterpreter:
         prompt = self._renderer.prompt.render(
             prompt_template=self._settings.prompt_template
         )
+
+        for line in DM_LOGO.splitlines():
+            self._renderer.wrap.render(
+                string=f" <<{DM_LOGO_COLOR_CODE}>>{line}<<RESET>>",
+                indent=False
+            )
+        self._renderer.empty_line()
+
         self._renderer.wrap.render(
             string=" <<BOLD>>dotmodules<<RESET>> <<DIM>>v1.0<<RESET>>",
             indent=False,

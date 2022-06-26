@@ -38,7 +38,7 @@ set -u  # prevent unset variable expansion
 #   Proxies the status of the execution.
 #==============================================================================
 dm__execute() {
-    "$@" | dm__logger__prefix_lines
+    "$@" 2>&1 | dm__logger__prefix_lines
 }
 
 #==============================================================================

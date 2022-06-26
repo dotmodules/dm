@@ -221,7 +221,7 @@ class TestModuleStatusCalculationCases:
         )
         assert module.status == ModuleStatus.DISABLED
 
-    def test__error_status_has_priority_over_disabled_status(
+    def test__disabled_status_has_priority_over_error(
         self, mocker: MockerFixture
     ) -> None:
         module = Module(
@@ -239,9 +239,9 @@ class TestModuleStatusCalculationCases:
         )
         mock_module_error.return_value = ["error"]
 
-        assert module.status == ModuleStatus.ERROR
+        assert module.status == ModuleStatus.DISABLED
 
-        mock_module_error.assert_called_once()
+        mock_module_error.assert_not_called()
 
     def test__no_errors__every_deployment_status_reported__status_will_be_deployed(
         self, mocker: MockerFixture

@@ -138,11 +138,11 @@ class Module:
 
     @property
     def status(self) -> ModuleStatus:
-        if self.errors:
-            return ModuleStatus.ERROR
-
         if not self.enabled:
             return ModuleStatus.DISABLED
+
+        if self.errors:
+            return ModuleStatus.ERROR
 
         path_manager = PathManager(root_path=self.root)
         if all(
