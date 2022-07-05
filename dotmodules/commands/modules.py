@@ -50,17 +50,30 @@ class ModulesCommand(Command):
                     module.root, settings.relative_modules_path.resolve()
                 )
 
-                match module.status:
-                    case ModuleStatus.DISABLED:
-                        status = "<<BOLD>><<RED>>disabled<<RESET>>"
-                    case ModuleStatus.PENDING:
-                        status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
-                    case ModuleStatus.DEPLOYED:
-                        status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
-                    case ModuleStatus.ERROR:
-                        status = "<<BOLD>><<RED>>error<<RESET>>"
-                    case _:
-                        pass
+                # TODO: After the minimum supported python version became 3.10
+                # we can uncomment this more elegant syntax..
+                # match module.status:
+                #     case ModuleStatus.DISABLED:
+                #         status = "<<BOLD>><<RED>>disabled<<RESET>>"
+                #     case ModuleStatus.PENDING:
+                #         status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
+                #     case ModuleStatus.DEPLOYED:
+                #         status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
+                #     case ModuleStatus.ERROR:
+                #         status = "<<BOLD>><<RED>>error<<RESET>>"
+                #     case _:
+                #         raise ValueError(f"Invalid module status value: '{module.status}'")
+
+                if module.status == ModuleStatus.DISABLED:
+                    status = "<<BOLD>><<RED>>disabled<<RESET>>"
+                elif module.status == ModuleStatus.PENDING:
+                    status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
+                elif module.status == ModuleStatus.DEPLOYED:
+                    status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
+                elif module.status == ModuleStatus.ERROR:
+                    status = "<<BOLD>><<RED>>error<<RESET>>"
+                else:
+                    raise ValueError(f"Invalid module status value: '{module.status}'")
 
                 renderer.table.add_row(
                     f"<<BOLD>><<BLUE>>[{str(index)}]<<RESET>>",
@@ -169,17 +182,31 @@ class ModulesCommand(Command):
         self, renderer: Renderer, module: Module, settings: Settings
     ) -> None:
         renderer.empty_line()
-        match module.status:
-            case ModuleStatus.DISABLED:
-                status = "<<BOLD>><<RED>>disabled<<RESET>>"
-            case ModuleStatus.PENDING:
-                status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
-            case ModuleStatus.DEPLOYED:
-                status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
-            case ModuleStatus.ERROR:
-                status = "<<BOLD>><<RED>>error<<RESET>>"
-            case _:
-                pass
+
+        # TODO: After the minimum supported python version became 3.10
+        # we can uncomment this more elegant syntax..
+        # match module.status:
+        #     case ModuleStatus.DISABLED:
+        #         status = "<<BOLD>><<RED>>disabled<<RESET>>"
+        #     case ModuleStatus.PENDING:
+        #         status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
+        #     case ModuleStatus.DEPLOYED:
+        #         status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
+        #     case ModuleStatus.ERROR:
+        #         status = "<<BOLD>><<RED>>error<<RESET>>"
+        #     case _:
+        #         raise ValueError(f"Invalid module status value: '{module.status}'")
+
+        if module.status == ModuleStatus.DISABLED:
+            status = "<<BOLD>><<RED>>disabled<<RESET>>"
+        elif module.status == ModuleStatus.PENDING:
+            status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
+        elif module.status == ModuleStatus.DEPLOYED:
+            status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
+        elif module.status == ModuleStatus.ERROR:
+            status = "<<BOLD>><<RED>>error<<RESET>>"
+        else:
+            raise ValueError(f"Invalid module status value: '{module.status}'")
         text = renderer.wrap.render(
             string=status,
             wrap_limit=settings.body_width,

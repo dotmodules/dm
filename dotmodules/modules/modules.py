@@ -2,7 +2,9 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Generator, List, Sequence, Union, OrderedDict as OrderedDictType
+from typing import Dict, Generator, List
+from typing import OrderedDict as OrderedDictType
+from typing import Sequence, Union
 
 from dotmodules.modules.hooks import (
     Hook,
