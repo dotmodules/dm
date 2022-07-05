@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Union
 
 
 @dataclass
@@ -18,7 +19,7 @@ class PathManager:
 
     root_path: Path
 
-    def resolve_local_path(self, local_path: str | Path) -> Path:
+    def resolve_local_path(self, local_path: Union[str, Path]) -> Path:
         """
         Resolves module local path that is relative to the root path into an
         absolute path.
@@ -27,7 +28,7 @@ class PathManager:
         return self.root_path / local_path
 
     def resolve_absolute_path(
-        self, absolute_path: str | Path, resolve_symlinks: bool = False
+        self, absolute_path: Union[str, Path], resolve_symlinks: bool = False
     ) -> Path:
         """
         Resolves an absolute path by replacing the optional '$HOME' literal into
@@ -52,7 +53,9 @@ class PathManager:
             absolute_path = os.path.abspath(absolute_path)
             return Path(absolute_path)
 
-    def get_relative_path(self, from_path: str | Path, to_path: str | Path) -> Path:
+    def get_relative_path(
+        self, from_path: Union[str, Path], to_path: Union[str, Path]
+    ) -> Path:
         """
         Calculates the relative path from the from_path to the to_path.
 

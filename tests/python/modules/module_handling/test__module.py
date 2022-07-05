@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, cast
+from typing import List, Union, cast
 
 import pytest
 from pytest_mock.plugin import MockerFixture
@@ -72,7 +72,7 @@ class TestModuleLoadingInternalCases:
         assert hook.priority == 2
 
     def test__hooks_can_be__validated__no_error(self) -> None:
-        hooks: List[ShellScriptHook | LinkDeploymentHook | LinkCleanUpHook] = [
+        hooks: List[Union[ShellScriptHook, LinkDeploymentHook, LinkCleanUpHook]] = [
             ShellScriptHook(
                 path_to_script="path_to_script_1",
                 name="name_1",
@@ -94,7 +94,7 @@ class TestModuleLoadingInternalCases:
         ],
     )
     def test__hooks_can_be__error__reserved_hook_name(self, reserved_name: str) -> None:
-        hooks: List[ShellScriptHook | LinkDeploymentHook | LinkCleanUpHook] = [
+        hooks: List[Union[ShellScriptHook, LinkDeploymentHook, LinkCleanUpHook]] = [
             ShellScriptHook(
                 path_to_script="path_to_script_1",
                 name=reserved_name,

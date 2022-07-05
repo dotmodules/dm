@@ -2,7 +2,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Generator, List, Sequence
+from typing import Dict, Generator, List, Sequence, Union
 
 from dotmodules.modules.hooks import (
     Hook,
@@ -104,8 +104,8 @@ class Module:
     @staticmethod
     def _create_hooks(
         hook_items: List[HookItemDict],
-    ) -> List[ShellScriptHook | LinkDeploymentHook | LinkCleanUpHook]:
-        hooks: List[ShellScriptHook | LinkDeploymentHook | LinkCleanUpHook] = []
+    ) -> List[Union[ShellScriptHook, LinkDeploymentHook, LinkCleanUpHook]]:
+        hooks: List[Union[ShellScriptHook, LinkDeploymentHook, LinkCleanUpHook]] = []
         for hook_item in hook_items:
             hook = ShellScriptHook(
                 path_to_script=hook_item["path_to_script"],
@@ -117,7 +117,7 @@ class Module:
 
     @staticmethod
     def _validate_hooks(
-        hooks: List[ShellScriptHook | LinkDeploymentHook | LinkCleanUpHook],
+        hooks: List[Union[ShellScriptHook, LinkDeploymentHook, LinkCleanUpHook]],
     ) -> None:
         for index, _hook in enumerate(hooks, start=1):
             hook_name = _hook.hook_name
@@ -130,7 +130,7 @@ class Module:
     @staticmethod
     def _create_default_link_hooks(
         links: List[LinkItem],
-    ) -> List[ShellScriptHook | LinkDeploymentHook | LinkCleanUpHook]:
+    ) -> List[Union[ShellScriptHook, LinkDeploymentHook, LinkCleanUpHook]]:
         return [
             LinkDeploymentHook(links=links),
             LinkCleanUpHook(links=links),
