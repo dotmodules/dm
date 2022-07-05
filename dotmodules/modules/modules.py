@@ -2,7 +2,7 @@ from collections import OrderedDict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Generator, List, Sequence, Union
+from typing import Dict, Generator, List, Sequence, Union, OrderedDict as OrderedDictType
 
 from dotmodules.modules.hooks import (
     Hook,
@@ -229,8 +229,8 @@ class Modules:
         return vars
 
     @property
-    def hooks(self) -> OrderedDict[str, List[HookAggregate]]:
-        hooks: OrderedDict[str, List[HookAggregate]] = OrderedDict()
+    def hooks(self) -> OrderedDictType[str, List[HookAggregate]]:
+        hooks: OrderedDictType[str, List[HookAggregate]] = OrderedDict()
         for module in self.modules:
             if not module.enabled:
                 continue

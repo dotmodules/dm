@@ -2,7 +2,10 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Type
 
-import tomllib
+# TODO: After python 3.11 tomllib will be in the standard library and this
+# import should be changed to 'import tomllib'.
+# https://docs.python.org/3.11/library/tomllib.html
+import toml as tomllib
 
 
 class LoaderError(Exception):
