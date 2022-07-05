@@ -68,7 +68,7 @@ class ColorAdapter:
     def _load_color_for_tag(self, tag: str) -> str:
         command = self._assemble_color_loading_command(tag=tag)
         shell_result = ShellAdapter.execute_and_capture(command=command)
-        if shell_result.status_code == 0:
+        if shell_result.status_code == 0 and shell_result.stdout:
             return shell_result.stdout[0]
         else:
             # We are ignoring the fact that the 'tput' call has failed and
