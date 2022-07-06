@@ -61,7 +61,7 @@ fi
 
 # Calculating the header length based on the indent and global text wrap limit.
 DM__HEADER_LENGTH="$(
-  python -c 'import sys;print(int(sys.argv[1])-len(sys.argv[2]))' \
+  python3 -c 'import sys;print(int(sys.argv[1])-len(sys.argv[2]))' \
   "$dm__config__wrap_limit" \
   "$dm__config__indent"\
 )"
@@ -89,7 +89,7 @@ DM__HEADER_LENGTH="$(
 dm__utils__repeat_character() {
   ___char="$1"
   ___count="$2"
-  python -c 'import sys;print(sys.argv[1]*int(sys.argv[2]))' \
+  python3 -c 'import sys;print(sys.argv[1]*int(sys.argv[2]))' \
     "$___char" \
     "$___count" \
 
@@ -148,9 +148,9 @@ _dm__utils__indent_line() {
 dm__logger__header() {
   ___header="HOOK ${BOLD}${dm__config__target_hook_name}${RESET} (${dm__config__target_hook_priority}) - ${dm__config__target_module_name}"
 
-  _dm__utils__indent_line "${DIM}╒$(dm__utils__repeat_character '═' $(("$DM__HEADER_LENGTH" - 1)))${RESET}"
+  _dm__utils__indent_line "${DIM}╒$(dm__utils__repeat_character '═' $(($DM__HEADER_LENGTH - 1)))${RESET}"
   _dm__utils__indent_line "${DIM}│${RESET} ${___header}"
-  _dm__utils__indent_line "${DIM}╞════╤$(dm__utils__repeat_character '═' $(("$DM__HEADER_LENGTH" - 6)))${RESET}"
+  _dm__utils__indent_line "${DIM}╞════╤$(dm__utils__repeat_character '═' $(($DM__HEADER_LENGTH - 6)))${RESET}"
 }
 
 #==============================================================================
@@ -387,7 +387,7 @@ dm__logger__user_input() {
 #   0 - Other status is not expected.
 #==============================================================================
 dm__logger__separator() {
-  _dm__utils__indent_line "${DIM}├────┼$(dm__utils__repeat_character '─' $(("$DM__HEADER_LENGTH" - 6)))${RESET}"
+  _dm__utils__indent_line "${DIM}├────┼$(dm__utils__repeat_character '─' $(($DM__HEADER_LENGTH - 6)))${RESET}"
 }
 
 #==============================================================================
@@ -412,7 +412,7 @@ dm__logger__separator() {
 #   0 - Other status is not expected.
 #==============================================================================
 dm__logger__double_separator() {
-  _dm__utils__indent_line "${DIM}╞════╪$(dm__utils__repeat_character '═' $(("$DM__HEADER_LENGTH" - 6)))${RESET}"
+  _dm__utils__indent_line "${DIM}╞════╪$(dm__utils__repeat_character '═' $(($DM__HEADER_LENGTH - 6)))${RESET}"
 }
 
 #==============================================================================
@@ -437,5 +437,5 @@ dm__logger__double_separator() {
 #   0 - Other status is not expected.
 #==============================================================================
 dm__logger__footer() {
-  _dm__utils__indent_line "${DIM}╘════╧$(dm__utils__repeat_character '═' $(("$DM__HEADER_LENGTH" - 6)))${RESET}"
+  _dm__utils__indent_line "${DIM}╘════╧$(dm__utils__repeat_character '═' $(($DM__HEADER_LENGTH - 6)))${RESET}"
 }
