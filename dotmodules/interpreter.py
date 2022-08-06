@@ -33,6 +33,7 @@ class CommandLineInterpreter:
         self._modules = Modules.load(
             modules_root_path=self._settings.relative_modules_path,
             config_file_name=self._settings.config_file_name,
+            deployment_target=self._settings.deployment_target,
         )
         self._delete_cache()
         self._populate_variables_cache(self._modules.variables)

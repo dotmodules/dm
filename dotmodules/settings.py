@@ -15,6 +15,7 @@ class Settings:
     """
 
     debug: bool = field(init=False)
+    deployment_target: str = field(init=False)
     relative_modules_path: pathlib.Path = field(init=False)
     config_file_name: str = field(init=False)
     text_wrap_limit: int = field(init=False)
@@ -27,7 +28,9 @@ class Settings:
     hotkey_modules: str = field(init=False)
     hotkey_variables: str = field(init=False)
     warning_wrapped_docs: bool = field(init=False)
-    # The current working directory is the dm repository root.
+
+    # The current working directory is the dm repository root for the following
+    # path definitions.
     dm_cache_root: Path = (Path.cwd() / ".dm_cache").resolve()
     dm_cache_variables: Path = (Path.cwd() / ".dm_cache" / "variables").resolve()
     header_width: int = 10
@@ -48,6 +51,7 @@ def load_settings() -> Settings:
     parser = argparse.ArgumentParser(description="Dotmodules")
 
     parser.add_argument("--debug", type=int, required=True)
+    parser.add_argument("--deployment-target", required=True)
     parser.add_argument("--relative-modules-path", type=pathlib.Path, required=True)
     parser.add_argument("--config-file-name", type=str, required=True)
     parser.add_argument("--text-wrap-limit", type=int, required=True)
@@ -66,6 +70,7 @@ def load_settings() -> Settings:
 
     settings = Settings()
     settings.debug = bool(parsed_args.debug)
+    settings.deployment_target = parsed_args.deployment_target
     settings.relative_modules_path = parsed_args.relative_modules_path
     settings.config_file_name = parsed_args.config_file_name
     settings.text_wrap_limit = parsed_args.text_wrap_limit

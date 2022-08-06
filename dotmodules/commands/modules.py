@@ -82,6 +82,7 @@ class ModulesCommand(Command):
                     status,
                     f"<<UNDERLINE>>{str(root)}<<RESET>>",
                 )
+                renderer.table.add_row("", "", "", "", "")
             renderer.table.render()
 
         elif len(parameters) == 1:

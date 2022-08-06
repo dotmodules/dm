@@ -43,6 +43,13 @@ class ConfigParser:
         KEY__LINKS = "links"
         KEY__HOOKS = "hooks"
 
+        TEMPLATE__DOCUMENTATION = "documentation__{deployment_target}"
+        TEMPLATE__VARIABLES = "variables__{deployment_target}"
+        TEMPLATE__LINKS = "links__{deployment_target}"
+        TEMPLATE__HOOKS = "hooks__{deployment_target}"
+
+        # NOTE: In the following definitions the type of the values will
+        # determine the expected value type.
         EXPECTED_LINK_ITEM: LinkItemDict = {
             "path_to_target": "string",
             "path_to_symlink": "string",
@@ -61,36 +68,116 @@ class ConfigParser:
     def parse_version(self) -> str:
         return self._parse_string(key=self.Definition.KEY__VERSION)
 
-    def parse_enabled(self) -> bool:
-        return self._parse_boolean(key=self.Definition.KEY__ENABLED)
+    def parse_enabled(self, deployment_target: str) -> bool:
+        """
+        A module can be enabled globally or for different deployment targets
+        specifically.
 
-    def parse_documentation(self) -> List[str]:
-        return self._parse_string(
+        Defining the enabled state is mandatory: either by specifying a global
+        enabled state or break up the state definiton to different deployment
+        targets.
+
+        If you define the enabled state in deployment target specific way, you
+        have to specify all used deployment targets. If you use a deployment
+        target not specified in a module's enabled status definition, it is
+        considered as a syntax error.
+        """
+        key = self.Definition.KEY__ENABLED
+        try:
+            value = self.loader.get(key=key)
+        except LoaderError as e:
+            raise ParserError(f"Mandatory section '{key}' is missing!") from e
+
+        if isinstance(value, dict):
+            if deployment_target not in value:
+                raise ParserError(
+                    f"Missing deployment target '{deployment_target}' from section '{key}'!"
+                )
+
+            value = value[deployment_target]
+
+            if not isinstance(value, bool):
+                raise ParserError(
+                    f"The value for section '{key}' should be boolean for deployment "
+                    f"target '{deployment_target}', got {type(value).__name__}!"
+                )
+        else:
+            if not isinstance(value, bool):
+                raise ParserError(
+                    f"The value for section '{key}' should be boolean, got {type(value).__name__}!"
+                )
+
+        return value
+
+    def parse_documentation(self, deployment_target: str) -> List[str]:
+        docs = self._parse_string(
             key=self.Definition.KEY__DOCUMENTATION, mandatory=False
         ).splitlines()
 
-    def parse_variables(self) -> Dict[str, List[str]]:
+        if deployment_target:
+            key = self.Definition.TEMPLATE__DOCUMENTATION.format(
+                deployment_target=deployment_target
+            )
+            targeted_docs = self._parse_string(key=key, mandatory=False).splitlines()
+            if targeted_docs:
+                # Adding an extra empty line if there are already documentation lines.
+                if docs:
+                    docs.append("")
+                docs += targeted_docs
+
+        return docs
+
+    def parse_variables(self, deployment_target: str) -> Dict[str, List[str]]:
+        raw_variables = self._load_global_variables()
+        variables = self._validate_variables(variables=raw_variables)
+
+        if deployment_target:
+            raw_variables = self._load_deployment_target_variables(
+                deployment_target=deployment_target
+            )
+            deployment_target_variables = self._validate_variables(
+                variables=raw_variables
+            )
+            for key in deployment_target_variables.keys():
+                if key in variables:
+                    deployment_target_variables_section = (
+                        self.Definition.TEMPLATE__VARIABLES.format(
+                            deployment_target=deployment_target
+                        )
+                    )
+                    raise ParserError(
+                        "Deployment target specific variable section "
+                        f"'{deployment_target_variables_section}' redefined already "
+                        f"existing global variable key '{key}'!"
+                    )
+            variables.update(deployment_target_variables)
+
+        return variables
+
+    def _load_global_variables(self) -> Any:
         try:
-            variables = self.loader.get(key=self.Definition.KEY__VARIABLES)
+            return self.loader.get(key=self.Definition.KEY__VARIABLES)
         except LoaderError:
-            # Variables are optional, a missing key would return an empty
+            # Variables are optional, a missing key would result an empty
             # dictionary.
             return {}
 
+    def _load_deployment_target_variables(self, deployment_target: str) -> Any:
+        try:
+            key = self.Definition.TEMPLATE__VARIABLES.format(
+                deployment_target=deployment_target
+            )
+            return self.loader.get(key=key)
+        except LoaderError:
+            # Variables are optional, a missing key would result an empty
+            # dictionary.
+            return {}
+
+    def _validate_variables(self, variables: Any) -> Dict[str, List[str]]:
         variables_is_a_dict = isinstance(variables, dict)
         if not variables_is_a_dict:
             raise ParserError(
                 "The '{}' section should have the following syntax: 'VARIABLE_NAME' = ['var_1', 'var_2', ..] !".format(
-                    self.Definition.KEY__VARIABLES
-                )
-            )
-
-        variable_names_are_strings = all(
-            [isinstance(key, str) for key in variables.keys()]
-        )
-        if not variable_names_are_strings:
-            raise ParserError(
-                "The '{}' section should only have string variable names!".format(
                     self.Definition.KEY__VARIABLES
                 )
             )
@@ -115,19 +202,72 @@ class ConfigParser:
                     raise ParserError(error_message)
             else:
                 raise ParserError(error_message)
+
         return validated_variables
 
-    def parse_links(self) -> List[LinkItemDict]:
-        return self._parse_item_list(
+    def parse_links(self, deployment_target: str) -> List[LinkItemDict]:
+        links = self._parse_item_list(
             key=self.Definition.KEY__LINKS,
             expected_item=self.Definition.EXPECTED_LINK_ITEM,
         )
 
-    def parse_hooks(self) -> List[HookItemDict]:
-        return self._parse_item_list(
+        if deployment_target:
+            key = self.Definition.TEMPLATE__LINKS.format(
+                deployment_target=deployment_target
+            )
+            deployment_target_links = self._parse_item_list(
+                key=key,
+                expected_item=self.Definition.EXPECTED_LINK_ITEM,
+            )
+
+            for deployment_target_link in deployment_target_links:
+                if deployment_target_link in links:
+                    deployment_target_link_section = (
+                        self.Definition.TEMPLATE__LINKS.format(
+                            deployment_target=deployment_target
+                        )
+                    )
+                    raise ParserError(
+                        "Deployment target specific link section "
+                        f"'{deployment_target_link_section}' contains an already "
+                        "defined link item!"
+                    )
+
+            links += deployment_target_links
+
+        return links
+
+    def parse_hooks(self, deployment_target: str) -> List[HookItemDict]:
+        hooks = self._parse_item_list(
             key=self.Definition.KEY__HOOKS,
             expected_item=self.Definition.EXPECTED_HOOK_ITEM,
         )
+
+        if deployment_target:
+            key = self.Definition.TEMPLATE__HOOKS.format(
+                deployment_target=deployment_target
+            )
+            deployment_target_hooks = self._parse_item_list(
+                key=key,
+                expected_item=self.Definition.EXPECTED_HOOK_ITEM,
+            )
+
+            for deployment_target_hook in deployment_target_hooks:
+                if deployment_target_hook in hooks:
+                    deployment_target_hook_section = (
+                        self.Definition.TEMPLATE__HOOKS.format(
+                            deployment_target=deployment_target
+                        )
+                    )
+                    raise ParserError(
+                        "Deployment target specific hook section "
+                        f"'{deployment_target_hook_section}' contains an already "
+                        "defined hook item!"
+                    )
+
+            hooks += deployment_target_hooks
+
+        return hooks
 
     def _parse_string(self, key: str, mandatory: bool = True) -> str:
         try:
@@ -144,22 +284,7 @@ class ConfigParser:
 
         if not isinstance(value, str):
             raise ParserError(
-                f"Value for section '{key}' should be a string, got '{value}'!"
-            )
-
-        return value
-
-    def _parse_boolean(self, key: str, mandatory: bool = True) -> bool:
-        try:
-            value = self.loader.get(key=key)
-        except LoaderError as e:
-            if not mandatory:
-                return False
-            raise ParserError(f"Mandatory '{key}' section is missing!") from e
-
-        if not isinstance(value, bool):
-            raise ParserError(
-                f"Value for section '{key}' should be a boolean, got '{value}'!"
+                f"Value for section '{key}' should be a string, got {type(value).__name__}!"
             )
 
         return value

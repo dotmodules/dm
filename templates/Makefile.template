@@ -5,12 +5,22 @@
 # The dotmodules repository root path relative to this Makefile.
 RELATIVE_DOTMODULES_REPO_ROOT_PATH := __RELATIVE_DM_ROOT_PATH__
 
-# Your directory that contains the condiguration modules relative to the
+# Your directory that contains the configuration modules relative to the
 # dotmodules repository root.
 RELATIVE_MODULES_PATH := __RELATIVE_MODULES_PATH__
 
 # Configuration file name.
 CONFIG_FILE_NAME := dm.toml
+
+# To support multiple deployment targets with the same dotmodules repository
+# there is an option to specify the current deployment name in an gitignored
+# file. The file should contain the unique deployment name. That name will be
+# used when parsing the configuration to load the deployment specific settings.
+# You should not modify the value of this variable directly. You should create
+# the 'dm.deployment.target.conf' file instead and put the current deployment
+# name into it.
+DEPLOYMENT_TARGET_FILE := dm.deployment.target.conf
+DEPLOYMENT_TARGET := $(shell cat '$(DEPLOYMENT_TARGET_FILE)' 2>/dev/null || echo '')
 
 # Python interpreter to use when invoking the starting script.
 PYTHON_INTERPRETER := python3
@@ -76,6 +86,7 @@ help:
 dm:
 	@cd $(RELATIVE_DOTMODULES_REPO_ROOT_PATH); $(PYTHON_INTERPRETER) dm.py \
 		--debug '$(DEBUG)' \
+		--deployment-target '$(DEPLOYMENT_TARGET)' \
 		--relative-modules-path '$(RELATIVE_MODULES_PATH)' \
 		--config-file-name '$(CONFIG_FILE_NAME)' \
 		--text-wrap-limit '$(CLI__TEXT_WRAP_LIMIT)' \

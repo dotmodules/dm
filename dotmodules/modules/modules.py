@@ -48,7 +48,7 @@ class Module:
     hooks: Sequence[Hook]
 
     @classmethod
-    def from_path(cls, path: Path) -> "Module":
+    def from_path(cls, path: Path, deployment_target: str) -> "Module":
         module_root = path.parent.resolve()
 
         try:
@@ -57,11 +57,13 @@ class Module:
 
             name = parser.parse_name()
             version = parser.parse_version()
-            enabled = parser.parse_enabled()
-            documentation = parser.parse_documentation()
-            variables = parser.parse_variables()
-            link_items = parser.parse_links()
-            hook_items = parser.parse_hooks()
+            enabled = parser.parse_enabled(deployment_target=deployment_target)
+            documentation = parser.parse_documentation(
+                deployment_target=deployment_target
+            )
+            variables = parser.parse_variables(deployment_target=deployment_target)
+            link_items = parser.parse_links(deployment_target=deployment_target)
+            hook_items = parser.parse_hooks(deployment_target=deployment_target)
 
             links = cls._create_links(link_items=link_items)
             hooks = cls._create_hooks(hook_items=hook_items)
@@ -195,14 +197,18 @@ class Modules:
         return Path(modules_root_path).rglob(config_file_name)
 
     @classmethod
-    def load(cls, modules_root_path: Path, config_file_name: str) -> "Modules":
+    def load(
+        cls, modules_root_path: Path, config_file_name: str, deployment_target: str
+    ) -> "Modules":
         modules = cls()
         config_file_paths = cls._config_file_paths(
             modules_root_path=modules_root_path, config_file_name=config_file_name
         )
         for config_file_path in config_file_paths:
             try:
-                module = Module.from_path(path=config_file_path)
+                module = Module.from_path(
+                    path=config_file_path, deployment_target=deployment_target
+                )
             except ModuleError as e:
                 raise ModuleError(
                     f"Error while loading module at path '{config_file_path}': {e}"
