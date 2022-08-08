@@ -213,11 +213,10 @@ echo "    Calculated relative modules directory path: ${GREEN}${relative_modules
 # invocation's directory.
 posix_adapter__sed \
   --expression "s#__RELATIVE_DM_ROOT_PATH__#${relative_dm_repo_root_path}#" \
-  "${DM_REPO_ROOT}/${MAKEFILE_TEMPLATE_PATH}" > "${MAKEFILE_NAME}"
+  "${DM_REPO_ROOT}/${MAKEFILE_TEMPLATE_PATH}" | \
 posix_adapter__sed \
-  --in-place '' \
   --expression "s#__RELATIVE_MODULES_PATH__#${relative_modules_path}#" \
-  "${MAKEFILE_NAME}"
+> "${MAKEFILE_NAME}"
 
 echo ''
 echo "    ${BOLD}Makefile template generated.${RESET}"
