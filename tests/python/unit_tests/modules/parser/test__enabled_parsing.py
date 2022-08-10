@@ -180,7 +180,7 @@ class TestEnabledParsing:
             parser.parse_enabled(deployment_target=dummy_deployment_target)
 
         expected_error_message = (
-            f"Section 'enabled' was defined for deployment targets only, but "
+            "Section 'enabled' was defined for deployment targets only, but "
             "there is no deployment target specified in the configuration!"
         )
         assert error_context.match(expected_error_message)

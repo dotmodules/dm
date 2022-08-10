@@ -20,6 +20,69 @@ class ModulesCommand(Command):
             "This is the modules command.",
         ]
 
+    def render_list(
+        self, modules: Modules, settings: Settings, renderer: Renderer
+    ) -> None:
+        renderer.wrap.render(
+            "<<DIM>><<CYAN>>These are the modules available in your configuration. "
+            "You can select a module by appending its index to the modules "
+            f"command like {settings.hotkey_modules} 42.<<RESET>>"
+        )
+        renderer.empty_line()
+
+        if not modules.modules:
+            renderer.wrap.render("<<DIM>>You have no modules registered.<<RESET>>")
+            renderer.empty_line()
+            return
+
+        current_root = ""
+        for index, module in enumerate(modules.modules, start=1):
+            root = os.path.relpath(
+                module.root, settings.relative_modules_path.resolve()
+            )
+            base_root = os.path.dirname(root)
+
+            # TODO: After the minimum supported python version became 3.10
+            # we can uncomment this more elegant syntax..
+            # match module.status:
+            #     case ModuleStatus.DISABLED:
+            #         status = "<<BOLD>><<RED>>disabled<<RESET>>"
+            #     case ModuleStatus.PENDING:
+            #         status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
+            #     case ModuleStatus.DEPLOYED:
+            #         status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
+            #     case ModuleStatus.ERROR:
+            #         status = "<<BOLD>><<RED>>error<<RESET>>"
+            #     case _:
+            #         raise ValueError(f"Invalid module status value: '{module.status}'")
+
+            if module.status == ModuleStatus.DISABLED:
+                status = "<<BOLD>><<RED>>disabled<<RESET>>"
+            elif module.status == ModuleStatus.PENDING:
+                status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
+            elif module.status == ModuleStatus.DEPLOYED:
+                status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
+            elif module.status == ModuleStatus.ERROR:
+                status = "<<BOLD>><<RED>>error<<RESET>>"
+            else:
+                raise ValueError(f"Invalid module status value: '{module.status}'")
+
+            if not current_root:
+                current_root = base_root
+            elif current_root != base_root:
+                current_root = base_root
+                renderer.table.add_row("", "", "", "", "")
+
+            renderer.table.add_row(
+                f"<<BOLD>><<BLUE>>[{str(index)}]<<RESET>>",
+                f"<<BOLD>>{module.name}<<RESET>>",
+                f"{str(module.version)}",
+                status,
+                f"<<UNDERLINE>>{str(root)}<<RESET>>",
+            )
+
+        renderer.table.render()
+
     def execute(
         self,
         settings: Settings,
@@ -33,69 +96,9 @@ class ModulesCommand(Command):
         renderer.empty_line()
 
         if not parameters:
-            renderer.wrap.render(
-                "<<DIM>><<CYAN>>These are the modules available in your configuration. "
-                "You can select a module by appending its index to the modules "
-                f"command like {settings.hotkey_modules} 42.<<RESET>>"
-            )
-            renderer.empty_line()
-
-            if not modules.modules:
-                renderer.wrap.render("<<DIM>>You have no modules registered.<<RESET>>")
-                renderer.empty_line()
-                return
-
-            current_root = ""
-            for index, module in enumerate(modules.modules, start=1):
-                root = os.path.relpath(
-                    module.root, settings.relative_modules_path.resolve()
-                )
-                base_root = os.path.dirname(root)
-
-                # TODO: After the minimum supported python version became 3.10
-                # we can uncomment this more elegant syntax..
-                # match module.status:
-                #     case ModuleStatus.DISABLED:
-                #         status = "<<BOLD>><<RED>>disabled<<RESET>>"
-                #     case ModuleStatus.PENDING:
-                #         status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
-                #     case ModuleStatus.DEPLOYED:
-                #         status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
-                #     case ModuleStatus.ERROR:
-                #         status = "<<BOLD>><<RED>>error<<RESET>>"
-                #     case _:
-                #         raise ValueError(f"Invalid module status value: '{module.status}'")
-
-                if module.status == ModuleStatus.DISABLED:
-                    status = "<<BOLD>><<RED>>disabled<<RESET>>"
-                elif module.status == ModuleStatus.PENDING:
-                    status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
-                elif module.status == ModuleStatus.DEPLOYED:
-                    status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
-                elif module.status == ModuleStatus.ERROR:
-                    status = "<<BOLD>><<RED>>error<<RESET>>"
-                else:
-                    raise ValueError(f"Invalid module status value: '{module.status}'")
-
-                if not current_root:
-                    current_root = base_root
-                elif current_root != base_root:
-                    current_root = base_root
-                    renderer.table.add_row("", "", "", "", "")
-
-                renderer.table.add_row(
-                    f"<<BOLD>><<BLUE>>[{str(index)}]<<RESET>>",
-                    f"<<BOLD>>{module.name}<<RESET>>",
-                    f"{str(module.version)}",
-                    status,
-                    f"<<UNDERLINE>>{str(root)}<<RESET>>",
-                )
-
-
-            renderer.table.render()
+            self.render_list(modules=modules, settings=settings, renderer=renderer)
 
         elif len(parameters) == 1:
-
             if not modules.modules:
                 renderer.wrap.render("<<DIM>>You have no modules registered.<<RESET>>")
                 renderer.empty_line()
