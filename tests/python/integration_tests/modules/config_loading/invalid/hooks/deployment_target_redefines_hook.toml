@@ -1,16 +1,7 @@
 name = "name_1"
 version = "version_1"
+
 enabled = true
-
-documentation = """
-line 1
- line 2
-  line 3
-"""
-
-[variables]
-VAR_1 = ["var11", "var12", "var13"]
-VAR_2 = ["var21", "var22", "var23"]
 
 [[hooks]]
 name = "hook_name_1"

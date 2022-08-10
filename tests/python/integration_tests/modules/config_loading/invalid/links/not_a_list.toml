@@ -1,11 +1,6 @@
 name = "name_1"
 version = "version_1"
-enabled = true
 
-documentation = """
-line 1
- line 2
-  line 3
-"""
+enabled = true
 
 links = 42

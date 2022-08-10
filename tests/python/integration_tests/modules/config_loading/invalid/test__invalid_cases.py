@@ -108,7 +108,10 @@ class TestInvalidEnabledConfigParsingCases:
         file_path = self.SAMPLE_FILE_DIR / "global__non_boolean.toml"
         with pytest.raises(ModuleError) as exception_info:
             Module.from_path(path=file_path, deployment_target="")
-        expected = "Configuration syntax error: The value for section 'enabled' should be boolean, got str!"
+        expected = (
+            "Configuration syntax error: The value for section 'enabled' should "
+            "be boolean, got str!"
+        )
         assert exception_info.match(expected)
 
     def test__global_enabled_missing__without_deployment_target(self) -> None:
@@ -142,6 +145,16 @@ class TestInvalidEnabledConfigParsingCases:
         expected = (
             "Configuration syntax error: The value for section 'enabled' should be "
             "boolean for deployment target 'my_target', got int!"
+        )
+        assert exception_info.match(expected)
+
+    def test__separated_enabled_field__but_deployment_target_is_missing(self) -> None:
+        file_path = self.SAMPLE_FILE_DIR / "deployment_target__missing.toml"
+        with pytest.raises(ModuleError) as exception_info:
+            Module.from_path(path=file_path, deployment_target="")
+        expected = (
+            "Configuration syntax error: Section 'enabled' was defined for deployment "
+            "targets only, but there is no deployment target specified in the configuration!"
         )
         assert exception_info.match(expected)
 

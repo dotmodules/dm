@@ -163,3 +163,26 @@ class TestEnabledParsing:
         assert error_context.match(expected_error_message)
 
         mock_parse_boolean.assert_called_with(key="enabled")
+
+    def test__deployment_target_specific_only__no_deployment_target(
+        self,
+        parser: ConfigParser,
+        mocker: MockerFixture,
+    ) -> None:
+        dummy_deployment_target = ""
+        mock_parse_boolean = mocker.patch.object(parser.loader, "get")
+
+        mock_parse_boolean.return_value = {
+            "other_deployment_target": False,
+        }
+
+        with pytest.raises(ParserError) as error_context:
+            parser.parse_enabled(deployment_target=dummy_deployment_target)
+
+        expected_error_message = (
+            f"Section 'enabled' was defined for deployment targets only, but "
+            "there is no deployment target specified in the configuration!"
+        )
+        assert error_context.match(expected_error_message)
+
+        mock_parse_boolean.assert_called_with(key="enabled")

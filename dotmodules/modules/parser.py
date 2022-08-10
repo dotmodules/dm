@@ -89,6 +89,12 @@ class ConfigParser:
             raise ParserError(f"Mandatory section '{key}' is missing!") from e
 
         if isinstance(value, dict):
+            if not deployment_target:
+                raise ParserError(
+                    f"Section '{key}' was defined for deployment targets only, but "
+                    "there is no deployment target specified in the configuration!"
+                )
+
             if deployment_target not in value:
                 raise ParserError(
                     f"Missing deployment target '{deployment_target}' from section '{key}'!"

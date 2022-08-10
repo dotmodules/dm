@@ -1,0 +1,68 @@
+name = "name_1"
+version = "version_1"
+
+documentation = """
+line 1
+ line 2
+  line 3
+"""
+
+enabled = true
+
+documentation__my_target_1 = """
+Target specific: my_target_1
+"""
+
+documentation__my_target_2 = """
+Target specific: my_target_2
+"""
+
+[variables]
+VAR_1 = "var1"
+VAR_2 = ["var21", "var22", "var23"]
+
+[variables__my_target_1]
+VAR_3 = ["var31", "var32", "var33"]
+
+[variables__my_target_2]
+VAR_4 = ["var41", "var42", "var43"]
+
+[[links]]
+name = "link_name_1"
+path_to_target = "path_to_target_1"
+path_to_symlink = "path_to_symlink_1"
+
+[[links]]
+name = "link_name_2"
+path_to_target = "path_to_target_2"
+path_to_symlink = "path_to_symlink_2"
+
+[[links__my_target_1]]
+name = "link_name_3"
+path_to_target = "path_to_target_3"
+path_to_symlink = "path_to_symlink_3"
+
+[[links__my_target_2]]
+name = "link_name_4"
+path_to_target = "path_to_target_4"
+path_to_symlink = "path_to_symlink_4"
+
+[[hooks]]
+name = "hook_name_1"
+path_to_script = "path_to_script_1"
+priority = 1
+
+[[hooks]]
+name = "hook_name_2"
+path_to_script = "path_to_script_2"
+priority = 2
+
+[[hooks__my_target_1]]
+name = "hook_name_3"
+path_to_script = "path_to_script_3"
+priority = 3
+
+[[hooks__my_target_2]]
+name = "hook_name_4"
+path_to_script = "path_to_script_4"
+priority = 4

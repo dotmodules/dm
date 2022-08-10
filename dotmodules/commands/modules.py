@@ -45,10 +45,12 @@ class ModulesCommand(Command):
                 renderer.empty_line()
                 return
 
+            current_root = ""
             for index, module in enumerate(modules.modules, start=1):
                 root = os.path.relpath(
                     module.root, settings.relative_modules_path.resolve()
                 )
+                base_root = os.path.dirname(root)
 
                 # TODO: After the minimum supported python version became 3.10
                 # we can uncomment this more elegant syntax..
@@ -75,6 +77,12 @@ class ModulesCommand(Command):
                 else:
                     raise ValueError(f"Invalid module status value: '{module.status}'")
 
+                if not current_root:
+                    current_root = base_root
+                elif current_root != base_root:
+                    current_root = base_root
+                    renderer.table.add_row("", "", "", "", "")
+
                 renderer.table.add_row(
                     f"<<BOLD>><<BLUE>>[{str(index)}]<<RESET>>",
                     f"<<BOLD>>{module.name}<<RESET>>",
@@ -82,7 +90,8 @@ class ModulesCommand(Command):
                     status,
                     f"<<UNDERLINE>>{str(root)}<<RESET>>",
                 )
-                renderer.table.add_row("", "", "", "", "")
+
+
             renderer.table.render()
 
         elif len(parameters) == 1:

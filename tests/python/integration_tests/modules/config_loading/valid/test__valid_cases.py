@@ -16,7 +16,7 @@ class TestEndToEndValidConfigParsingCases:
     SAMPLE_FILE_DIR = Path(__file__).parent
 
     def test__full__without_deployment_target(self) -> None:
-        file_path = self.SAMPLE_FILE_DIR / "full.toml"
+        file_path = self.SAMPLE_FILE_DIR / "full_with_global_enabled_section.toml"
         module = Module.from_path(path=file_path, deployment_target="")
 
         assert module.name == "name_1"
@@ -89,7 +89,7 @@ class TestEndToEndValidConfigParsingCases:
         assert hook.links == module.links
 
     def test__full__with_deployment_target(self) -> None:
-        file_path = self.SAMPLE_FILE_DIR / "full.toml"
+        file_path = self.SAMPLE_FILE_DIR / "full_with_separated_enabled_section.toml"
         module = Module.from_path(path=file_path, deployment_target="my_target_1")
 
         assert module.name == "name_1"
