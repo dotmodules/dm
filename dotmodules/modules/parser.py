@@ -92,7 +92,7 @@ class ConfigParser:
             if not deployment_target:
                 raise ParserError(
                     f"Section '{key}' was defined for deployment targets only, but "
-                    "there is no deployment target specified in the configuration!"
+                    "there is no deployment target specified for the current deployment!"
                 )
 
             if deployment_target not in value:

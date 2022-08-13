@@ -19,7 +19,7 @@ CONFIG_FILE_NAME := dm.toml
 # You should not modify the value of this variable directly. You should create
 # the 'dm.deployment.target.conf' file instead and put the current deployment
 # name into it.
-DEPLOYMENT_TARGET_FILE := dm.deployment.target.conf
+DEPLOYMENT_TARGET_FILE := dm_deployment_target.conf
 DEPLOYMENT_TARGET := $(shell cat '$(DEPLOYMENT_TARGET_FILE)' 2>/dev/null || echo '')
 
 # Python interpreter to use when invoking the starting script.

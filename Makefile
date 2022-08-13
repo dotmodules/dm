@@ -95,7 +95,7 @@ test_shell:
 
 .PHONY: test
 test: test_python test_shell
-	@echo 'Running the test suites..'
+	@echo 'Test suites finished.'
 
 .PHONY: virtualenv_activated
 virtualenv_activated:
