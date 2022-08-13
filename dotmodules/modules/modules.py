@@ -16,9 +16,9 @@ from dotmodules.modules.links import LinkItem
 from dotmodules.modules.loader import ConfigLoader, LoaderError
 from dotmodules.modules.parser import (
     ConfigParser,
-    HookItemDict,
     LinkItemDict,
     ParserError,
+    ShellScriptHookItemDict,
 )
 from dotmodules.modules.path import PathManager
 
@@ -63,10 +63,16 @@ class Module:
             )
             variables = parser.parse_variables(deployment_target=deployment_target)
             link_items = parser.parse_links(deployment_target=deployment_target)
-            hook_items = parser.parse_hooks(deployment_target=deployment_target)
+            shell_script_hook_items = parser.parse_shell_script_hooks(
+                deployment_target=deployment_target
+            )
 
             links = cls._create_links(link_items=link_items)
-            hooks = cls._create_hooks(hook_items=hook_items)
+            shell_script_hooks = cls._create_shell_script_hooks(
+                shell_script_hook_items=shell_script_hook_items
+            )
+            hooks = shell_script_hooks
+
             cls._validate_hooks(hooks=hooks)
 
             if links:
@@ -106,11 +112,11 @@ class Module:
         return links
 
     @staticmethod
-    def _create_hooks(
-        hook_items: List[HookItemDict],
+    def _create_shell_script_hooks(
+        shell_script_hook_items: List[ShellScriptHookItemDict],
     ) -> List[Union[ShellScriptHook, LinkDeploymentHook, LinkCleanUpHook]]:
         hooks: List[Union[ShellScriptHook, LinkDeploymentHook, LinkCleanUpHook]] = []
-        for hook_item in hook_items:
+        for hook_item in shell_script_hook_items:
             hook = ShellScriptHook(
                 path_to_script=hook_item["path_to_script"],
                 priority=hook_item["priority"],

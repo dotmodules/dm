@@ -10,13 +10,13 @@ class LinkItemDict(TypedDict):
     name: str
 
 
-class HookItemDict(TypedDict):
+class ShellScriptHookItemDict(TypedDict):
     path_to_script: str
     priority: int
     name: str
 
 
-T = TypeVar("T", bound=Union[LinkItemDict, HookItemDict])
+T = TypeVar("T", bound=Union[LinkItemDict, ShellScriptHookItemDict])
 
 
 class ParserError(Exception):
@@ -41,12 +41,12 @@ class ConfigParser:
         KEY__DOCUMENTATION = "documentation"
         KEY__VARIABLES = "variables"
         KEY__LINKS = "links"
-        KEY__HOOKS = "hooks"
+        KEY__SHELL_SCRIPT_HOOKS = "shell_script_hooks"
 
         TEMPLATE__DOCUMENTATION = "documentation__{deployment_target}"
         TEMPLATE__VARIABLES = "variables__{deployment_target}"
         TEMPLATE__LINKS = "links__{deployment_target}"
-        TEMPLATE__HOOKS = "hooks__{deployment_target}"
+        TEMPLATE__SHELL_SCRIPT_HOOKS = "shell_script_hooks__{deployment_target}"
 
         # NOTE: In the following definitions the type of the values will
         # determine the expected value type.
@@ -56,7 +56,7 @@ class ConfigParser:
             "name": "string",
         }
 
-        EXPECTED_HOOK_ITEM: HookItemDict = {
+        EXPECTED_SHELL_SCRIPT_HOOK_ITEM: ShellScriptHookItemDict = {
             "path_to_script": "string",
             "name": "string",
             "priority": 0,
@@ -243,25 +243,27 @@ class ConfigParser:
 
         return links
 
-    def parse_hooks(self, deployment_target: str) -> List[HookItemDict]:
+    def parse_shell_script_hooks(
+        self, deployment_target: str
+    ) -> List[ShellScriptHookItemDict]:
         hooks = self._parse_item_list(
-            key=self.Definition.KEY__HOOKS,
-            expected_item=self.Definition.EXPECTED_HOOK_ITEM,
+            key=self.Definition.KEY__SHELL_SCRIPT_HOOKS,
+            expected_item=self.Definition.EXPECTED_SHELL_SCRIPT_HOOK_ITEM,
         )
 
         if deployment_target:
-            key = self.Definition.TEMPLATE__HOOKS.format(
+            key = self.Definition.TEMPLATE__SHELL_SCRIPT_HOOKS.format(
                 deployment_target=deployment_target
             )
             deployment_target_hooks = self._parse_item_list(
                 key=key,
-                expected_item=self.Definition.EXPECTED_HOOK_ITEM,
+                expected_item=self.Definition.EXPECTED_SHELL_SCRIPT_HOOK_ITEM,
             )
 
             for deployment_target_hook in deployment_target_hooks:
                 if deployment_target_hook in hooks:
                     deployment_target_hook_section = (
-                        self.Definition.TEMPLATE__HOOKS.format(
+                        self.Definition.TEMPLATE__SHELL_SCRIPT_HOOKS.format(
                             deployment_target=deployment_target
                         )
                     )

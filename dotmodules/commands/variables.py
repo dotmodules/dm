@@ -43,8 +43,12 @@ class VariablesCommand(Command):
         header_separator = " "
 
         for name, values in modules.variables.items():
+            colored_values = [
+                f"<<HIGHLIGHT>><<GREEN>> ok <<RESET>><<HIGHLIGHT>>{value}<<RESET>>"
+                for value in values
+            ]
             text = renderer.wrap.render(
-                string=" ".join(values),
+                string=" ".join(colored_values),
                 wrap_limit=body_width,
                 print_lines=False,
                 indent=False,

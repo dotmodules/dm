@@ -3,11 +3,11 @@ version = "version_1"
 
 enabled = true
 
-[[hooks]]
+[[shell_script_hooks]]
 name = "hook_name_1"
 path_to_script = "path_to_script_1"
 priority = 1
 
-[[hooks]]
+[[shell_script_hooks]]
 name = "hook_name_2"
 path_to_script = "path_to_script_2"

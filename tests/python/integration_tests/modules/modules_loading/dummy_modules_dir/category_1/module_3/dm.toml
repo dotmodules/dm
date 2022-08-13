@@ -1,8 +1,9 @@
 name = "module_3"
 version = "version_3"
-enabled = true
 
 documentation = "docs_3"
+
+enabled = true
 
 [variables]
 VAR_3_1 = "var_1"
@@ -13,7 +14,7 @@ name = "link_name_3"
 path_to_target = "path_to_target_3"
 path_to_symlink = "path_to_symlink_3"
 
-[[hooks]]
+[[shell_script_hooks]]
 name = "hook_name_3"
 path_to_script = "path_to_script_3"
 priority = 3

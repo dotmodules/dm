@@ -3,4 +3,4 @@ version = "version_1"
 
 enabled = true
 
-hooks = [42]
+shell_script_hooks = [42]

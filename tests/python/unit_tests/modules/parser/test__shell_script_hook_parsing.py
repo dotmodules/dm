@@ -3,24 +3,24 @@ from typing import List
 import pytest
 from pytest_mock.plugin import MockerFixture
 
-from dotmodules.modules.parser import ConfigParser, HookItemDict, ParserError
+from dotmodules.modules.parser import ConfigParser, ParserError, ShellScriptHookItemDict
 
 
-class TestHookParsing:
-    def test__missing_global_hooks__without_deployment_target(
+class TestShellScriptHookParsing:
+    def test__missing_global_shell_script_hooks__without_deployment_target(
         self, parser: ConfigParser, mocker: MockerFixture
     ) -> None:
-        dummy_global_hooks: List[HookItemDict] = []
+        dummy_global_hooks: List[ShellScriptHookItemDict] = []
         mock_parse_item_list = mocker.patch.object(parser, "_parse_item_list")
         mock_parse_item_list.return_value = dummy_global_hooks
 
         expected_hooks = dummy_global_hooks
 
-        result = parser.parse_hooks(deployment_target="")
+        result = parser.parse_shell_script_hooks(deployment_target="")
         assert result == expected_hooks
 
         mock_parse_item_list.assert_called_once_with(
-            key="hooks",
+            key="shell_script_hooks",
             expected_item={
                 "path_to_script": "string",
                 "name": "string",
@@ -28,12 +28,12 @@ class TestHookParsing:
             },
         )
 
-    def test__missing_global_hooks__with_missing_deployment_target(
+    def test__missing_global_shell_script_hooks__with_missing_deployment_target(
         self, parser: ConfigParser, mocker: MockerFixture
     ) -> None:
         dummy_deployment_target = "my_target"
-        dummy_global_hooks: List[HookItemDict] = []
-        dummy_deployment_target_hooks: List[HookItemDict] = []
+        dummy_global_hooks: List[ShellScriptHookItemDict] = []
+        dummy_deployment_target_hooks: List[ShellScriptHookItemDict] = []
         mock_parse_item_list = mocker.patch.object(parser, "_parse_item_list")
         mock_parse_item_list.side_effect = [
             dummy_global_hooks,
@@ -42,13 +42,15 @@ class TestHookParsing:
 
         expected_hooks = dummy_global_hooks
 
-        result = parser.parse_hooks(deployment_target=dummy_deployment_target)
+        result = parser.parse_shell_script_hooks(
+            deployment_target=dummy_deployment_target
+        )
         assert result == expected_hooks
 
         mock_parse_item_list.assert_has_calls(
             [
                 mocker.call(
-                    key="hooks",
+                    key="shell_script_hooks",
                     expected_item={
                         "path_to_script": "string",
                         "name": "string",
@@ -56,7 +58,7 @@ class TestHookParsing:
                     },
                 ),
                 mocker.call(
-                    key=f"hooks__{dummy_deployment_target}",
+                    key=f"shell_script_hooks__{dummy_deployment_target}",
                     expected_item={
                         "path_to_script": "string",
                         "name": "string",
@@ -66,12 +68,12 @@ class TestHookParsing:
             ]
         )
 
-    def test__missing_global_hooks__with_deployment_target(
+    def test__missing_global_shell_script_hooks__with_deployment_target(
         self, parser: ConfigParser, mocker: MockerFixture
     ) -> None:
         dummy_deployment_target = "my_target"
-        dummy_global_hooks: List[HookItemDict] = []
-        dummy_deployment_target_hooks: List[HookItemDict] = [
+        dummy_global_hooks: List[ShellScriptHookItemDict] = []
+        dummy_deployment_target_hooks: List[ShellScriptHookItemDict] = [
             {
                 "path_to_script": "my_path_to_script_3",
                 "priority": 3,
@@ -91,13 +93,15 @@ class TestHookParsing:
 
         expected_hooks = dummy_global_hooks + dummy_deployment_target_hooks
 
-        result = parser.parse_hooks(deployment_target=dummy_deployment_target)
+        result = parser.parse_shell_script_hooks(
+            deployment_target=dummy_deployment_target
+        )
         assert result == expected_hooks
 
         mock_parse_item_list.assert_has_calls(
             [
                 mocker.call(
-                    key="hooks",
+                    key="shell_script_hooks",
                     expected_item={
                         "path_to_script": "string",
                         "name": "string",
@@ -105,7 +109,7 @@ class TestHookParsing:
                     },
                 ),
                 mocker.call(
-                    key=f"hooks__{dummy_deployment_target}",
+                    key=f"shell_script_hooks__{dummy_deployment_target}",
                     expected_item={
                         "path_to_script": "string",
                         "name": "string",
@@ -115,7 +119,7 @@ class TestHookParsing:
             ]
         )
 
-    def test__global_hooks__without_deployment_target(
+    def test__global_shell_script_hooks__without_deployment_target(
         self, parser: ConfigParser, mocker: MockerFixture
     ) -> None:
         dummy_global_hooks = [
@@ -135,11 +139,11 @@ class TestHookParsing:
 
         expected_hooks = dummy_global_hooks
 
-        result = parser.parse_hooks(deployment_target="")
+        result = parser.parse_shell_script_hooks(deployment_target="")
         assert result == expected_hooks
 
         mock_parse_item_list.assert_called_once_with(
-            key="hooks",
+            key="shell_script_hooks",
             expected_item={
                 "path_to_script": "string",
                 "name": "string",
@@ -147,7 +151,7 @@ class TestHookParsing:
             },
         )
 
-    def test__global_hooks__with_missing_deployment_target(
+    def test__global_shell_script_hooks__with_missing_deployment_target(
         self, parser: ConfigParser, mocker: MockerFixture
     ) -> None:
         dummy_deployment_target = "my_target"
@@ -163,7 +167,7 @@ class TestHookParsing:
                 "name": "my_name_2",
             },
         ]
-        dummy_deployment_target_hooks: List[HookItemDict] = []
+        dummy_deployment_target_hooks: List[ShellScriptHookItemDict] = []
         mock_parse_item_list = mocker.patch.object(parser, "_parse_item_list")
         mock_parse_item_list.side_effect = [
             dummy_global_hooks,
@@ -172,13 +176,15 @@ class TestHookParsing:
 
         expected_hooks = dummy_global_hooks
 
-        result = parser.parse_hooks(deployment_target=dummy_deployment_target)
+        result = parser.parse_shell_script_hooks(
+            deployment_target=dummy_deployment_target
+        )
         assert result == expected_hooks
 
         mock_parse_item_list.assert_has_calls(
             [
                 mocker.call(
-                    key="hooks",
+                    key="shell_script_hooks",
                     expected_item={
                         "path_to_script": "string",
                         "name": "string",
@@ -186,7 +192,7 @@ class TestHookParsing:
                     },
                 ),
                 mocker.call(
-                    key=f"hooks__{dummy_deployment_target}",
+                    key=f"shell_script_hooks__{dummy_deployment_target}",
                     expected_item={
                         "path_to_script": "string",
                         "name": "string",
@@ -196,11 +202,11 @@ class TestHookParsing:
             ]
         )
 
-    def test__global_hooks__with_deployment_target(
+    def test__global_shell_script_hooks__with_deployment_target(
         self, parser: ConfigParser, mocker: MockerFixture
     ) -> None:
         dummy_deployment_target = "my_target"
-        dummy_global_hooks: List[HookItemDict] = [
+        dummy_global_hooks: List[ShellScriptHookItemDict] = [
             {
                 "path_to_script": "my_path_to_script_1",
                 "priority": 1,
@@ -212,7 +218,7 @@ class TestHookParsing:
                 "name": "my_name_2",
             },
         ]
-        dummy_deployment_target_hooks: List[HookItemDict] = [
+        dummy_deployment_target_hooks: List[ShellScriptHookItemDict] = [
             {
                 "path_to_script": "my_path_to_script_3",
                 "priority": 3,
@@ -232,13 +238,15 @@ class TestHookParsing:
 
         expected_hooks = dummy_global_hooks
 
-        result = parser.parse_hooks(deployment_target=dummy_deployment_target)
+        result = parser.parse_shell_script_hooks(
+            deployment_target=dummy_deployment_target
+        )
         assert result == expected_hooks
 
         mock_parse_item_list.assert_has_calls(
             [
                 mocker.call(
-                    key="hooks",
+                    key="shell_script_hooks",
                     expected_item={
                         "path_to_script": "string",
                         "name": "string",
@@ -246,7 +254,7 @@ class TestHookParsing:
                     },
                 ),
                 mocker.call(
-                    key=f"hooks__{dummy_deployment_target}",
+                    key=f"shell_script_hooks__{dummy_deployment_target}",
                     expected_item={
                         "path_to_script": "string",
                         "name": "string",
@@ -256,7 +264,7 @@ class TestHookParsing:
             ]
         )
 
-    def test__deployment_target_redefines_hook__error_should_be_raised(
+    def test__deployment_target_redefines_shell_script_hook__error_should_be_raised(
         self, parser: ConfigParser, mocker: MockerFixture
     ) -> None:
         dummy_deployment_target = "my_target"
@@ -281,11 +289,11 @@ class TestHookParsing:
         ]
 
         with pytest.raises(ParserError) as error_context:
-            parser.parse_hooks(deployment_target=dummy_deployment_target)
+            parser.parse_shell_script_hooks(deployment_target=dummy_deployment_target)
 
         expected_error_message = (
             "Deployment target specific hook section "
-            f"'hooks__{dummy_deployment_target}' contains an already "
+            f"'shell_script_hooks__{dummy_deployment_target}' contains an already "
             "defined hook item!"
         )
         assert error_context.match(expected_error_message)
@@ -293,7 +301,7 @@ class TestHookParsing:
         mock_parse_item_list.assert_has_calls(
             [
                 mocker.call(
-                    key="hooks",
+                    key="shell_script_hooks",
                     expected_item={
                         "path_to_script": "string",
                         "name": "string",
@@ -301,7 +309,7 @@ class TestHookParsing:
                     },
                 ),
                 mocker.call(
-                    key=f"hooks__{dummy_deployment_target}",
+                    key=f"shell_script_hooks__{dummy_deployment_target}",
                     expected_item={
                         "path_to_script": "string",
                         "name": "string",

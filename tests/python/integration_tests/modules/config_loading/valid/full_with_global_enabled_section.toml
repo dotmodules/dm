@@ -47,22 +47,22 @@ name = "link_name_4"
 path_to_target = "path_to_target_4"
 path_to_symlink = "path_to_symlink_4"
 
-[[hooks]]
+[[shell_script_hooks]]
 name = "hook_name_1"
 path_to_script = "path_to_script_1"
 priority = 1
 
-[[hooks]]
+[[shell_script_hooks]]
 name = "hook_name_2"
 path_to_script = "path_to_script_2"
 priority = 2
 
-[[hooks__my_target_1]]
+[[shell_script_hooks__my_target_1]]
 name = "hook_name_3"
 path_to_script = "path_to_script_3"
 priority = 3
 
-[[hooks__my_target_2]]
+[[shell_script_hooks__my_target_2]]
 name = "hook_name_4"
 path_to_script = "path_to_script_4"
 priority = 4

@@ -323,8 +323,8 @@ class TestInvalidHooksConfigParsingCases:
         with pytest.raises(ModuleError) as exception_info:
             Module.from_path(path=file_path, deployment_target="")
         expected = (
-            "Configuration syntax error: Missing mandatory field 'name' from section 'hooks' "
-            "item at index 2!"
+            "Configuration syntax error: Missing mandatory field 'name' from section "
+            "'shell_script_hooks' item at index 2!"
         )
         assert exception_info.match(expected)
 
@@ -334,7 +334,7 @@ class TestInvalidHooksConfigParsingCases:
             Module.from_path(path=file_path, deployment_target="")
         expected = (
             "Configuration syntax error: Missing mandatory field 'path_to_script' from section "
-            "'hooks' item at index 2!"
+            "'shell_script_hooks' item at index 2!"
         )
         assert exception_info.match(expected)
 
@@ -344,7 +344,7 @@ class TestInvalidHooksConfigParsingCases:
             Module.from_path(path=file_path, deployment_target="")
         expected = (
             "Configuration syntax error: Missing mandatory field 'priority' from section "
-            "'hooks' item at index 2!"
+            "'shell_script_hooks' item at index 2!"
         )
         assert exception_info.match(expected)
 
@@ -353,8 +353,8 @@ class TestInvalidHooksConfigParsingCases:
         with pytest.raises(ModuleError) as exception_info:
             Module.from_path(path=file_path, deployment_target="")
         expected = (
-            "Configuration syntax error: Unexpected field 'additional_field' found for section "
-            "'hooks' item at index 2!"
+            "Configuration syntax error: Unexpected field 'additional_field' found for "
+            "section 'shell_script_hooks' item at index 2!"
         )
         assert exception_info.match(expected)
 
@@ -364,7 +364,7 @@ class TestInvalidHooksConfigParsingCases:
             Module.from_path(path=file_path, deployment_target="")
         expected = (
             "Configuration syntax error: Unexpected fields 'additional_field_1', "
-            "'additional_field_2' found for section 'hooks' item at index 2!"
+            "'additional_field_2' found for section 'shell_script_hooks' item at index 2!"
         )
         assert exception_info.match(expected)
 
@@ -374,7 +374,7 @@ class TestInvalidHooksConfigParsingCases:
             Module.from_path(path=file_path, deployment_target="")
         expected = (
             "Configuration syntax error: The value for field 'name' should be an str "
-            "in section 'hooks' item at index 1!"
+            "in section 'shell_script_hooks' item at index 1!"
         )
         assert exception_info.match(expected)
 
@@ -383,8 +383,8 @@ class TestInvalidHooksConfigParsingCases:
         with pytest.raises(ModuleError) as exception_info:
             Module.from_path(path=file_path, deployment_target="")
         expected = (
-            "Configuration syntax error: Invalid value for 'hooks'! It should contain "
-            "a list of objects!"
+            "Configuration syntax error: Invalid value for 'shell_script_hooks'! It should "
+            "contain a list of objects!"
         )
         assert exception_info.match(expected)
 
@@ -393,8 +393,8 @@ class TestInvalidHooksConfigParsingCases:
         with pytest.raises(ModuleError) as exception_info:
             Module.from_path(path=file_path, deployment_target="")
         expected = (
-            "Configuration syntax error: Invalid value for 'hooks'! It should contain "
-            "a list of objects!"
+            "Configuration syntax error: Invalid value for 'shell_script_hooks'! It should "
+            "contain a list of objects!"
         )
         assert exception_info.match(expected)
 
@@ -403,7 +403,7 @@ class TestInvalidHooksConfigParsingCases:
         with pytest.raises(ModuleError) as exception_info:
             Module.from_path(path=file_path, deployment_target="my_target")
         expected = (
-            "Configuration syntax error: Deployment target specific hook section 'hooks__my_target' "
-            "contains an already defined hook item!"
+            "Configuration syntax error: Deployment target specific hook section "
+            "'shell_script_hooks__my_target' contains an already defined hook item!"
         )
         assert exception_info.match(expected)

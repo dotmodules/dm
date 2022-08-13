@@ -11,7 +11,7 @@ from dotmodules.modules.hooks import (
 )
 from dotmodules.modules.links import LinkItem
 from dotmodules.modules.modules import Module, ModuleStatus
-from dotmodules.modules.parser import HookItemDict, LinkItemDict, ParserError
+from dotmodules.modules.parser import LinkItemDict, ParserError, ShellScriptHookItemDict
 
 
 class TestModuleLoadingInternalCases:
@@ -43,8 +43,8 @@ class TestModuleLoadingInternalCases:
         assert link.path_to_symlink == "path_to_symlink_2"
         assert link.name == "name_2"
 
-    def test__hooks_can_be_created(self) -> None:
-        hook_items: List[HookItemDict] = [
+    def test__shell_script_hooks_can_be_created(self) -> None:
+        shell_script_hook_items: List[ShellScriptHookItemDict] = [
             {
                 "path_to_script": "path_to_script_1",
                 "name": "name_1",
@@ -57,7 +57,9 @@ class TestModuleLoadingInternalCases:
             },
         ]
 
-        hooks = Module._create_hooks(hook_items=hook_items)
+        hooks = Module._create_shell_script_hooks(
+            shell_script_hook_items=shell_script_hook_items
+        )
 
         assert len(hooks) == 2
 
@@ -71,7 +73,7 @@ class TestModuleLoadingInternalCases:
         assert hook.name == "name_2"
         assert hook.priority == 2
 
-    def test__hooks_can_be__validated__no_error(self) -> None:
+    def test__hooks_can_be_validated__no_error(self) -> None:
         hooks: List[Union[ShellScriptHook, LinkDeploymentHook, LinkCleanUpHook]] = [
             ShellScriptHook(
                 path_to_script="path_to_script_1",
@@ -93,7 +95,9 @@ class TestModuleLoadingInternalCases:
             LinkCleanUpHook.NAME,
         ],
     )
-    def test__hooks_can_be__error__reserved_hook_name(self, reserved_name: str) -> None:
+    def test__hooks_can_be_validated__error__reserved_hook_name(
+        self, reserved_name: str
+    ) -> None:
         hooks: List[Union[ShellScriptHook, LinkDeploymentHook, LinkCleanUpHook]] = [
             ShellScriptHook(
                 path_to_script="path_to_script_1",
