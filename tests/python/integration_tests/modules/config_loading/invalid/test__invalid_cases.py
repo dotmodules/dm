@@ -154,7 +154,7 @@ class TestInvalidEnabledConfigParsingCases:
             Module.from_path(path=file_path, deployment_target="")
         expected = (
             "Configuration syntax error: Section 'enabled' was defined for deployment "
-            "targets only, but there is no deployment target specified in the configuration!"
+            "targets only, but there is no deployment target specified for the current deployment!"
         )
         assert exception_info.match(expected)
 
