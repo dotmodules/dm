@@ -29,26 +29,37 @@ class VariablesCommand(Command):
     ) -> None:
         renderer.empty_line()
 
-        if not modules.modules:
+        if len(modules) == 0:
             renderer.wrap.render("<<DIM>>You have no modules registered.<<RESET>>")
             renderer.empty_line()
             return
 
-        header_width = max([len(name) for name in modules.variables.keys()]) + len(
-            settings.column_padding
-        )
+        header_width = max(
+            [len(name) for name in modules.aggregated_variables.keys()]
+        ) + len(settings.column_padding)
         body_width = (
             settings.text_wrap_limit - header_width - len(settings.column_padding)
         )
         header_separator = " "
 
-        for name, values in modules.variables.items():
-            colored_values = [
-                f"<<HIGHLIGHT>><<GREEN>> ok <<RESET>><<HIGHLIGHT>>{value}<<RESET>>"
-                for value in values
-            ]
+        for name, values in modules.aggregated_variables.items():
+            prepared_values = []
+            for value in values:
+                variable_status = modules.variable_statuses.get(
+                    variable_name=name, variable_value=value
+                )
+                if variable_status and variable_status.processed:
+                    # prepared_values.append(f"<<HIGHLIGHT>>_{value}_<<GREEN>>_{variable_status.details}_<<RESET>>")
+                    prepared_values.append(
+                        f"<<BOLD>><<GREEN>>[{value}]<<RESET>><<DIM>>-{variable_status.status_string}<<RESET>>"
+                    )
+                else:
+                    prepared_values.append(
+                        f"<<BOLD>><<RED>>[{value}]<<RESET>><<DIM>>-{variable_status.status_string}<<RESET>>"
+                    )
+
             text = renderer.wrap.render(
-                string=" ".join(colored_values),
+                string=" ".join(prepared_values),
                 wrap_limit=body_width,
                 print_lines=False,
                 indent=False,

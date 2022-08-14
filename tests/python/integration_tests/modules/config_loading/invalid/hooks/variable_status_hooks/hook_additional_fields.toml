@@ -1,0 +1,16 @@
+name = "name_1"
+version = "version_1"
+
+enabled = true
+
+[[variable_status_hooks]]
+variable_name = "variable_name_1"
+path_to_script = "path_to_script_1"
+prepare_step_necessary = false
+
+[[variable_status_hooks]]
+variable_name = "variable_name_2"
+path_to_script = "path_to_script_2"
+prepare_step_necessary = false
+additional_field_1 = "additional_value_1"
+additional_field_2 = "additional_value_2"

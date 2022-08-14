@@ -10,8 +10,14 @@ from dotmodules.modules.hooks import (
     ShellScriptHook,
 )
 from dotmodules.modules.links import LinkItem
-from dotmodules.modules.modules import Module, ModuleStatus
+from dotmodules.modules.modules import Module, Modules, ModuleStatus
 from dotmodules.modules.parser import LinkItemDict, ParserError, ShellScriptHookItemDict
+
+
+@pytest.fixture
+def modules(mocker: MockerFixture) -> Modules:
+    mock_modules = mocker.MagicMock()
+    return cast(Modules, mock_modules)
 
 
 class TestModuleLoadingInternalCases:
@@ -145,7 +151,9 @@ class TestModuleLoadingInternalCases:
 
 class TestModuleErrorCollectingCases:
     def test__errors_can_be_collected_from_hooks_and_links(
-        self, mocker: MockerFixture
+        self,
+        mocker: MockerFixture,
+        modules: Modules,
     ) -> None:
         link = LinkItem(
             path_to_target="path_to_target_1",
@@ -170,9 +178,11 @@ class TestModuleErrorCollectingCases:
             version="module_version_1",
             enabled=True,
             documentation=["line_1"],
-            variables={},
+            aggregated_variables={},
             links=[link],
             hooks=[hook],
+            variable_status_hooks=[],
+            modules=modules,
         )
 
         errors = module.errors
@@ -191,7 +201,9 @@ class TestModuleErrorCollectingCases:
 
 class TestModuleStatusCalculationCases:
     def test__errors_reported__status_will_be_error(
-        self, mocker: MockerFixture
+        self,
+        mocker: MockerFixture,
+        modules: Modules,
     ) -> None:
         module = Module(
             root=Path("module/root"),
@@ -199,9 +211,11 @@ class TestModuleStatusCalculationCases:
             version="module_version_1",
             enabled=True,
             documentation=["line_1"],
-            variables={},
+            aggregated_variables={},
             links=[],
             hooks=[],
+            variable_status_hooks=[],
+            modules=modules,
         )
         mock_module_error = mocker.patch.object(
             Module, "errors", new_callable=mocker.PropertyMock
@@ -212,21 +226,25 @@ class TestModuleStatusCalculationCases:
 
         mock_module_error.assert_called_once()
 
-    def test__module_disabled__status_will_be_disabled(self) -> None:
+    def test__module_disabled__status_will_be_disabled(self, modules: Modules) -> None:
         module = Module(
             root=Path("module/root"),
             name="module_name_1",
             version="module_version_1",
             enabled=False,
             documentation=["line_1"],
-            variables={},
+            aggregated_variables={},
             links=[],
             hooks=[],
+            variable_status_hooks=[],
+            modules=modules,
         )
         assert module.status == ModuleStatus.DISABLED
 
     def test__disabled_status_has_priority_over_error(
-        self, mocker: MockerFixture
+        self,
+        mocker: MockerFixture,
+        modules: Modules,
     ) -> None:
         module = Module(
             root=Path("module/root"),
@@ -234,9 +252,11 @@ class TestModuleStatusCalculationCases:
             version="module_version_1",
             enabled=False,
             documentation=["line_1"],
-            variables={},
+            aggregated_variables={},
             links=[],
             hooks=[],
+            variable_status_hooks=[],
+            modules=modules,
         )
         mock_module_error = mocker.patch.object(
             Module, "errors", new_callable=mocker.PropertyMock
@@ -248,7 +268,9 @@ class TestModuleStatusCalculationCases:
         mock_module_error.assert_not_called()
 
     def test__no_errors__every_deployment_status_reported__status_will_be_deployed(
-        self, mocker: MockerFixture
+        self,
+        mocker: MockerFixture,
+        modules: Modules,
     ) -> None:
         link = LinkItem(
             path_to_target="path_to_target_1",
@@ -261,9 +283,11 @@ class TestModuleStatusCalculationCases:
             version="module_version_1",
             enabled=True,
             documentation=["line_1"],
-            variables={},
+            aggregated_variables={},
             links=[link],
             hooks=[],
+            variable_status_hooks=[],
+            modules=modules,
         )
 
         mock_module_error = mocker.patch.object(
@@ -285,7 +309,9 @@ class TestModuleStatusCalculationCases:
         mock_target_matched_check.assert_called_once()
 
     def test__no_error__not_all_deployment_status__status_will_be_pending(
-        self, mocker: MockerFixture
+        self,
+        mocker: MockerFixture,
+        modules: Modules,
     ) -> None:
         link = LinkItem(
             path_to_target="path_to_target_1",
@@ -298,9 +324,11 @@ class TestModuleStatusCalculationCases:
             version="module_version_1",
             enabled=True,
             documentation=["line_1"],
-            variables={},
+            aggregated_variables={},
             links=[link],
             hooks=[],
+            variable_status_hooks=[],
+            modules=modules,
         )
 
         mock_module_error = mocker.patch.object(

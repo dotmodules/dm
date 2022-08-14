@@ -16,7 +16,16 @@ class ShellScriptHookItemDict(TypedDict):
     name: str
 
 
-T = TypeVar("T", bound=Union[LinkItemDict, ShellScriptHookItemDict])
+class VariableStatusHookItemDict(TypedDict):
+    path_to_script: str
+    variable_name: str
+    prepare_step_necessary: bool
+
+
+T = TypeVar(
+    "T",
+    bound=Union[LinkItemDict, ShellScriptHookItemDict, VariableStatusHookItemDict],
+)
 
 
 class ParserError(Exception):
@@ -42,11 +51,13 @@ class ConfigParser:
         KEY__VARIABLES = "variables"
         KEY__LINKS = "links"
         KEY__SHELL_SCRIPT_HOOKS = "shell_script_hooks"
+        KEY__VARIABLE_STATUS_HOOKS = "variable_status_hooks"
 
         TEMPLATE__DOCUMENTATION = "documentation__{deployment_target}"
         TEMPLATE__VARIABLES = "variables__{deployment_target}"
         TEMPLATE__LINKS = "links__{deployment_target}"
         TEMPLATE__SHELL_SCRIPT_HOOKS = "shell_script_hooks__{deployment_target}"
+        TEMPLATE__VARIABLE_STATUS_HOOKS = "variable_status_hooks__{deployment_target}"
 
         # NOTE: In the following definitions the type of the values will
         # determine the expected value type.
@@ -60,6 +71,12 @@ class ConfigParser:
             "path_to_script": "string",
             "name": "string",
             "priority": 0,
+        }
+
+        EXPECTED_VARIABLE_STATUS_HOOK_ITEM: VariableStatusHookItemDict = {
+            "path_to_script": "string",
+            "variable_name": "string",
+            "prepare_step_necessary": False,
         }
 
     def parse_name(self) -> str:
@@ -264,6 +281,40 @@ class ConfigParser:
                 if deployment_target_hook in hooks:
                     deployment_target_hook_section = (
                         self.Definition.TEMPLATE__SHELL_SCRIPT_HOOKS.format(
+                            deployment_target=deployment_target
+                        )
+                    )
+                    raise ParserError(
+                        "Deployment target specific hook section "
+                        f"'{deployment_target_hook_section}' contains an already "
+                        "defined hook item!"
+                    )
+
+            hooks += deployment_target_hooks
+
+        return hooks
+
+    def parse_variable_status_hooks(
+        self, deployment_target: str
+    ) -> List[VariableStatusHookItemDict]:
+        hooks = self._parse_item_list(
+            key=self.Definition.KEY__VARIABLE_STATUS_HOOKS,
+            expected_item=self.Definition.EXPECTED_VARIABLE_STATUS_HOOK_ITEM,
+        )
+
+        if deployment_target:
+            key = self.Definition.TEMPLATE__VARIABLE_STATUS_HOOKS.format(
+                deployment_target=deployment_target
+            )
+            deployment_target_hooks = self._parse_item_list(
+                key=key,
+                expected_item=self.Definition.EXPECTED_VARIABLE_STATUS_HOOK_ITEM,
+            )
+
+            for deployment_target_hook in deployment_target_hooks:
+                if deployment_target_hook in hooks:
+                    deployment_target_hook_section = (
+                        self.Definition.TEMPLATE__VARIABLE_STATUS_HOOKS.format(
                             deployment_target=deployment_target
                         )
                     )

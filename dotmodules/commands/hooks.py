@@ -2,7 +2,6 @@ from typing import Callable, List, Optional
 
 from dotmodules.commands import Command
 from dotmodules.modules import Modules
-from dotmodules.modules.path import PathManager
 from dotmodules.renderer import Renderer
 from dotmodules.settings import Settings
 
@@ -30,19 +29,19 @@ class HooksCommand(Command):
     ) -> None:
         renderer.empty_line()
 
-        if not modules.modules:
+        if len(modules) == 0:
             renderer.wrap.render("<<DIM>>You have no modules registered.<<RESET>>")
             renderer.empty_line()
             return
 
         if not parameters:
             index = 1
-            for name, hook_aggregates in modules.hooks.items():
+            for name, hooks in modules.aggregated_hooks.items():
                 name_printed = False
-                for hook_aggregate in hook_aggregates:
-                    hook_priority = hook_aggregate.hook.hook_priority
-                    hook_module_name = hook_aggregate.module.name
-                    hook_details = hook_aggregate.hook.hook_description
+                for hook in hooks:
+                    hook_priority = hook.hook_priority
+                    hook_module_name = hook.execution_context.module_name
+                    hook_details = hook.hook_description
 
                     renderer.table.add_row(
                         f"<<BOLD>><<BLUE>>[{str(index)}]<<RESET>>"
@@ -60,15 +59,9 @@ class HooksCommand(Command):
 
         else:
             hook_index = int(parameters[0]) - 1
-            hook_name = list(modules.hooks.keys())[hook_index]
-            hook_aggregates = modules.hooks[hook_name]
-            for hook_aggregate in hook_aggregates:
-                path_manager = PathManager(root_path=hook_aggregate.module.root)
-                hook_aggregate.hook.execute(
-                    module_name=hook_aggregate.module.name,
-                    module_root=hook_aggregate.module.root,
-                    path_manager=path_manager,
-                    settings=settings,
-                )
+            hook_name = list(modules.aggregated_hooks.keys())[hook_index]
+            hooks = modules.aggregated_hooks[hook_name]
+            for hook in hooks:
+                hook.execute()
 
         renderer.empty_line()

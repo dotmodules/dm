@@ -9,18 +9,28 @@ from dotmodules.modules.hooks import (
     ShellScriptHook,
 )
 from dotmodules.modules.modules import Module, ModuleError, Modules
+from dotmodules.settings import Settings
+
+
+@pytest.fixture
+def settings() -> Settings:
+    return Settings()
 
 
 @pytest.mark.integration
 class TestEndToEndModuleLoadingCases:
-    def test__modules_can_be_loaded_from_a_directory_structure(self) -> None:
-        modules_root_path = Path(__file__).parent / "dummy_modules_dir"
-        config_file_name = "dm.toml"
-        modules = Modules.load(
-            modules_root_path=modules_root_path,
-            config_file_name=config_file_name,
-            deployment_target="",
-        )
+    def test__modules_can_be_loaded_from_a_directory_structure(
+        self, settings: Settings
+    ) -> None:
+        settings.relative_modules_path = Path(__file__).parent / "dummy_modules_dir"
+        settings.config_file_name = "dm.toml"
+        settings.deployment_target = ""
+        settings.dm_cache_root = Path("/my/dm/cache/root")
+        settings.dm_cache_variables = Path("/my/dm/cache/variables")
+        settings.indent = "my_indent"
+        settings.text_wrap_limit = 42
+
+        modules = Modules(settings=settings)
         assert modules
         assert len(modules) == 4
 
@@ -33,13 +43,13 @@ class TestEndToEndModuleLoadingCases:
         # =====================================================================
         # MODULE 2
 
-        module = modules.modules[0]
+        module = modules[0]
         assert isinstance(module, Module)
         assert module.name == "module_2"
         assert module.version == "version_2"
         assert module.enabled
         assert module.documentation == ["docs_2"]
-        assert module.variables == {
+        assert module.aggregated_variables == {
             "VAR_2_1": ["var_1"],
             "VAR_2_2": ["var_2_1", "var_2_2", "var_2_3"],
         }
@@ -89,13 +99,13 @@ class TestEndToEndModuleLoadingCases:
         # =====================================================================
         # MODULE 3
 
-        module = modules.modules[1]
+        module = modules[1]
         assert isinstance(module, Module)
         assert module.name == "module_3"
         assert module.version == "version_3"
         assert module.enabled
         assert module.documentation == ["docs_3"]
-        assert module.variables == {
+        assert module.aggregated_variables == {
             "VAR_3_1": ["var_1"],
             "VAR_3_2": ["var_2_1", "var_2_2", "var_2_3"],
         }
@@ -145,13 +155,13 @@ class TestEndToEndModuleLoadingCases:
         # =====================================================================
         # MODULE 4
 
-        module = modules.modules[2]
+        module = modules[2]
         assert isinstance(module, Module)
         assert module.name == "module_4"
         assert module.version == "version_4"
         assert not module.enabled
         assert module.documentation == ["docs_4"]
-        assert module.variables == {
+        assert module.aggregated_variables == {
             "VAR_4_1": ["var_1"],
             "VAR_4_2": ["var_2_1", "var_2_2", "var_2_3"],
         }
@@ -201,13 +211,13 @@ class TestEndToEndModuleLoadingCases:
         # =====================================================================
         # MODULE 1
 
-        module = modules.modules[3]
+        module = modules[3]
         assert isinstance(module, Module)
         assert module.name == "module_1"
         assert module.version == "version_1"
         assert module.enabled
         assert module.documentation == ["docs_1"]
-        assert module.variables == {
+        assert module.aggregated_variables == {
             "VAR_1_1": ["var_1"],
             "VAR_1_2": ["var_2_1", "var_2_2", "var_2_3"],
         }
@@ -254,16 +264,18 @@ class TestEndToEndModuleLoadingCases:
         assert hook.hook_description == "Cleans up 1 link"
         assert hook.links == module.links
 
-    def test__error_during_loading(self) -> None:
-        modules_root_path = Path(__file__).parent / "dummy_modules_dir_error"
-        config_file_name = "dm.toml"
+    def test__error_during_loading(self, settings: Settings) -> None:
+        settings.relative_modules_path = (
+            Path(__file__).parent / "dummy_modules_dir_error"
+        )
+        settings.config_file_name = "dm.toml"
+        settings.deployment_target = ""
+
         with pytest.raises(ModuleError) as exception_info:
-            Modules.load(
-                modules_root_path=modules_root_path,
-                config_file_name=config_file_name,
-                deployment_target="",
-            )
-        failed_module_path = modules_root_path / "category_1" / "module_3" / "dm.toml"
+            Modules(settings=settings)
+        failed_module_path = (
+            settings.relative_modules_path / "category_1" / "module_3" / "dm.toml"
+        )
         expected = (
             f"Error while loading module at path '{failed_module_path}': "
             "Configuration syntax error: Missing mandatory field 'name' from section "

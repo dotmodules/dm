@@ -30,13 +30,13 @@ class ModulesCommand(Command):
         )
         renderer.empty_line()
 
-        if not modules.modules:
+        if len(modules) == 0:
             renderer.wrap.render("<<DIM>>You have no modules registered.<<RESET>>")
             renderer.empty_line()
             return
 
         current_root = ""
-        for index, module in enumerate(modules.modules, start=1):
+        for index, module in enumerate(modules, start=1):
             root = os.path.relpath(
                 module.root, settings.relative_modules_path.resolve()
             )
@@ -99,13 +99,13 @@ class ModulesCommand(Command):
             self.render_list(modules=modules, settings=settings, renderer=renderer)
 
         elif len(parameters) == 1:
-            if not modules.modules:
+            if len(modules) == 0:
                 renderer.wrap.render("<<DIM>>You have no modules registered.<<RESET>>")
                 renderer.empty_line()
                 return
 
             index = int(parameters[0])
-            module = modules.modules[index - 1]
+            module = modules[index - 1]
 
             self._render_module_name(
                 renderer=renderer, module=module, settings=settings
@@ -126,7 +126,7 @@ class ModulesCommand(Command):
                 renderer=renderer, module=module, settings=settings
             )
             self._render_module_variables(
-                renderer=renderer, module=module, settings=settings
+                renderer=renderer, modules=modules, module=module, settings=settings
             )
             self._render_module_links(
                 renderer=renderer, module=module, settings=settings
@@ -139,16 +139,10 @@ class ModulesCommand(Command):
             module_index = int(parameters[0]) - 1
             hook_index = int(parameters[1]) - 1
 
-            module = modules.modules[module_index]
+            module = modules[module_index]
             hook = module.hooks[hook_index]
-            path_manager = PathManager(root_path=module.root)
 
-            hook_status_code = hook.execute(
-                module_name=module.name,
-                module_root=module.root,
-                path_manager=path_manager,
-                settings=self._settings,
-            )
+            hook_status_code = hook.execute()
 
             if hook_status_code != 0:
                 renderer.empty_line()
@@ -325,16 +319,30 @@ class ModulesCommand(Command):
         )
 
     def _render_module_variables(
-        self, renderer: Renderer, module: Module, settings: Settings
+        self, renderer: Renderer, modules: Modules, module: Module, settings: Settings
     ) -> None:
-        if not module.variables:
+        if not module.aggregated_variables:
             return
 
         renderer.empty_line()
 
-        for name, values in module.variables.items():
+        for name, values in module.aggregated_variables.items():
+            prepared_values = []
+            for value in values:
+                variable_status = modules.variable_statuses.get(
+                    variable_name=name, variable_value=value
+                )
+                if variable_status and variable_status.processed:
+                    # prepared_values.append(f"<<HIGHLIGHT>>_{value}_<<GREEN>>_{variable_status.details}_<<RESET>>")
+                    prepared_values.append(
+                        f"<<BOLD>><<GREEN>>[{value}]<<RESET>><<DIM>>-{variable_status.status_string}<<RESET>>"
+                    )
+                else:
+                    prepared_values.append(
+                        f"<<BOLD>><<RED>>[{value}]<<RESET>><<DIM>>-{variable_status.status_string}<<RESET>>"
+                    )
             renderer.table.add_row(
-                f"<<BOLD>>{name}<<RESET>> " + " ".join(values),
+                f"<<BOLD>>{name}<<RESET>> " + " ".join(prepared_values),
             )
         text = renderer.table.render(print_lines=False, indent=False)
 

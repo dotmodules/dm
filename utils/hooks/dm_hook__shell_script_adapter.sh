@@ -41,7 +41,7 @@ shift
 #==============================================================================
 
 # NOTE: The common script parses 8 arguments. The next argument to be parsed is
-# the 9th that is intended to be parsed by the hook scripts.
+# the 9th that is intended to be parsed by the hook adapter script.
 
 # Argument 9 - Target hook script that should be executed.
 dm__config__target_hook_script="$1"

@@ -1,0 +1,8 @@
+name = "name_1"
+version = "version_1"
+
+enabled = true
+
+[[variable_status_hooks]]
+path_to_script = "path_to_script_1"
+prepare_step_necessary = false

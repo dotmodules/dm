@@ -7,12 +7,13 @@ from dotmodules.modules.hooks import (
     LinkCleanUpHook,
     LinkDeploymentHook,
     ShellScriptHook,
+    VariableStatusHook,
 )
 from dotmodules.modules.links import LinkItem
 from dotmodules.settings import Settings
 
 
-class TestHookArgumentBuildingCases:
+class TestShellScriptHookArgumentBuildingCases:
     def test__shell_script_hook_can_build_its_arguments(
         self, tmp_path: Path, mocker: MockerFixture
     ) -> None:
@@ -23,6 +24,9 @@ class TestHookArgumentBuildingCases:
         # Module related dummy values.
         dummy_module_root = tmp_path
         dummy_module_name = "my_module_name"
+        dummy_module = mocker.MagicMock()
+        dummy_module.name = dummy_module_name
+        dummy_module.root = dummy_module_root
 
         # Shell script hook related dummy values.
         dummy_path_to_script = "./dummy.script"
@@ -45,20 +49,22 @@ class TestHookArgumentBuildingCases:
         mocker.patch("dotmodules.modules.hooks.os.getcwd", return_value=dummy_cwd)
 
         # Path manager related mocked items and dummy values.
-        mock_path_manager = mocker.MagicMock()
+        mock_path_manager = mocker.patch("dotmodules.modules.hooks.PathManager")
         # Single call mocking for the shell script hook path_to_script value.
         dummy_resolved_path_to_script = "my_resolved_path_to_script"
-        mock_path_manager.resolve_local_path.return_value = (
+        mock_path_manager.return_value.resolve_local_path.return_value = (
             dummy_resolved_path_to_script
         )
         # Single call mocking for the hook adapter script absolute path resolving.
         dummy_resolved_hook_adapter_script = "my_resolved_hook_adapter_script"
-        mock_path_manager.resolve_absolute_path.return_value = (
+        mock_path_manager.return_value.resolve_absolute_path.return_value = (
             dummy_resolved_hook_adapter_script
         )
         # Single relative path calculation for the relative dm repo root.
         dummy_relative_dm_repo_root = "my_relative_dm_repo_root"
-        mock_path_manager.get_relative_path.return_value = dummy_relative_dm_repo_root
+        mock_path_manager.return_value.get_relative_path.return_value = (
+            dummy_relative_dm_repo_root
+        )
 
         # Shell adapter related dummy values and mocked items.
         dummy_status_code = 0
@@ -102,18 +108,18 @@ class TestHookArgumentBuildingCases:
             priority=dummy_hook_priority,
         )
 
-        result = hook.execute(
-            module_name=dummy_module_name,
-            module_root=dummy_module_root,
-            path_manager=mock_path_manager,
-            settings=dummy_settings,
-        )
+        # To be able to execute the hook, its exeecution context needs to be
+        # initialized from the corrrsponding module and from the settings
+        # objects.
+        hook.initialize_execution_context(module=dummy_module, settings=dummy_settings)
+        result = hook.execute()
 
         # =========================================================================
         #  ASSERTION
         # =========================================================================
 
-        assert result == dummy_status_code
+        assert result.status_code == dummy_status_code
+        assert not result.execution_result
 
         # Shell adapter mocked call checking.
         mock_shell_adapter.return_value.execute_interactively.assert_called_with(
@@ -121,11 +127,13 @@ class TestHookArgumentBuildingCases:
         )
 
         # Path manager mocked call checking.
-        mock_path_manager.resolve_local_path.assert_called_with(dummy_path_to_script)
-        mock_path_manager.resolve_absolute_path.assert_called_with(
+        mock_path_manager.return_value.resolve_local_path.assert_called_with(
+            dummy_path_to_script
+        )
+        mock_path_manager.return_value.resolve_absolute_path.assert_called_with(
             HookAdapterScript.SHELL_SCRIPT, resolve_symlinks=True
         )
-        mock_path_manager.get_relative_path.assert_called_with(
+        mock_path_manager.return_value.get_relative_path.assert_called_with(
             from_path=dummy_module_root, to_path=dummy_cwd
         )
 
@@ -139,6 +147,9 @@ class TestHookArgumentBuildingCases:
         # Module related dummy values.
         dummy_module_root = tmp_path
         dummy_module_name = "my_module_name"
+        dummy_module = mocker.MagicMock()
+        dummy_module.name = dummy_module_name
+        dummy_module.root = dummy_module_root
 
         # Settings related dummy values and mocked items.
         dummy_cache_root = "my_cache_root"
@@ -178,11 +189,11 @@ class TestHookArgumentBuildingCases:
         ]
 
         # Path manager related mocked items and dummy values.
-        mock_path_manager = mocker.MagicMock()
+        mock_path_manager = mocker.patch("dotmodules.modules.hooks.PathManager")
         # Two calls mocking for the links local path to target resolving.
         dummy_resolved_link_path_to_target_1 = "my_resolved_link_path_to_target_1"
         dummy_resolved_link_path_to_target_2 = "my_resolved_link_path_to_target_2"
-        mock_path_manager.resolve_local_path.side_effect = [
+        mock_path_manager.return_value.resolve_local_path.side_effect = [
             dummy_resolved_link_path_to_target_1,
             dummy_resolved_link_path_to_target_2,
         ]
@@ -191,14 +202,16 @@ class TestHookArgumentBuildingCases:
         dummy_resolved_hook_adapter_script = "my_resolved_hook_adapter_script"
         dummy_resolved_link_path_to_symlink_1 = "my_resolved_link_path_to_symlink_1"
         dummy_resolved_link_path_to_symlink_2 = "my_resolved_link_path_to_symlink_2"
-        mock_path_manager.resolve_absolute_path.side_effect = [
+        mock_path_manager.return_value.resolve_absolute_path.side_effect = [
             dummy_resolved_hook_adapter_script,
             dummy_resolved_link_path_to_symlink_1,
             dummy_resolved_link_path_to_symlink_2,
         ]
         # Single relative path calculation for the relative dm repo root.
         dummy_relative_dm_repo_root = "my_relative_dm_repo_root"
-        mock_path_manager.get_relative_path.return_value = dummy_relative_dm_repo_root
+        mock_path_manager.return_value.get_relative_path.return_value = (
+            dummy_relative_dm_repo_root
+        )
 
         # Shell adapter related dummy values and mocked items.
         dummy_status_code = 0
@@ -244,18 +257,18 @@ class TestHookArgumentBuildingCases:
 
         hook = LinkDeploymentHook(links=dummy_links)
 
-        result = hook.execute(
-            module_name=dummy_module_name,
-            module_root=dummy_module_root,
-            path_manager=mock_path_manager,
-            settings=dummy_settings,
-        )
+        # To be able to execute the hook, its exeecution context needs to be
+        # initialized from the corrrsponding module and from the settings
+        # objects.
+        hook.initialize_execution_context(module=dummy_module, settings=dummy_settings)
+        result = hook.execute()
 
         # =========================================================================
         #  ASSERTION
         # =========================================================================
 
-        assert result == dummy_status_code
+        assert result.status_code == dummy_status_code
+        assert not result.execution_result
 
         # Shell adapter mocked call checking.
         mock_shell_adapter.return_value.execute_interactively.assert_called_with(
@@ -263,20 +276,20 @@ class TestHookArgumentBuildingCases:
         )
 
         # Path manager mocked call checking.
-        mock_path_manager.resolve_local_path.assert_has_calls(
+        mock_path_manager.return_value.resolve_local_path.assert_has_calls(
             [
                 mocker.call(dummy_link_path_to_target_1),
                 mocker.call(dummy_link_path_to_target_2),
             ]
         )
-        mock_path_manager.resolve_absolute_path.assert_has_calls(
+        mock_path_manager.return_value.resolve_absolute_path.assert_has_calls(
             [
                 mocker.call(HookAdapterScript.LINK_DEPLOYMENT, resolve_symlinks=True),
                 mocker.call(dummy_link_path_to_symlink_1),
                 mocker.call(dummy_link_path_to_symlink_2),
             ]
         )
-        mock_path_manager.get_relative_path.assert_called_with(
+        mock_path_manager.return_value.get_relative_path.assert_called_with(
             from_path=dummy_module_root, to_path=dummy_cwd
         )
 
@@ -290,6 +303,9 @@ class TestHookArgumentBuildingCases:
         # Module related dummy values.
         dummy_module_root = tmp_path
         dummy_module_name = "my_module_name"
+        dummy_module = mocker.MagicMock()
+        dummy_module.name = dummy_module_name
+        dummy_module.root = dummy_module_root
 
         # Settings related dummy values and mocked items.
         dummy_cache_root = "my_cache_root"
@@ -329,20 +345,22 @@ class TestHookArgumentBuildingCases:
         ]
 
         # Path manager related mocked items and dummy values.
-        mock_path_manager = mocker.MagicMock()
+        mock_path_manager = mocker.patch("dotmodules.modules.hooks.PathManager")
         # Three calls mocking for the hook adapter script absolute path resolving
         # and for the link absolute symlink path resolving.
         dummy_resolved_hook_adapter_script = "my_resolved_hook_adapter_script"
         dummy_resolved_link_path_to_symlink_1 = "my_resolved_link_path_to_symlink_1"
         dummy_resolved_link_path_to_symlink_2 = "my_resolved_link_path_to_symlink_2"
-        mock_path_manager.resolve_absolute_path.side_effect = [
+        mock_path_manager.return_value.resolve_absolute_path.side_effect = [
             dummy_resolved_hook_adapter_script,
             dummy_resolved_link_path_to_symlink_1,
             dummy_resolved_link_path_to_symlink_2,
         ]
         # Single relative path calculation for the relative dm repo root.
         dummy_relative_dm_repo_root = "my_relative_dm_repo_root"
-        mock_path_manager.get_relative_path.return_value = dummy_relative_dm_repo_root
+        mock_path_manager.return_value.get_relative_path.return_value = (
+            dummy_relative_dm_repo_root
+        )
 
         # Shell adapter related dummy values and mocked items.
         dummy_status_code = 0
@@ -384,18 +402,18 @@ class TestHookArgumentBuildingCases:
 
         hook = LinkCleanUpHook(links=dummy_links)
 
-        result = hook.execute(
-            module_name=dummy_module_name,
-            module_root=dummy_module_root,
-            path_manager=mock_path_manager,
-            settings=dummy_settings,
-        )
+        # To be able to execute the hook, its exeecution context needs to be
+        # initialized from the corrrsponding module and from the settings
+        # objects.
+        hook.initialize_execution_context(module=dummy_module, settings=dummy_settings)
+        result = hook.execute()
 
         # =========================================================================
         #  ASSERTION
         # =========================================================================
 
-        assert result == dummy_status_code
+        assert result.status_code == dummy_status_code
+        assert not result.execution_result
 
         # Shell adapter mocked call checking.
         mock_shell_adapter.return_value.execute_interactively.assert_called_with(
@@ -403,15 +421,15 @@ class TestHookArgumentBuildingCases:
         )
 
         # Path manager mocked call checking.
-        mock_path_manager.resolve_local_path.assert_not_called()
-        mock_path_manager.resolve_absolute_path.assert_has_calls(
+        mock_path_manager.return_value.resolve_local_path.assert_not_called()
+        mock_path_manager.return_value.resolve_absolute_path.assert_has_calls(
             [
                 mocker.call(HookAdapterScript.LINK_CLEAN_UP, resolve_symlinks=True),
                 mocker.call(dummy_link_path_to_symlink_1),
                 mocker.call(dummy_link_path_to_symlink_2),
             ]
         )
-        mock_path_manager.get_relative_path.assert_called_with(
+        mock_path_manager.return_value.get_relative_path.assert_called_with(
             from_path=dummy_module_root, to_path=dummy_cwd
         )
 
@@ -430,6 +448,21 @@ class TestHookDescriptionGatheringCases:
 
         expected_description = (
             f"Runs local script <<UNDERLINE>>{dummy_path_to_script}<<RESET>>"
+        )
+        assert hook.hook_description == expected_description
+
+    def test__variable_status_hook_can_describe_itself(self) -> None:
+        dummy_path_to_script = "./dummy.script"
+        dummy_variable_name = "MY_VAR"
+
+        hook = VariableStatusHook(
+            path_to_script=dummy_path_to_script,
+            variable_name=dummy_variable_name,
+        )
+
+        expected_description = (
+            f"Retrieves deployment statistics for variable '{dummy_variable_name}' "
+            f"through script <<UNDERLINE>>{dummy_path_to_script}<<RESET>>"
         )
         assert hook.hook_description == expected_description
 
@@ -524,7 +557,7 @@ class TestHookErrorReportingCases:
 
         mock_path_manager.resolve_local_path.assert_called_with(dummy_path_to_script)
 
-    def test__shell_script_hook__file_not_ecists__error_should_be_reported(
+    def test__shell_script_hook__file_not_exists__error_should_be_reported(
         self, tmp_path: Path, mocker: MockerFixture
     ) -> None:
         dummy_path_to_script = "./dummy.script"
@@ -544,14 +577,61 @@ class TestHookErrorReportingCases:
         mock_path_manager.resolve_local_path.return_value = dummy_script
 
         expected_errors = [
-            f"Hook[{dummy_hook_name}]: path_to_script '{dummy_path_to_script}' does not name a file!",
+            f"ShellScriptHook[{dummy_hook_name}]: path_to_script '{dummy_path_to_script}' does not name a file!",
         ]
         assert hook.report_errors(path_manager=mock_path_manager) == expected_errors
 
         mock_path_manager.resolve_local_path.assert_called_with(dummy_path_to_script)
 
-    def test__link_deployment_hook__no_errors_should_be_reported(
+    def test__variable_status_hook__valid_path_to_script__no_errors(
         self, tmp_path: Path, mocker: MockerFixture
+    ) -> None:
+        dummy_path_to_script = "./dummy.script"
+        dummy_variable_name = "MY_VAR"
+
+        dummy_script = tmp_path / dummy_path_to_script
+        dummy_script.touch()
+
+        hook = VariableStatusHook(
+            path_to_script=dummy_path_to_script,
+            variable_name=dummy_variable_name,
+        )
+
+        mock_path_manager = mocker.MagicMock()
+        mock_path_manager.resolve_local_path.return_value = dummy_script
+
+        assert hook.report_errors(path_manager=mock_path_manager) == []
+
+        mock_path_manager.resolve_local_path.assert_called_with(dummy_path_to_script)
+
+    def test__variable_status_hook__file_not_exists__error_should_be_reported(
+        self, tmp_path: Path, mocker: MockerFixture
+    ) -> None:
+        dummy_path_to_script = "./dummy.script"
+        dummy_variable_name = "MY_VAR"
+
+        dummy_script = tmp_path / dummy_path_to_script
+        # NOTE: the file path won't be touched.
+
+        hook = VariableStatusHook(
+            path_to_script=dummy_path_to_script,
+            variable_name=dummy_variable_name,
+        )
+
+        mock_path_manager = mocker.MagicMock()
+        mock_path_manager.resolve_local_path.return_value = dummy_script
+
+        expected_errors = [
+            f"VariableStatusHook[{dummy_variable_name}]: path_to_script '{dummy_path_to_script}' does not name a file!"
+        ]
+        assert hook.report_errors(path_manager=mock_path_manager) == expected_errors
+
+        mock_path_manager.resolve_local_path.assert_called_with(dummy_path_to_script)
+
+
+class TestLinkDeploymentHookErrorReportingCases:
+    def test__link_deployment_hook__no_errors_should_be_reported(
+        self, mocker: MockerFixture
     ) -> None:
         dummy_links = [
             LinkItem(
@@ -568,8 +648,10 @@ class TestHookErrorReportingCases:
         # The link deployment hook should not report any errors.
         assert hook.report_errors(path_manager=mock_path_manager) == []
 
+
+class TestLinkCleanupHookErrorReportingCases:
     def test__link_cleanup_hook__no_errors_should_be_reported(
-        self, tmp_path: Path, mocker: MockerFixture
+        self, mocker: MockerFixture
     ) -> None:
         dummy_links = [
             LinkItem(
@@ -585,3 +667,50 @@ class TestHookErrorReportingCases:
 
         # The link cleanup hook should not report any errors.
         assert hook.report_errors(path_manager=mock_path_manager) == []
+
+
+class TestVariableStatusHookErrorReportingCases:
+    def test__variable_status_hook__valid_path_to_script__no_errors(
+        self, tmp_path: Path, mocker: MockerFixture
+    ) -> None:
+        dummy_path_to_script = "./dummy.script"
+        dummy_variable_name = "my_hook_name"
+
+        dummy_script = tmp_path / dummy_path_to_script
+        dummy_script.touch()
+
+        hook = VariableStatusHook(
+            path_to_script=dummy_path_to_script,
+            variable_name=dummy_variable_name,
+        )
+
+        mock_path_manager = mocker.MagicMock()
+        mock_path_manager.resolve_local_path.return_value = dummy_script
+
+        assert hook.report_errors(path_manager=mock_path_manager) == []
+
+        mock_path_manager.resolve_local_path.assert_called_with(dummy_path_to_script)
+
+    def test__variable_stastus_hook__file_not_ecists__error_should_be_reported(
+        self, tmp_path: Path, mocker: MockerFixture
+    ) -> None:
+        dummy_path_to_script = "./dummy.script"
+        dummy_variable_name = "my_hook_name"
+
+        dummy_script = tmp_path / dummy_path_to_script
+        # NOTE: the file path won't be touched.
+
+        hook = VariableStatusHook(
+            path_to_script=dummy_path_to_script,
+            variable_name=dummy_variable_name,
+        )
+
+        mock_path_manager = mocker.MagicMock()
+        mock_path_manager.resolve_local_path.return_value = dummy_script
+
+        expected_errors = [
+            f"VariableStatusHook[{dummy_variable_name}]: path_to_script '{dummy_path_to_script}' does not name a file!",
+        ]
+        assert hook.report_errors(path_manager=mock_path_manager) == expected_errors
+
+        mock_path_manager.resolve_local_path.assert_called_with(dummy_path_to_script)

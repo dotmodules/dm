@@ -66,3 +66,23 @@ priority = 3
 name = "hook_name_4"
 path_to_script = "path_to_script_4"
 priority = 4
+
+[[variable_status_hooks]]
+variable_name = "variable_name_1"
+path_to_script = "path_to_script_1"
+prepare_step_necessary = false
+
+[[variable_status_hooks]]
+variable_name = "variable_name_2"
+path_to_script = "path_to_script_2"
+prepare_step_necessary = false
+
+[[variable_status_hooks__my_target_1]]
+variable_name = "variable_name_3"
+path_to_script = "path_to_script_3"
+prepare_step_necessary = false
+
+[[variable_status_hooks__my_target_2]]
+variable_name = "variable_name_4"
+path_to_script = "path_to_script_4"
+prepare_step_necessary = false

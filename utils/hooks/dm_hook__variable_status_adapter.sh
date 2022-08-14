@@ -43,30 +43,31 @@ shift
 # NOTE: The common script parses 8 arguments. The next argument to be parsed is
 # the 9th that is intended to be parsed by the hook adapter script.
 
+# Argument 9 - Execution mode of the script.
+dm__config__execution_mode="$1"
+shift
+
+# Argument 10 - Variable name.
+dm__config__variable_name="$1"
+shift
+
+# Argument 11 - Variable value that should be checked.
+dm__config__variable_value="$1"
+shift
+
+# Argument 12 - Target hook script that should be executed.
+dm__config__target_hook_script="$1"
+shift
+
 #==============================================================================
 # ENTRY POINT
 #==============================================================================
 
-dm__logger__header
-
-___first_item_processed='0'
-
-while [ $# -gt 0 ]
-do
-
-  path_to_symlink="$1"
-  shift
-
-  if [ "$___first_item_processed" = '0' ]
-  then
-    ___first_item_processed='1'
-  else
-    dm__logger__double_separator
-  fi
-
-  dm__remove_symlink "$path_to_symlink"
-
-done
-
-
-dm__logger__footer
+# Executing the target variable status hook script by passing the execution
+# mode, variable name and variable value to be checked. The script output and
+# status code will be captured by the called process.
+"$dm__config__target_hook_script" \
+  "$dm__config__dm_cache_root" \
+  "$dm__config__execution_mode" \
+  "$dm__config__variable_name" \
+  "$dm__config__variable_value"

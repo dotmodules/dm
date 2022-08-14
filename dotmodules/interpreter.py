@@ -31,22 +31,31 @@ class CommandLineInterpreter:
         self._settings = load_settings()
         self._commands = Commands(settings=self._settings)
         self._renderer = Renderer(settings=self._settings)
-        self._delete_cache()
-        try:
-            self._modules = Modules.load(
-                modules_root_path=self._settings.relative_modules_path,
-                config_file_name=self._settings.config_file_name,
-                deployment_target=self._settings.deployment_target,
+
+        for line in DM_LOGO.splitlines():
+            self._renderer.wrap.render(
+                string=f" <<{DM_LOGO_COLOR_CODE}>>{line}<<RESET>>", indent=False
             )
+        self._renderer.empty_line()
+
+        self._renderer.wrap.render(
+            string=" <<BOLD>>dotmodules<<RESET>> <<DIM>>v1.0<<RESET>>",
+            indent=False,
+        )
+
+        self._flush_cache()
+        try:
+            self._modules = Modules(settings=self._settings)
         except ModuleError as e:
             self._renderer.empty_line()
             self._renderer.wrap.render(f"<<RED>>{e}<<RESET>>")
             raise SystemExit()
-        self._populate_variables_cache(self._modules.variables)
+        self._populate_variables_cache(self._modules.aggregated_variables)
 
-    def _delete_cache(self) -> None:
+    def _flush_cache(self) -> None:
         cache_directory = self._settings.dm_cache_root
         shutil.rmtree(cache_directory, ignore_errors=True)
+        self._settings.dm_cache_root.mkdir(parents=True)
 
     def _populate_variables_cache(self, variables: Dict[str, List[str]]) -> None:
         variables_cache_directory = self._settings.dm_cache_variables
@@ -68,16 +77,6 @@ class CommandLineInterpreter:
             prompt_template=self._settings.prompt_template
         )
 
-        for line in DM_LOGO.splitlines():
-            self._renderer.wrap.render(
-                string=f" <<{DM_LOGO_COLOR_CODE}>>{line}<<RESET>>", indent=False
-            )
-        self._renderer.empty_line()
-
-        self._renderer.wrap.render(
-            string=" <<BOLD>>dotmodules<<RESET>> <<DIM>>v1.0<<RESET>>",
-            indent=False,
-        )
         while True:
             raw_input = input(prompt)
             try:

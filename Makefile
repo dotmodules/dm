@@ -60,8 +60,8 @@ check: virtualenv_activated
 
 .PHONY: fix
 fix: virtualenv_activated
-	@isort --color --profile black dotmodules tests dm.py 2>&1 | sed 's/^/isort | /'
-	@black dotmodules tests dm.py 2>&1 | sed 's/^/black | /'
+	@isort --color --profile black dotmodules tests dm.py dm_variable_status_worker.py 2>&1 | sed 's/^/isort | /'
+	@black dotmodules tests dm.py dm_variable_status_worker.py 2>&1 | sed 's/^/black | /'
 
 .PHONY: test_python_unit
 test_python_unit: virtualenv_activated

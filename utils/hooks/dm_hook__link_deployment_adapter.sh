@@ -41,8 +41,7 @@ shift
 #==============================================================================
 
 # NOTE: The common script parses 8 arguments. The next argument to be parsed is
-# the 9th that is intended to be parsed by the hook scripts.
-
+# the 9th that is intended to be parsed by the hook adapter script.
 
 #==============================================================================
 # ENTRY POINT

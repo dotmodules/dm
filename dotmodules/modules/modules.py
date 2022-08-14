@@ -1,16 +1,15 @@
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Generator, List
-from typing import OrderedDict as OrderedDictType
-from typing import Sequence, Union
+from typing import Iterator, List, Sequence, Union
 
 from dotmodules.modules.hooks import (
     Hook,
     LinkCleanUpHook,
     LinkDeploymentHook,
     ShellScriptHook,
+    VariableStatusHook,
 )
 from dotmodules.modules.links import LinkItem
 from dotmodules.modules.loader import ConfigLoader, LoaderError
@@ -19,8 +18,16 @@ from dotmodules.modules.parser import (
     LinkItemDict,
     ParserError,
     ShellScriptHookItemDict,
+    VariableStatusHookItemDict,
 )
 from dotmodules.modules.path import PathManager
+from dotmodules.modules.types import (
+    AggregatedHooksType,
+    AggregatedVariableStatusHooksType,
+    AggregatedVariablesType,
+)
+from dotmodules.modules.variable_status import VariableStatusManager
+from dotmodules.settings import Settings
 
 
 class ModuleError(Exception):
@@ -43,12 +50,19 @@ class Module:
     version: str
     enabled: bool
     documentation: Sequence[str]
-    variables: Dict[str, List[str]]
+    aggregated_variables: AggregatedVariablesType
     links: Sequence[LinkItem]
     hooks: Sequence[Hook]
+    variable_status_hooks: List[VariableStatusHook]
+
+    # Link to the containing modules object to be able to access the aggregated
+    # variable statuses.
+    modules: "Modules"
 
     @classmethod
-    def from_path(cls, path: Path, deployment_target: str) -> "Module":
+    def from_path(
+        cls, path: Path, deployment_target: str, modules: "Modules"
+    ) -> "Module":
         module_root = path.parent.resolve()
 
         try:
@@ -61,7 +75,9 @@ class Module:
             documentation = parser.parse_documentation(
                 deployment_target=deployment_target
             )
-            variables = parser.parse_variables(deployment_target=deployment_target)
+            aggregated_variables = parser.parse_variables(
+                deployment_target=deployment_target
+            )
             link_items = parser.parse_links(deployment_target=deployment_target)
             shell_script_hook_items = parser.parse_shell_script_hooks(
                 deployment_target=deployment_target
@@ -72,6 +88,13 @@ class Module:
                 shell_script_hook_items=shell_script_hook_items
             )
             hooks = shell_script_hooks
+
+            variable_status_hook_items = parser.parse_variable_status_hooks(
+                deployment_target=deployment_target
+            )
+            variable_status_hooks = cls._create_variable_status_hooks(
+                variable_status_hook_items=variable_status_hook_items
+            )
 
             cls._validate_hooks(hooks=hooks)
 
@@ -92,10 +115,12 @@ class Module:
             version=version,
             enabled=enabled,
             documentation=documentation,
-            variables=variables,
+            aggregated_variables=aggregated_variables,
             root=module_root,
             links=links,
             hooks=hooks,
+            variable_status_hooks=variable_status_hooks,
+            modules=modules,
         )
         return module
 
@@ -121,6 +146,20 @@ class Module:
                 path_to_script=hook_item["path_to_script"],
                 priority=hook_item["priority"],
                 name=hook_item["name"],
+            )
+            hooks.append(hook)
+        return hooks
+
+    @staticmethod
+    def _create_variable_status_hooks(
+        variable_status_hook_items: List[VariableStatusHookItemDict],
+    ) -> List[VariableStatusHook]:
+        hooks: List[VariableStatusHook] = []
+        for hook_item in variable_status_hook_items:
+            hook = VariableStatusHook(
+                path_to_script=hook_item["path_to_script"],
+                variable_name=hook_item["variable_name"],
+                prepare_step_necessary=hook_item["prepare_step_necessary"],
             )
             hooks.append(hook)
         return hooks
@@ -154,14 +193,23 @@ class Module:
         if self.errors:
             return ModuleStatus.ERROR
 
+        links_state = []
         path_manager = PathManager(root_path=self.root)
-        if all(
-            [
+        for link in self.links:
+            links_state.append(
                 link.check_if_link_exists(path_manager=path_manager)
                 and link.check_if_target_matched(path_manager=path_manager)
-                for link in self.links
-            ]
-        ):
+            )
+
+        variables_state = []
+        for variable_name, variable_values in self.aggregated_variables.items():
+            for variable_value in variable_values:
+                variable_status = self.modules.variable_statuses.get(
+                    variable_name=variable_name, variable_value=variable_value
+                )
+                variables_state.append(variable_status.processed)
+
+        if all(links_state + variables_state):
             return ModuleStatus.DEPLOYED
 
         return ModuleStatus.PENDING
@@ -177,12 +225,6 @@ class Module:
         return errors
 
 
-@dataclass
-class HookAggregate:
-    module: Module
-    hook: Hook
-
-
 class Modules:
     """
     Aggregation class that contains the loaded modules. It provides an interface
@@ -190,70 +232,162 @@ class Modules:
     them.
     """
 
-    def __init__(self) -> None:
-        self.modules: List[Module] = []
+    def __init__(self, settings: Settings) -> None:
+        self._settings = settings
+
+        # Loading the modules from the config file paths.
+        config_file_path_list = self._collect_config_file_paths(
+            modules_root_path=settings.relative_modules_path,
+            config_file_name=settings.config_file_name,
+        )
+        self._module_objects = self._load_module_objects(
+            config_file_path_list=config_file_path_list,
+            deployment_target=settings.deployment_target,
+        )
+
+        # Aggregating the variables.
+        self._aggregated_variables = self._aggregate_variables(
+            module_objects=self._module_objects
+        )
+
+        # Aggregating the hooks.
+        self._aggregated_hooks = self._aggregate_hooks(
+            module_objects=self._module_objects, settings=settings
+        )
+
+        # Initializing the variable statuses subsystem.
+        aggregated_variable_status_hooks = self._aggregate_variable_status_hooks(
+            module_objects=self._module_objects, settings=settings
+        )
+        self.variable_statuses = VariableStatusManager(
+            aggregated_variables=self._aggregated_variables,
+            aggregated_variable_status_hooks=aggregated_variable_status_hooks,
+            settings=self._settings,
+        )
+        self.variable_statuses.refresh(
+            variables=list(self._aggregated_variables.keys())
+        )
 
     def __len__(self) -> int:
-        return len(self.modules)
+        return len(self._module_objects)
 
-    @staticmethod
-    def _config_file_paths(
-        modules_root_path: Path, config_file_name: str
-    ) -> Generator[Path, None, None]:
-        return Path(modules_root_path).rglob(config_file_name)
+    def __getitem__(self, key: int) -> Module:
+        return self._module_objects[key]
 
-    @classmethod
-    def load(
-        cls, modules_root_path: Path, config_file_name: str, deployment_target: str
-    ) -> "Modules":
-        modules = cls()
-        config_file_paths = cls._config_file_paths(
-            modules_root_path=modules_root_path, config_file_name=config_file_name
-        )
-        for config_file_path in config_file_paths:
+    def __iter__(self) -> Iterator[Module]:
+        return iter(self._module_objects)
+
+    def _load_module_objects(
+        self, config_file_path_list: List[Path], deployment_target: str
+    ) -> List[Module]:
+        """
+        Loader method that loads all modules from the list of configuration file
+        paths respecting the passed deployment target.
+        """
+        module_objects: List[Module] = []
+
+        for config_file_path in config_file_path_list:
             try:
                 module = Module.from_path(
-                    path=config_file_path, deployment_target=deployment_target
+                    path=config_file_path,
+                    deployment_target=deployment_target,
+                    modules=self,
                 )
             except ModuleError as e:
                 raise ModuleError(
                     f"Error while loading module at path '{config_file_path}': {e}"
                 ) from e
-            modules.modules.append(module)
+            module_objects.append(module)
 
-        # Sorting the modules in alphabetical path order.
-        modules.modules.sort(key=lambda m: str(m.root))
-        return modules
+        module_objects.sort(key=lambda m: str(m.root))
 
-    @property
-    def variables(self) -> Dict[str, List[str]]:
-        vars = {}
-        for module in self.modules:
+        return module_objects
+
+    @staticmethod
+    def _aggregate_variables(module_objects: List[Module]) -> AggregatedVariablesType:
+        """
+        Function to aggregate variables from the loaded modules while
+        deduplicating them.
+
+        Disabled modules won't be agrregated.
+        """
+        vars: AggregatedVariablesType = defaultdict(list)
+        for module in module_objects:
             if not module.enabled:
                 continue
-            for name, values in module.variables.items():
-                if name not in vars:
-                    vars[name] = list(values)
-                else:
-                    for value in values:
-                        if value not in vars[name]:
-                            vars[name] += values
-                    vars[name].sort()
+            for name, values in module.aggregated_variables.items():
+                for value in values:
+                    if value not in vars[name]:
+                        vars[name].append(value)
 
-        return vars
+        for values in vars.values():
+            values.sort()
 
-    @property
-    def hooks(self) -> OrderedDictType[str, List[HookAggregate]]:
-        hooks: OrderedDictType[str, List[HookAggregate]] = OrderedDict()
-        for module in self.modules:
+        return dict(vars)
+
+    @staticmethod
+    def _aggregate_hooks(
+        module_objects: List[Module],
+        settings: Settings,
+    ) -> AggregatedHooksType:
+        """
+        Function to collect the hooks from the loaded modules while groupping
+        them together with their module objects. Hooks gets aggregated into
+        lists by name ordered by priority.
+
+        Disabled modules won't be agrregated.
+        """
+        hooks: AggregatedHooksType = OrderedDict()
+        for module in module_objects:
             if not module.enabled:
                 continue
             for hook in module.hooks:
+                hook.initialize_execution_context(module=module, settings=settings)
                 hook_name = hook.hook_name
                 if hook_name not in hooks:
                     hooks[hook_name] = []
-                hooks[hook_name].append(HookAggregate(module=module, hook=hook))
-        for _, values in hooks.items():
-            values.sort(key=lambda item: item.hook.hook_priority)
+                hooks[hook_name].append(hook)
+        for values in hooks.values():
+            values.sort(key=lambda hook: hook.hook_priority)
 
         return hooks
+
+    @staticmethod
+    def _aggregate_variable_status_hooks(
+        module_objects: List[Module],
+        settings: Settings,
+    ) -> AggregatedVariableStatusHooksType:
+        """
+        Function to collect the variable status hooks from the loaded modules.
+        Duplicated variable status hooks for a variable is considered a
+        configuration error.
+
+        Disabled modules won't be aggregated.
+        """
+        variable_status_hooks = {}
+        for module in module_objects:
+            if not module.enabled:
+                continue
+            for hook in module.variable_status_hooks:
+                if hook.variable_name in variable_status_hooks:
+                    raise ModuleError(
+                        "Multiple varible status hooks were defined for variable "
+                        f"name '{hook.variable_name}'!"
+                    )
+                hook.initialize_execution_context(module=module, settings=settings)
+                variable_status_hooks[hook.variable_name] = hook
+        return variable_status_hooks
+
+    @staticmethod
+    def _collect_config_file_paths(
+        modules_root_path: Path, config_file_name: str
+    ) -> List[Path]:
+        return list(Path(modules_root_path).rglob(config_file_name))
+
+    @property
+    def aggregated_variables(self) -> AggregatedVariablesType:
+        return self._aggregated_variables
+
+    @property
+    def aggregated_hooks(self) -> AggregatedHooksType:
+        return self._aggregated_hooks
