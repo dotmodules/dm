@@ -2,12 +2,15 @@ import json
 import sys
 import uuid
 from collections import defaultdict
-from dataclasses import dataclass, field
 from pathlib import Path
 from subprocess import Popen  # nosec
 from typing import Dict, List, Optional, TypedDict
 
-from dotmodules.modules.hooks import VariableStatus, VariableStatusHookExecutionMode
+from dotmodules.modules.hooks import (
+    VariableStatus,
+    VariableStatusHook,
+    VariableStatusHookExecutionMode,
+)
 from dotmodules.modules.types import (
     AggregatedVariableStatusesType,
     AggregatedVariableStatusHooksType,
@@ -21,78 +24,73 @@ class ShellResultDict(TypedDict):
     status_string: str
 
 
-@dataclass
 class VariableStatusRefreshTask:
     REFRESH_TASK_SCRIPT_PATH = Path.cwd() / "dm_variable_status_worker.py"
-    TRANSFER_FILE_NAME = "transfer.pickle"
-    RESULTS_FILE_NAME = "results.json"
+    TRANSFER_FILE_NAME = "serialized_task_object.json"
+    RESULT_FILE_NAME = "result.json"
 
-    task_id: str
-    cache_path: Path
-    target_variables: AggregatedVariablesType
-    target_hooks: AggregatedVariableStatusHooksType
-
-    # TODO: create proper type for this
-    _results: Optional[Dict[str, Dict[str, ShellResultDict]]] = field(
-        init=False, default=None
-    )
-
-    @classmethod
-    def create(
-        cls,
-        target_variables: List[str],
-        aggregated_variables: AggregatedVariablesType,
-        aggregated_variable_status_hooks: AggregatedVariableStatusHooksType,
-        variable_status_cache: Path,
-    ) -> "VariableStatusRefreshTask":
+    def __init__(
+        self,
+        task_id: str,
+        variable_name: str,
+        variable_values: List[str],
+        variable_status_hook: VariableStatusHook,
+        cache_path: Path,
+    ) -> None:
         # Generating the unique id for the task.
-        task_id = uuid.uuid4().hex
+        if not task_id:
+            self._task_id = uuid.uuid4().hex
+        else:
+            self._task_id = task_id
 
         # Creating the cache directory for the task.
-        cache_path = variable_status_cache / task_id
-        cache_path.mkdir(parents=True)
+        self._cache_path = cache_path
+        self._cache_path.mkdir(parents=True, exist_ok=True)
 
-        # Preparing the hooks and variables.
-        scoped_target_variables: AggregatedVariablesType = {}
-        scoped_target_hooks: AggregatedVariableStatusHooksType = {}
-        for target_variable in target_variables:
-            if target_variable in aggregated_variable_status_hooks:
-                scoped_target_variables[target_variable] = aggregated_variables[
-                    target_variable
-                ]
-                scoped_target_hooks[target_variable] = aggregated_variable_status_hooks[
-                    target_variable
-                ]
+        # Assigning target variables.
+        self._variable_name = variable_name
+        self._variable_values = variable_values
+        self._variable_status_hook = variable_status_hook
 
-        return cls(
-            task_id=task_id,
-            cache_path=cache_path,
-            target_variables=scoped_target_variables,
-            target_hooks=scoped_target_hooks,
-        )
+        # Empty result variable.
+        # TODO: create proper type for this
+        self._result: Optional[Dict[str, ShellResultDict]]
 
     @property
-    def transfer_file_path(self) -> Path:
-        return self.cache_path / self.TRANSFER_FILE_NAME
+    def _transfer_file_path(self) -> Path:
+        return self._cache_path / self.TRANSFER_FILE_NAME
 
     @property
-    def results_file_path(self) -> Path:
-        return self.cache_path / self.RESULTS_FILE_NAME
+    def result_file_path(self) -> Path:
+        return self._cache_path / self.RESULT_FILE_NAME
 
     def _save_to_disk(self) -> None:
-        import pickle  # nosec
+        serialized_data = {
+            "task_id": self._task_id,
+            "variable_name": self._variable_name,
+            "variable_values": self._variable_values,
+            "cache_path": str(self._cache_path),
+            "variable_status_hook": self._variable_status_hook.serialize(),
+        }
 
-        with open(self.transfer_file_path, "wb+") as f:
-            pickle.dump(self, f)
+        with open(self._transfer_file_path, "w+") as f:
+            json.dump(serialized_data, f)
 
     @staticmethod
     def _load_from_disk(transfer_file_path: Path) -> "VariableStatusRefreshTask":
-        import pickle  # nosec
+        with open(transfer_file_path, "r") as f:
+            serialized_data = json.load(f)
 
-        with open(transfer_file_path, "rb") as f:
-            loaded_object = pickle.load(f)  # nosec
-            if not isinstance(loaded_object, VariableStatusRefreshTask):
-                raise ValueError("Invalid unpickled object!")
+        variable_status_hook = VariableStatusHook.deserialize(
+            serialized_data=serialized_data["variable_status_hook"]
+        )
+        loaded_object = VariableStatusRefreshTask(
+            task_id=serialized_data["task_id"],
+            variable_name=serialized_data["variable_name"],
+            variable_values=serialized_data["variable_values"],
+            cache_path=Path(serialized_data["cache_path"]),
+            variable_status_hook=variable_status_hook,
+        )
 
         return loaded_object
 
@@ -104,77 +102,81 @@ class VariableStatusRefreshTask:
         refresh_task._execute_in_worker()
 
     def execute(self) -> None:
+        """
+        Execution this class would happen in two processes:
+
+        1. The currently running process will serialize itself into disk, and
+        executes a helper (worker) script in the background then returns.
+
+        2. The worker script will deserialize the same object from disk, and
+        executes the variable status hook inside it, and writes the result to a
+        file.
+        """
+
         self._save_to_disk()
         args = [
             str(sys.executable),
             str(self.REFRESH_TASK_SCRIPT_PATH),
             "--transfer-file-path",
-            str(self.transfer_file_path),
+            str(self._transfer_file_path),
         ]
         Popen(args)
 
     def _execute_in_worker(self) -> None:
-        results: Dict[str, Dict[str, ShellResultDict]] = {}
-        for variable_name, variable_values in self.target_variables.items():
-            hook = self.target_hooks[variable_name]
-            if hook.prepare_step_necessary:
-                hook_execution_result = hook.execute(
-                    extra_arguments={
-                        "execution_mode": VariableStatusHookExecutionMode.PREPARE,
-                        "variable_name": variable_name,
-                        "variable_value": "",
-                    },
+        result: Dict[str, ShellResultDict] = {}
+        if self._variable_status_hook.prepare_step_necessary:
+            hook_execution_result = self._variable_status_hook.execute(
+                extra_arguments={
+                    "execution_mode": VariableStatusHookExecutionMode.PREPARE,
+                    "variable_name": self._variable_name,
+                    "variable_value": "",
+                },
+            )
+        for variable_value in self._variable_values:
+            hook_execution_result = self._variable_status_hook.execute(
+                extra_arguments={
+                    "execution_mode": VariableStatusHookExecutionMode.EXECUTE,
+                    "variable_name": self._variable_name,
+                    "variable_value": variable_value,
+                },
+            )
+            if hook_execution_result.execution_result:
+                result[variable_value] = {
+                    "processed": hook_execution_result.status_code == 0,
+                    "status_string": hook_execution_result.execution_result.stdout[0]
+                    if hook_execution_result.execution_result.stdout
+                    else "",
+                }
+            else:
+                raise ValueError(
+                    f"Variable status hook execution failed: '{hook_execution_result}'"
                 )
-            results[variable_name] = {}
-            for variable_value in variable_values:
-                hook_execution_result = hook.execute(
-                    extra_arguments={
-                        "execution_mode": VariableStatusHookExecutionMode.EXECUTE,
-                        "variable_name": variable_name,
-                        "variable_value": variable_value,
-                    },
-                )
-                if hook_execution_result.execution_result:
-                    results[variable_name][variable_value] = {
-                        "processed": hook_execution_result.status_code == 0,
-                        "status_string": hook_execution_result.execution_result.stdout[
-                            0
-                        ]
-                        if hook_execution_result.execution_result.stdout
-                        else "",
-                    }
-                else:
-                    raise ValueError(
-                        f"Variable status hook execution failed: '{hook_execution_result}'"
-                    )
 
-        with open(self.results_file_path, "w+") as f:
-            json.dump(results, f, indent=4)
+        with open(self.result_file_path, "w+") as f:
+            json.dump(result, f, indent=4)
 
     @property
     def has_finished(self) -> bool:
         try:
-            with open(self.results_file_path) as f:
-                self._results = json.load(f)
+            with open(self.result_file_path) as f:
+                self._result = json.load(f)
                 return True
         except (FileNotFoundError, ValueError):
             return False
 
     @property
-    def results(self) -> AggregatedVariableStatusesType:
-        if self._results is not None:
-            partial_aggregated_variable_statuses: AggregatedVariableStatusesType = (
-                defaultdict(dict)
-            )
-            for variable_name, variable_value_statuses in self._results.items():
-                for variable_value in variable_value_statuses.keys():
-                    variable_status_result = variable_value_statuses[variable_value]
-                    variable_status = VariableStatus(**variable_status_result)
-                    if variable_status.processed and not variable_status.status_string:
-                        variable_status.status_string = "added"
-                    partial_aggregated_variable_statuses[variable_name][
-                        variable_value
-                    ] = variable_status
+    def result(self) -> AggregatedVariableStatusesType:
+        if self._result is not None:
+            partial_aggregated_variable_statuses: AggregatedVariableStatusesType = {
+                self._variable_name: {},
+            }
+            for variable_value, variable_status_result in self._result.items():
+                variable_status = VariableStatus(**variable_status_result)
+                if variable_status.processed and not variable_status.status_string:
+                    variable_status.status_string = "added"
+                partial_aggregated_variable_statuses[self._variable_name][
+                    variable_value
+                ] = variable_status
             return partial_aggregated_variable_statuses
         else:
             raise SystemError("Results call happened on the unfinished status hook!")
@@ -217,28 +219,30 @@ class VariableStatusManager:
         """
         for refresh_task in self._running_refresh_tasks:
             if refresh_task.has_finished:
-                self._aggregated_variable_statuses.update(refresh_task.results)
+                self._aggregated_variable_statuses.update(refresh_task.result)
         try:
             return self._aggregated_variable_statuses[variable_name][variable_value]
         except KeyError:
             return VariableStatus(processed=False, status_string="disabled")
 
-    def refresh(
-        self, variable: Optional[str] = None, variables: Optional[List[str]] = None
-    ) -> None:
-        if variable and variables:
-            raise ValueError("cannot pass both variable and variables at the same time")
-        target_variables = []
-        if variable:
-            target_variables.append(variable)
-        if variables:
-            target_variables += variables
+    def refresh(self, variable_name: str) -> None:
+        if variable_name not in self._aggregated_variable_status_hooks:
+            # TODO: report a warning about missing variable status hook
+            # print(f"missing varibale status hook for variable '{variable_name}'")
+            return
 
-        refresh_task = VariableStatusRefreshTask.create(
-            target_variables=target_variables,
-            aggregated_variables=self._aggregated_variables,
-            aggregated_variable_status_hooks=self._aggregated_variable_status_hooks,
-            variable_status_cache=self._settings.dm_cache_variable_status_hooks,
+        task_id = uuid.uuid4().hex
+        task_cache_path = self._settings.dm_cache_variable_status_hooks / task_id
+        refresh_task = VariableStatusRefreshTask(
+            task_id=task_id,
+            variable_name=variable_name,
+            variable_values=self._aggregated_variables[variable_name],
+            variable_status_hook=self._aggregated_variable_status_hooks[variable_name],
+            cache_path=task_cache_path,
         )
         refresh_task.execute()
         self._running_refresh_tasks.append(refresh_task)
+
+    def refresh_all(self) -> None:
+        for variable_name in self._aggregated_variables:
+            self.refresh(variable_name=variable_name)

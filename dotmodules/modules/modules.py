@@ -264,9 +264,7 @@ class Modules:
             aggregated_variable_status_hooks=aggregated_variable_status_hooks,
             settings=self._settings,
         )
-        self.variable_statuses.refresh(
-            variables=list(self._aggregated_variables.keys())
-        )
+        self.variable_statuses.refresh_all()
 
     def __len__(self) -> int:
         return len(self._module_objects)
