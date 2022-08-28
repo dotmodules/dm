@@ -395,6 +395,26 @@ class VariableStatusHook(Hook):
         variable_status_hook.execution_context = execution_context
         return variable_status_hook
 
+    def execute_prepare_step(self, variable_name: str) -> HookExecutionResult:
+        return self.execute(
+            extra_arguments={
+                "execution_mode": VariableStatusHookExecutionMode.PREPARE,
+                "variable_name": variable_name,
+                "variable_value": "",
+            },
+        )
+
+    def execute_execute_step(
+        self, variable_name: str, variable_value: str
+    ) -> HookExecutionResult:
+        return self.execute(
+            extra_arguments={
+                "execution_mode": VariableStatusHookExecutionMode.EXECUTE,
+                "variable_name": variable_name,
+                "variable_value": variable_value,
+            },
+        )
+
 
 @dataclass
 class LinkDeploymentHook(Hook):

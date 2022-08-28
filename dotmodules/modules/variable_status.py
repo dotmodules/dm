@@ -3,14 +3,13 @@ import sys
 import uuid
 from collections import defaultdict
 from pathlib import Path
+
+# Importing and using the subprocess module can be a security issue, but it is
+# necessary in our case.
 from subprocess import Popen  # nosec
 from typing import Dict, List, Optional, TypedDict
 
-from dotmodules.modules.hooks import (
-    VariableStatus,
-    VariableStatusHook,
-    VariableStatusHookExecutionMode,
-)
+from dotmodules.modules.hooks import VariableStatus, VariableStatusHook
 from dotmodules.modules.types import (
     AggregatedVariableStatusesType,
     AggregatedVariableStatusHooksType,
@@ -22,6 +21,9 @@ from dotmodules.settings import Settings
 class ShellResultDict(TypedDict):
     processed: bool
     status_string: str
+
+
+AggregatedShellResultDictType = Dict[str, ShellResultDict]
 
 
 class VariableStatusRefreshTask:
@@ -53,8 +55,7 @@ class VariableStatusRefreshTask:
         self._variable_status_hook = variable_status_hook
 
         # Empty result variable.
-        # TODO: create proper type for this
-        self._result: Optional[Dict[str, ShellResultDict]]
+        self._result: Optional[AggregatedShellResultDictType]
 
     @property
     def _transfer_file_path(self) -> Path:
@@ -63,6 +64,27 @@ class VariableStatusRefreshTask:
     @property
     def result_file_path(self) -> Path:
         return self._cache_path / self.RESULT_FILE_NAME
+
+    def execute(self) -> None:
+        """
+        Execution this class would happen in two processes:
+
+        1. The currently running process will serialize itself into disk, and
+        executes a helper (worker) script in the background then returns.
+
+        2. The worker script will deserialize the same object from disk, and
+        executes the variable status hook inside it, and writes the result to a
+        file.
+        """
+
+        self._save_to_disk()
+        args = [
+            str(sys.executable),
+            str(self.REFRESH_TASK_SCRIPT_PATH),
+            "--transfer-file-path",
+            str(self._transfer_file_path),
+        ]
+        Popen(args)
 
     def _save_to_disk(self) -> None:
         serialized_data = {
@@ -101,45 +123,26 @@ class VariableStatusRefreshTask:
         )
         refresh_task._execute_in_worker()
 
-    def execute(self) -> None:
-        """
-        Execution this class would happen in two processes:
-
-        1. The currently running process will serialize itself into disk, and
-        executes a helper (worker) script in the background then returns.
-
-        2. The worker script will deserialize the same object from disk, and
-        executes the variable status hook inside it, and writes the result to a
-        file.
-        """
-
-        self._save_to_disk()
-        args = [
-            str(sys.executable),
-            str(self.REFRESH_TASK_SCRIPT_PATH),
-            "--transfer-file-path",
-            str(self._transfer_file_path),
-        ]
-        Popen(args)
-
     def _execute_in_worker(self) -> None:
-        result: Dict[str, ShellResultDict] = {}
+        """
+        This method will be executed in the worker process.
+        """
+
+        result: AggregatedShellResultDictType = {}
+
+        # Execute prepare step if needed
         if self._variable_status_hook.prepare_step_necessary:
-            hook_execution_result = self._variable_status_hook.execute(
-                extra_arguments={
-                    "execution_mode": VariableStatusHookExecutionMode.PREPARE,
-                    "variable_name": self._variable_name,
-                    "variable_value": "",
-                },
+            hook_execution_result = self._variable_status_hook.execute_prepare_step(
+                variable_name=self._variable_name
             )
+
+        # Execute the processing steps one by one.
         for variable_value in self._variable_values:
-            hook_execution_result = self._variable_status_hook.execute(
-                extra_arguments={
-                    "execution_mode": VariableStatusHookExecutionMode.EXECUTE,
-                    "variable_name": self._variable_name,
-                    "variable_value": variable_value,
-                },
+            hook_execution_result = self._variable_status_hook.execute_execute_step(
+                variable_name=self._variable_name,
+                variable_value=variable_value,
             )
+
             if hook_execution_result.execution_result:
                 result[variable_value] = {
                     "processed": hook_execution_result.status_code == 0,
