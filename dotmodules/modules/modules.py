@@ -39,8 +39,9 @@ class ModuleError(Exception):
 class ModuleStatus(str, Enum):
     DISABLED: str = "disabled"
     DEPLOYED: str = "deployed"
-    PENDING: str = "pending"
+    INCOMPLETE: str = "incomplete"
     ERROR: str = "error"
+    LOADING: str = "loading"
 
 
 @dataclass
@@ -186,6 +187,18 @@ class Module:
         ]
 
     @property
+    def is_disabled(self) -> bool:
+        return self.status == ModuleStatus.DISABLED
+
+    @property
+    def is_loading(self) -> bool:
+        return self.status == ModuleStatus.LOADING
+
+    @property
+    def is_incomplete(self) -> bool:
+        return self.status == ModuleStatus.INCOMPLETE
+
+    @property
     def status(self) -> ModuleStatus:
         if not self.enabled:
             return ModuleStatus.DISABLED
@@ -201,18 +214,24 @@ class Module:
                 and link.check_if_target_matched(path_manager=path_manager)
             )
 
-        variables_state = []
+        variable_states = []
         for variable_name, variable_values in self.aggregated_variables.items():
             for variable_value in variable_values:
                 variable_status = self.modules.variable_statuses.get(
                     variable_name=variable_name, variable_value=variable_value
                 )
-                variables_state.append(variable_status.processed)
 
-        if all(links_state + variables_state):
+                # If there is at least a variable loading, the whole module
+                # status will be "loading".
+                if variable_status.variable_is_loading:
+                    return ModuleStatus.LOADING
+
+                variable_states.append(variable_status.variable_was_added)
+
+        if all(links_state + variable_states):
             return ModuleStatus.DEPLOYED
 
-        return ModuleStatus.PENDING
+        return ModuleStatus.INCOMPLETE
 
     @property
     def errors(self) -> List[str]:

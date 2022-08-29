@@ -4,10 +4,7 @@ from typing import Callable, List, Optional, cast
 import pytest
 from pytest_mock.plugin import MockerFixture
 
-from dotmodules.modules.hooks import (  # HookExecutionResult,
-    ShellScriptHook,
-    VariableStatusHook,
-)
+from dotmodules.modules.hooks import ShellScriptHook, VariableStatusHook
 from dotmodules.modules.links import LinkItem
 from dotmodules.modules.modules import Module, ModuleError, Modules
 from dotmodules.settings import Settings

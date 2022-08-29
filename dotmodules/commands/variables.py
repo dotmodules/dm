@@ -2,6 +2,7 @@ from typing import Callable, List, Optional
 
 from dotmodules.commands import Command
 from dotmodules.modules import Modules
+from dotmodules.modules.variable_status import VariableStatusValue
 from dotmodules.renderer import Renderer
 from dotmodules.settings import Settings
 
@@ -48,15 +49,22 @@ class VariablesCommand(Command):
                 variable_status = modules.variable_statuses.get(
                     variable_name=name, variable_value=value
                 )
-                if variable_status and variable_status.processed:
-                    # prepared_values.append(f"<<HIGHLIGHT>>_{value}_<<GREEN>>_{variable_status.details}_<<RESET>>")
-                    prepared_values.append(
-                        f"<<BOLD>><<GREEN>>[{value}]<<RESET>><<DIM>>-{variable_status.status_string}<<RESET>>"
-                    )
+                if variable_status.status == VariableStatusValue.ADDED:
+                    color = "<<GREEN>>"
+                elif variable_status.status == VariableStatusValue.MISSING:
+                    color = "<<RED>>"
+                elif variable_status.status == VariableStatusValue.LOADING:
+                    color = "<<MAGENTA>>"
+                elif variable_status.status == VariableStatusValue.NOT_AVAIBLE:
+                    color = "<<DIM>>"
                 else:
-                    prepared_values.append(
-                        f"<<BOLD>><<RED>>[{value}]<<RESET>><<DIM>>-{variable_status.status_string}<<RESET>>"
+                    raise ValueError(
+                        f"Invalid variable status value: '{variable_status.status}'"
                     )
+
+                prepared_values.append(
+                    f"<<BOLD>>{color}[{value}]<<RESET>><<DIM>>-{variable_status.status_string}<<RESET>>"
+                )
 
             text = renderer.wrap.render(
                 string=" ".join(prepared_values),

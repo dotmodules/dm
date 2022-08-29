@@ -59,6 +59,10 @@ shift
 dm__config__target_hook_script="$1"
 shift
 
+# Argument 13 - Path to the private cache directory.
+dm__config__cache_path="$1"
+shift
+
 #==============================================================================
 # ENTRY POINT
 #==============================================================================
@@ -67,7 +71,7 @@ shift
 # mode, variable name and variable value to be checked. The script output and
 # status code will be captured by the called process.
 "$dm__config__target_hook_script" \
-  "$dm__config__dm_cache_root" \
   "$dm__config__execution_mode" \
   "$dm__config__variable_name" \
-  "$dm__config__variable_value"
+  "$dm__config__variable_value" \
+  "$dm__config__cache_path"

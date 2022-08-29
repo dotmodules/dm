@@ -343,7 +343,7 @@ class TestModuleStatusCalculationCases:
             link, "check_if_target_matched", return_value=True
         )
 
-        assert module.status == ModuleStatus.PENDING
+        assert module.status == ModuleStatus.INCOMPLETE
 
         mock_module_error.assert_called_once()
         mock_link_existence_check.assert_called_once()

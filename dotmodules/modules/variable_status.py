@@ -2,6 +2,7 @@ import json
 import sys
 import uuid
 from collections import defaultdict
+from enum import Enum
 from pathlib import Path
 
 # Importing and using the subprocess module can be a security issue, but it is
@@ -9,9 +10,8 @@ from pathlib import Path
 from subprocess import Popen  # nosec
 from typing import Dict, List, Optional, TypedDict
 
-from dotmodules.modules.hooks import VariableStatus, VariableStatusHook
+from dotmodules.modules.hooks import VariableStatusHook
 from dotmodules.modules.types import (
-    AggregatedVariableStatusesType,
     AggregatedVariableStatusHooksType,
     AggregatedVariablesType,
 )
@@ -19,11 +19,57 @@ from dotmodules.settings import Settings
 
 
 class ShellResultDict(TypedDict):
-    processed: bool
-    status_string: str
+    variable_processed: bool
+    details: str
+
+
+class VariableStatusValue(str, Enum):
+    ADDED: str = "added"
+    LOADING: str = "loading"
+    MISSING: str = "missing"
+    NOT_AVAIBLE: str = "not available"
+
+
+class VariableStatus:
+    def __init__(
+        self, status: VariableStatusValue, status_string: Optional[str] = None
+    ) -> None:
+        self._status = status
+        self._status_string = status_string
+
+    @classmethod
+    def from_shell_result(
+        cls, variable_processed: bool, details: Optional[str]
+    ) -> "VariableStatus":
+        status = (
+            VariableStatusValue.ADDED
+            if variable_processed
+            else VariableStatusValue.MISSING
+        )
+        return cls(status=status, status_string=details)
+
+    @property
+    def variable_was_added(self) -> bool:
+        return self._status == VariableStatusValue.ADDED
+
+    @property
+    def variable_is_loading(self) -> bool:
+        return self._status == VariableStatusValue.LOADING
+
+    @property
+    def status(self) -> VariableStatusValue:
+        return self._status
+
+    @property
+    def status_string(self) -> str:
+        if not self._status_string:
+            return self._status.value
+
+        return self._status_string
 
 
 AggregatedShellResultDictType = Dict[str, ShellResultDict]
+AggregatedVariableStatusesType = Dict[str, Dict[str, VariableStatus]]
 
 
 class VariableStatusRefreshTask:
@@ -130,10 +176,16 @@ class VariableStatusRefreshTask:
 
         result: AggregatedShellResultDictType = {}
 
+        # Private cache path for the hook to persist artifacts between the
+        # prepare and execute steps.
+        private_cache_path = self._cache_path / "hook_cache"
+        private_cache_path.mkdir(parents=True, exist_ok=True)
+
         # Execute prepare step if needed
         if self._variable_status_hook.prepare_step_necessary:
             hook_execution_result = self._variable_status_hook.execute_prepare_step(
-                variable_name=self._variable_name
+                variable_name=self._variable_name,
+                cache_path=private_cache_path,
             )
 
         # Execute the processing steps one by one.
@@ -141,14 +193,19 @@ class VariableStatusRefreshTask:
             hook_execution_result = self._variable_status_hook.execute_execute_step(
                 variable_name=self._variable_name,
                 variable_value=variable_value,
+                cache_path=private_cache_path,
             )
 
             if hook_execution_result.execution_result:
-                result[variable_value] = {
-                    "processed": hook_execution_result.status_code == 0,
-                    "status_string": hook_execution_result.execution_result.stdout[0]
+                variable_processed = hook_execution_result.status_code == 0
+                details = (
+                    hook_execution_result.execution_result.stdout[0]
                     if hook_execution_result.execution_result.stdout
-                    else "",
+                    else ""
+                )
+                result[variable_value] = {
+                    "variable_processed": variable_processed,
+                    "details": details,
                 }
             else:
                 raise ValueError(
@@ -170,17 +227,21 @@ class VariableStatusRefreshTask:
     @property
     def result(self) -> AggregatedVariableStatusesType:
         if self._result is not None:
-            partial_aggregated_variable_statuses: AggregatedVariableStatusesType = {
+            aggregated_variable_status: AggregatedVariableStatusesType = {
                 self._variable_name: {},
             }
+
             for variable_value, variable_status_result in self._result.items():
-                variable_status = VariableStatus(**variable_status_result)
-                if variable_status.processed and not variable_status.status_string:
-                    variable_status.status_string = "added"
-                partial_aggregated_variable_statuses[self._variable_name][
+                variable_status = VariableStatus.from_shell_result(
+                    variable_processed=variable_status_result["variable_processed"],
+                    details=variable_status_result["details"],
+                )
+
+                aggregated_variable_status[self._variable_name][
                     variable_value
                 ] = variable_status
-            return partial_aggregated_variable_statuses
+
+            return aggregated_variable_status
         else:
             raise SystemError("Results call happened on the unfinished status hook!")
 
@@ -212,7 +273,7 @@ class VariableStatusManager:
             for variable_value in variable_values:
                 variable_status_dictionary[variable_name][
                     variable_value
-                ] = VariableStatus(processed=False, status_string="loading")
+                ] = VariableStatus(status=VariableStatusValue.LOADING)
         return dict(variable_status_dictionary)
 
     def get(self, variable_name: str, variable_value: str) -> VariableStatus:
@@ -226,7 +287,7 @@ class VariableStatusManager:
         try:
             return self._aggregated_variable_statuses[variable_name][variable_value]
         except KeyError:
-            return VariableStatus(processed=False, status_string="disabled")
+            return VariableStatus(status=VariableStatusValue.NOT_AVAIBLE)
 
     def refresh(self, variable_name: str) -> None:
         if variable_name not in self._aggregated_variable_status_hooks:

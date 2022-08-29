@@ -4,6 +4,7 @@ from typing import Callable, List, Optional
 from dotmodules.commands import Command
 from dotmodules.modules import Module, Modules, ModuleStatus
 from dotmodules.modules.path import PathManager
+from dotmodules.modules.variable_status import VariableStatusValue
 from dotmodules.renderer import Renderer
 from dotmodules.settings import Settings
 
@@ -57,15 +58,19 @@ class ModulesCommand(Command):
             #         raise ValueError(f"Invalid module status value: '{module.status}'")
 
             if module.status == ModuleStatus.DISABLED:
-                status = "<<BOLD>><<RED>>disabled<<RESET>>"
-            elif module.status == ModuleStatus.PENDING:
-                status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
+                color = "<<DIM>>"
+            elif module.status == ModuleStatus.INCOMPLETE:
+                color = "<<BOLD>><<YELLOW>>"
             elif module.status == ModuleStatus.DEPLOYED:
-                status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
+                color = "<<BOLD>><<GREEN>>"
             elif module.status == ModuleStatus.ERROR:
-                status = "<<BOLD>><<RED>>error<<RESET>>"
+                color = "<<BOLD>><<RED>>"
+            elif module.status == ModuleStatus.LOADING:
+                color = "<<BOLD>><<MAGENTA>>"
             else:
                 raise ValueError(f"Invalid module status value: '{module.status}'")
+
+            status = f"{color}{module.status.value}<<RESET>>"
 
             if not current_root:
                 current_root = base_root
@@ -73,12 +78,35 @@ class ModulesCommand(Command):
                 current_root = base_root
                 renderer.table.add_row("", "", "", "", "")
 
+            index_column = (
+                f"<<BOLD>><<BLUE>>[{str(index)}]<<RESET>>"
+                if not module.is_disabled
+                else f"<<DIM>>[{str(index)}]<<RESET>>"
+            )
+            if module.is_disabled:
+                name_column = f"<<DIM>>{module.name}<<RESET>>"
+            elif module.is_incomplete:
+                name_column = f"<<BOLD>><<YELLOW>>{module.name}<<RESET>>"
+            else:
+                name_column = f"<<BOLD>>{module.name}<<RESET>>"
+
+            version_column = (
+                f"{str(module.version)}"
+                if not module.is_disabled
+                else f"<<DIM>>{str(module.version)}<<RESET>>"
+            )
+            root_column = (
+                f"<<UNDERLINE>>{str(root)}<<RESET>>"
+                if not module.is_disabled
+                else f"<<UNDERLINE>><<DIM>>{str(root)}<<RESET>>"
+            )
+
             renderer.table.add_row(
-                f"<<BOLD>><<BLUE>>[{str(index)}]<<RESET>>",
-                f"<<BOLD>>{module.name}<<RESET>>",
-                f"{str(module.version)}",
+                index_column,
+                name_column,
+                version_column,
                 status,
-                f"<<UNDERLINE>>{str(root)}<<RESET>>",
+                root_column,
             )
 
         renderer.table.render()
@@ -205,15 +233,20 @@ class ModulesCommand(Command):
         #         raise ValueError(f"Invalid module status value: '{module.status}'")
 
         if module.status == ModuleStatus.DISABLED:
-            status = "<<BOLD>><<RED>>disabled<<RESET>>"
-        elif module.status == ModuleStatus.PENDING:
-            status = "<<BOLD>><<YELLOW>>pending<<RESET>>"
+            color = "<<DIM>>"
+        elif module.status == ModuleStatus.INCOMPLETE:
+            color = "<<BOLD>><<YELLOW>>"
         elif module.status == ModuleStatus.DEPLOYED:
-            status = "<<BOLD>><<GREEN>>deployed<<RESET>>"
+            color = "<<BOLD>><<GREEN>>"
         elif module.status == ModuleStatus.ERROR:
-            status = "<<BOLD>><<RED>>error<<RESET>>"
+            color = "<<BOLD>><<RED>>"
+        elif module.status == ModuleStatus.LOADING:
+            color = "<<BOLD>><<MAGENTA>>"
         else:
             raise ValueError(f"Invalid module status value: '{module.status}'")
+
+        status = f"{color}{module.status.value}<<RESET>>"
+
         text = renderer.wrap.render(
             string=status,
             wrap_limit=settings.body_width,
@@ -291,24 +324,33 @@ class ModulesCommand(Command):
         path_manager = PathManager(root_path=module.root)
 
         for link in module.links:
-            link_color = "RED"
-            target_color = "RED"
+            link_exists = link.check_if_link_exists(path_manager=path_manager)
+            target_matched = link.check_if_target_matched(path_manager=path_manager)
 
-            try:
-                if link.check_if_link_exists(path_manager=path_manager):
-                    link_color = "GREEN"
-                    if link.check_if_target_matched(path_manager=path_manager):
-                        target_color = "GREEN"
-                link_status = f"<<BOLD>><<{link_color}>>link<<RESET>>"
-                target_status = f"<<BOLD>><<{target_color}>>target<<RESET>>"
-                status = f"<<DIM>>[<<RESET>>{link_status}<<DIM>>|<<RESET>>{target_status}<<DIM>>]<<RESET>>"
-            except ValueError:
-                status = "<<DIM>>[<<RESET>>   <<BOLD>><<RED>>error<<RESET>>   <<DIM>>]<<RESET>>"
+            if link_exists and target_matched:
+                path_to_symlink_color = "<<BOLD>><<GREEN>>"
+                link_status = "<<DIM>>==><<RESET>>"
+                path_to_target_color = "<<BOLD>><<GREEN>>"
+                target_status = "<<DIM>>[matched]<<RESET>>"
+
+            elif link_exists and not target_matched:
+                path_to_symlink_color = "<<BOLD>><<GREEN>>"
+                link_status = "<<DIM>>=X=<<RESET>>"
+                path_to_target_color = "<<BOLD>><<RED>>"
+                target_status = "<<DIM>>[mismatch]<<RESET>>"
+
+            elif not link_exists:
+                path_to_symlink_color = "<<BOLD>><<RED>>"
+                link_status = ""
+                path_to_target_color = "<<BOLD>><<RED>>"
+                target_status = "<<DIM>>[missing]<<RESET>>"
 
             renderer.table.add_row(
-                status,
-                f"<<UNDERLINE>>{link.path_to_target}<<RESET>>",
-                f"<<UNDERLINE>>{link.path_to_symlink}<<RESET>>",
+                f"<<BOLD>>{link.name}<<RESET>>",
+                f"<<UNDERLINE>>{path_to_symlink_color}{link.path_to_symlink}<<RESET>>",
+                link_status,
+                f"<<UNDERLINE>>{path_to_target_color}{link.path_to_target}<<RESET>>",
+                target_status,
             )
         text = renderer.table.render(print_lines=False, indent=False)
         renderer.header.render(
@@ -332,15 +374,22 @@ class ModulesCommand(Command):
                 variable_status = modules.variable_statuses.get(
                     variable_name=name, variable_value=value
                 )
-                if variable_status and variable_status.processed:
-                    # prepared_values.append(f"<<HIGHLIGHT>>_{value}_<<GREEN>>_{variable_status.details}_<<RESET>>")
-                    prepared_values.append(
-                        f"<<BOLD>><<GREEN>>[{value}]<<RESET>><<DIM>>-{variable_status.status_string}<<RESET>>"
-                    )
+                if variable_status.status == VariableStatusValue.ADDED:
+                    color = "<<GREEN>>"
+                elif variable_status.status == VariableStatusValue.MISSING:
+                    color = "<<RED>>"
+                elif variable_status.status == VariableStatusValue.LOADING:
+                    color = "<<MAGENTA>>"
+                elif variable_status.status == VariableStatusValue.NOT_AVAIBLE:
+                    color = "<<DIM>>"
                 else:
-                    prepared_values.append(
-                        f"<<BOLD>><<RED>>[{value}]<<RESET>><<DIM>>-{variable_status.status_string}<<RESET>>"
+                    raise ValueError(
+                        f"Invalid variable status value: '{variable_status.status}'"
                     )
+
+                prepared_values.append(
+                    f"<<BOLD>>{color}[{value}]<<RESET>><<DIM>>-{variable_status.status_string}<<RESET>>"
+                )
             renderer.table.add_row(
                 f"<<BOLD>>{name}<<RESET>> " + " ".join(prepared_values),
             )
@@ -364,8 +413,8 @@ class ModulesCommand(Command):
         for index, hook in enumerate(module.hooks, start=1):
             renderer.table.add_row(
                 f"<<BOLD>><<BLUE>>[{index}]<<RESET>>",
-                f"<<BOLD>>{hook.hook_name}<<RESET>> ({hook.hook_priority})",
-                f"{hook.hook_description}",
+                f"<<BOLD>>{hook.hook_name}<<RESET>> <<DIM>>({hook.hook_priority})<<RESET>>",
+                f"<<DIM>>{hook.hook_description}<<RESET>>",
             )
         text = renderer.table.render(print_lines=False, indent=False)
 
