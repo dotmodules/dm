@@ -4,7 +4,7 @@ from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Dict, Iterator, List, Sequence, Union
+from typing import Iterator, List, Sequence, Union
 
 from dotmodules.modules.hooks import (
     Hook,
@@ -262,6 +262,10 @@ class Modules:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self._flush_cache()
+
+        if not settings.relative_modules_path:
+            # TODO: raise better errors
+            raise ModuleError("missing relative modules path definition")
 
         # Loading the modules from the config file paths.
         config_file_path_list = self._collect_config_file_paths(

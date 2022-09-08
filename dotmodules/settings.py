@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -12,7 +12,7 @@ class Settings:
     """
 
     # The relative modules path has to be set explicitly.
-    relative_modules_path: Optional[Path] = None
+    raw_relative_modules_path: Optional[Path] = None
 
     # Core settings
     debug: bool = False
@@ -32,6 +32,19 @@ class Settings:
     warning_wrapped_docs: bool = True
     header_width: int = 10
     header_separator: int = 2
+
+    @property
+    def relative_modules_path(self) -> Path:
+        if not self.raw_relative_modules_path:
+            raise ValueError("relative modules path has to be initialized")
+        else:
+            relative_modules_path = self.raw_relative_modules_path.resolve()
+
+        if not relative_modules_path.is_dir():
+            raise ValueError(
+                f"non existent relative modules path: '{relative_modules_path}'"
+            )
+        return relative_modules_path
 
     @property
     def dm_cache_root(self) -> Path:

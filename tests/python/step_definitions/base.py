@@ -1,14 +1,10 @@
-import json
-import os
 from functools import partial
 from pathlib import Path
 from typing import Optional
 
-import pytest
-from pytest_bdd import given, parsers, then, when
+from pytest_bdd import parsers
 
 from dotmodules.modules.modules import Modules
-from dotmodules.settings import Settings
 
 EXTRA_TYPES = {
     "P": Path,
@@ -23,11 +19,6 @@ class ScenarioError(Exception):
     """Exception raised on invalid scenario definitions."""
 
 
-@pytest.fixture
-def settings() -> Settings:
-    return Settings()
-
-
 class ExecutionContext:
     def __init__(
         self, modules: Optional[Modules] = None, exception: Optional[Exception] = None
@@ -38,8 +29,16 @@ class ExecutionContext:
                 "an exception. You cannot omit both!"
             )
 
-        self._modules = modules
-        self._exception = exception
+        # Explicit type narrowings becasue of mypy cannot understand exception raising.
+        if modules is not None:
+            self._modules = modules
+        else:
+            self._modules = None
+
+        if exception is not None:
+            self._exception = exception
+        else:
+            self._exception = None
 
     @property
     def modules(self) -> Modules:

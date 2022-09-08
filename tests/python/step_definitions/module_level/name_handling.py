@@ -1,6 +1,6 @@
 from pytest_bdd import then
 
-from ..base import ExecutionContext, p, settings
+from ..base import ExecutionContext, p
 
 
 @then(p('the module at index "{index:I}" should have its name set to "{name:S}"'))

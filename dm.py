@@ -30,7 +30,7 @@ def load_settings() -> Settings:
     settings = Settings()
     settings.debug = bool(parsed_args.debug)
     settings.deployment_target = parsed_args.deployment_target
-    settings.relative_modules_path = parsed_args.relative_modules_path
+    settings.raw_relative_modules_path = parsed_args.relative_modules_path
     settings.config_file_name = parsed_args.config_file_name
     settings.text_wrap_limit = parsed_args.text_wrap_limit
     settings.indent = parsed_args.indent
