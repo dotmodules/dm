@@ -1,12 +1,7 @@
-import re
-import shutil
-from typing import Dict, List
-
 from dotmodules.commands import Commands
 from dotmodules.modules import Modules
-from dotmodules.modules.modules import ModuleError
 from dotmodules.renderer import Renderer
-from dotmodules.settings import load_settings
+from dotmodules.settings import Settings
 
 DM_LOGO = """
       ██│
@@ -27,10 +22,14 @@ class InterpreterFinished(Exception):
 
 
 class CommandLineInterpreter:
-    def __init__(self) -> None:
-        self._settings = load_settings()
+    def __init__(
+        self, settings: Settings, renderer: Renderer, modules: Modules
+    ) -> None:
+        self._settings = settings
+        self._renderer = renderer
+        self._modules = modules
+
         self._commands = Commands(settings=self._settings)
-        self._renderer = Renderer(settings=self._settings)
 
         for line in DM_LOGO.splitlines():
             self._renderer.wrap.render(
@@ -42,32 +41,6 @@ class CommandLineInterpreter:
             string=" <<BOLD>>dotmodules<<RESET>> <<DIM>>v1.0<<RESET>>",
             indent=False,
         )
-
-        self._flush_cache()
-        try:
-            self._modules = Modules(settings=self._settings)
-        except ModuleError as e:
-            self._renderer.empty_line()
-            self._renderer.wrap.render(f"<<RED>>{e}<<RESET>>")
-            raise SystemExit()
-        self._populate_variables_cache(self._modules.aggregated_variables)
-
-    def _flush_cache(self) -> None:
-        cache_directory = self._settings.dm_cache_root
-        shutil.rmtree(cache_directory, ignore_errors=True)
-        self._settings.dm_cache_root.mkdir(parents=True)
-
-    def _populate_variables_cache(self, variables: Dict[str, List[str]]) -> None:
-        variables_cache_directory = self._settings.dm_cache_variables
-        variables_cache_directory.mkdir(parents=True)
-        for name, values in variables.items():
-            if re.search(r"\s", name):
-                raise ValueError(
-                    f"varibale name should not contain whitespace: '{name}'"
-                )
-            with open(variables_cache_directory / name, "w+") as f:
-                for value in values:
-                    f.write(f"{value}\n")
 
     def _abort_interpreter(self) -> None:
         raise InterpreterFinished()

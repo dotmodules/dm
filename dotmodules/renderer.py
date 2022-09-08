@@ -205,11 +205,11 @@ class TableRenderer:
             ]
 
             # Joining together the cells with the predefined cell separator string.
-            line = self._settings.column_padding.join(rendered_cells)
+            line = self._settings.rendered_column_padding.join(rendered_cells)
 
             # Indenting each row if needed.
             if indent:
-                line = self._settings.indent + line
+                line = self._settings.rendered_indent + line
 
             output_lines.append(line)
 
@@ -271,7 +271,7 @@ class PromptRenderer:
 
     def render(self, prompt_template: str) -> str:
         prompt = prompt_template.replace("<<SPACE>>", " ")
-        prompt = prompt.replace("<<INDENT>>", self._settings.indent)
+        prompt = prompt.replace("<<INDENT>>", self._settings.rendered_indent)
         colorize_result = self._colors.colorize(string=prompt)
         return colorize_result.colorized_string
 
@@ -314,7 +314,7 @@ class WrapRenderer:
         if wrap_limit is None:
             wrap_limit = self._settings.text_wrap_limit
         if indent:
-            wrap_limit -= len(self._settings.indent)
+            wrap_limit -= len(self._settings.rendered_indent)
 
         lines = string.splitlines()
         output_lines = []
@@ -329,7 +329,7 @@ class WrapRenderer:
                 # Indenting the wrapped lines if needed.
                 if indent:
                     wrapped_lines = [
-                        self._settings.indent + wrapped_line
+                        self._settings.rendered_indent + wrapped_line
                         for wrapped_line in wrapped_lines
                     ]
                 output_lines += wrapped_lines

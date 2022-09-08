@@ -63,27 +63,27 @@ fix: virtualenv_activated
 	@isort --color --profile black dotmodules tests dm.py dm_variable_status_worker.py 2>&1 | sed 's/^/isort | /'
 	@black dotmodules tests dm.py dm_variable_status_worker.py 2>&1 | sed 's/^/black | /'
 
-.PHONY: test_python_unit
-test_python_unit: virtualenv_activated
-	@python -m pytest -vv -c pytest.ini \
-		-m 'not integration' \
-		--cov=dotmodules/ \
-		--cov=tests/python/unit_tests \
-		tests/python/unit_tests \
-		dotmodules
+# .PHONY: test_python_unit
+# test_python_unit: virtualenv_activated
+# 	@python -m pytest -vv -c pytest.ini \
+# 		-m 'not integration' \
+# 		--cov=dotmodules/ \
+# 		--cov=tests/python/unit_tests \
+# 		tests/python/unit_tests \
+# 		dotmodules
 
-.PHONY: test_python_integration
-test_python_integration: virtualenv_activated
-	@python -m pytest -vv -c pytest.ini \
-		-m integration \
-		--cov=dotmodules/ \
-		--cov=tests/python/integration_tests \
-		tests/python/integration_tests \
-		dotmodules
+# .PHONY: test_python_integration
+# test_python_integration: virtualenv_activated
+# 	@python -m pytest -vv -c pytest.ini \
+# 		-m integration \
+# 		--cov=dotmodules/ \
+# 		--cov=tests/python/integration_tests \
+# 		tests/python/integration_tests \
+# 		dotmodules
 
 .PHONY: test_python
 test_python: virtualenv_activated
-	@python -m pytest -vv -c pytest.ini \
+	@python -m pytest -c pytest.ini \
 		--cov=dotmodules/ \
 		--cov=tests/python \
 		tests/python \

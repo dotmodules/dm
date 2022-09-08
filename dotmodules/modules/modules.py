@@ -1,8 +1,10 @@
+import re
+import shutil
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Iterator, List, Sequence, Union
+from typing import Dict, Iterator, List, Sequence, Union
 
 from dotmodules.modules.hooks import (
     Hook,
@@ -51,7 +53,7 @@ class Module:
     version: str
     enabled: bool
     documentation: Sequence[str]
-    aggregated_variables: AggregatedVariablesType
+    variables: AggregatedVariablesType
     links: Sequence[LinkItem]
     hooks: Sequence[Hook]
     variable_status_hooks: List[VariableStatusHook]
@@ -76,9 +78,7 @@ class Module:
             documentation = parser.parse_documentation(
                 deployment_target=deployment_target
             )
-            aggregated_variables = parser.parse_variables(
-                deployment_target=deployment_target
-            )
+            variables = parser.parse_variables(deployment_target=deployment_target)
             link_items = parser.parse_links(deployment_target=deployment_target)
             shell_script_hook_items = parser.parse_shell_script_hooks(
                 deployment_target=deployment_target
@@ -111,12 +111,20 @@ class Module:
                 f"Unexpected error happened during module loading: {e}"
             ) from e
 
+        # Default the name to the directory name the module is in.
+        if not name:
+            name = module_root.name
+
+        # Set default value for the missing version.
+        if not version:
+            version = "-"
+
         module = cls(
             name=name,
             version=version,
             enabled=enabled,
             documentation=documentation,
-            aggregated_variables=aggregated_variables,
+            variables=variables,
             root=module_root,
             links=links,
             hooks=hooks,
@@ -215,7 +223,7 @@ class Module:
             )
 
         variable_states = []
-        for variable_name, variable_values in self.aggregated_variables.items():
+        for variable_name, variable_values in self.variables.items():
             for variable_value in variable_values:
                 variable_status = self.modules.variable_statuses.get(
                     variable_name=variable_name, variable_value=variable_value
@@ -253,6 +261,7 @@ class Modules:
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
+        self._flush_cache()
 
         # Loading the modules from the config file paths.
         config_file_path_list = self._collect_config_file_paths(
@@ -268,6 +277,7 @@ class Modules:
         self._aggregated_variables = self._aggregate_variables(
             module_objects=self._module_objects
         )
+        self._populate_variables_cache(aggregated_variables=self._aggregated_variables)
 
         # Aggregating the hooks.
         self._aggregated_hooks = self._aggregate_hooks(
@@ -320,6 +330,25 @@ class Modules:
 
         return module_objects
 
+    def _flush_cache(self) -> None:
+        cache_directory = self._settings.dm_cache_root
+        shutil.rmtree(cache_directory, ignore_errors=True)
+        self._settings.dm_cache_root.mkdir(parents=True)
+
+    def _populate_variables_cache(
+        self, aggregated_variables: AggregatedVariablesType
+    ) -> None:
+        variables_cache_directory = self._settings.dm_cache_variables
+        variables_cache_directory.mkdir(parents=True)
+        for name, values in aggregated_variables.items():
+            if re.search(r"\s", name):
+                raise ValueError(
+                    f"varibale name should not contain whitespace: '{name}'"
+                )
+            with open(variables_cache_directory / name, "w+") as f:
+                for value in values:
+                    f.write(f"{value}\n")
+
     @staticmethod
     def _aggregate_variables(module_objects: List[Module]) -> AggregatedVariablesType:
         """
@@ -332,7 +361,7 @@ class Modules:
         for module in module_objects:
             if not module.enabled:
                 continue
-            for name, values in module.aggregated_variables.items():
+            for name, values in module.variables.items():
                 for value in values:
                     if value not in vars[name]:
                         vars[name].append(value)
@@ -399,7 +428,13 @@ class Modules:
     def _collect_config_file_paths(
         modules_root_path: Path, config_file_name: str
     ) -> List[Path]:
-        return list(Path(modules_root_path).rglob(config_file_name))
+        config_file_paths = list(modules_root_path.rglob(config_file_name))
+        if config_file_paths:
+            if modules_root_path / config_file_name in config_file_paths:
+                raise ModuleError(
+                    "You cannot have a config file directly in the main modules directory!"
+                )
+        return config_file_paths
 
     @property
     def aggregated_variables(self) -> AggregatedVariablesType:

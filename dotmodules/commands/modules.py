@@ -193,7 +193,7 @@ class ModulesCommand(Command):
             header="<<DIM>>Name<<RESET>>",
             header_width=settings.header_width,
             lines=text,
-            separator=settings.header_separator,
+            separator=settings.rendered_header_separator,
         )
 
     def _render_module_version(
@@ -210,7 +210,7 @@ class ModulesCommand(Command):
             header="<<DIM>>Version<<RESET>>",
             header_width=settings.header_width,
             lines=text,
-            separator=settings.header_separator,
+            separator=settings.rendered_header_separator,
         )
 
     def _render_module_status(
@@ -257,7 +257,7 @@ class ModulesCommand(Command):
             header="<<DIM>>Status<<RESET>>",
             header_width=settings.header_width,
             lines=text,
-            separator=settings.header_separator,
+            separator=settings.rendered_header_separator,
         )
 
     def _render_module_errors(
@@ -277,7 +277,7 @@ class ModulesCommand(Command):
                 header="<<DIM>>Errors<<RESET>>",
                 header_width=settings.header_width,
                 lines=text,
-                separator=settings.header_separator,
+                separator=settings.rendered_header_separator,
             )
 
     def _render_module_documentation(
@@ -294,7 +294,7 @@ class ModulesCommand(Command):
             header="<<DIM>>Docs<<RESET>>",
             header_width=settings.header_width,
             lines=text,
-            separator=settings.header_separator,
+            separator=settings.rendered_header_separator,
         )
 
     def _render_module_path(
@@ -311,7 +311,7 @@ class ModulesCommand(Command):
             header="<<DIM>>Path<<RESET>>",
             header_width=settings.header_width,
             lines=text,
-            separator=settings.header_separator,
+            separator=settings.rendered_header_separator,
         )
 
     def _render_module_links(
@@ -357,18 +357,18 @@ class ModulesCommand(Command):
             header="<<DIM>>Links<<RESET>>",
             header_width=settings.header_width,
             lines=text,
-            separator=settings.header_separator,
+            separator=settings.rendered_header_separator,
         )
 
     def _render_module_variables(
         self, renderer: Renderer, modules: Modules, module: Module, settings: Settings
     ) -> None:
-        if not module.aggregated_variables:
+        if not module.variables:
             return
 
         renderer.empty_line()
 
-        for name, values in module.aggregated_variables.items():
+        for name, values in module.variables.items():
             prepared_values = []
             for value in values:
                 variable_status = modules.variable_statuses.get(
@@ -399,7 +399,7 @@ class ModulesCommand(Command):
             header="<<DIM>>Variables<<RESET>>",
             header_width=settings.header_width,
             lines=text,
-            separator=settings.header_separator,
+            separator=settings.rendered_header_separator,
         )
 
     def _render_module_hooks(
@@ -422,5 +422,5 @@ class ModulesCommand(Command):
             header="<<DIM>>Hooks<<RESET>>",
             header_width=settings.header_width,
             lines=text,
-            separator=settings.header_separator,
+            separator=settings.rendered_header_separator,
         )

@@ -37,9 +37,11 @@ class VariablesCommand(Command):
 
         header_width = max(
             [len(name) for name in modules.aggregated_variables.keys()]
-        ) + len(settings.column_padding)
+        ) + len(settings.rendered_column_padding)
         body_width = (
-            settings.text_wrap_limit - header_width - len(settings.column_padding)
+            settings.text_wrap_limit
+            - header_width
+            - len(settings.rendered_column_padding)
         )
         header_separator = " "
 

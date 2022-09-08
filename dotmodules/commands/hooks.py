@@ -48,9 +48,9 @@ class HooksCommand(Command):
                         if not name_printed
                         else "",
                         f"<<BOLD>>{name}<<RESET>>" if not name_printed else "",
-                        str(hook_priority),
+                        f"<<DIM>>({hook_priority})<<RESET>>",
                         f"<<BOLD>>{hook_module_name}<<RESET>>",
-                        hook_details,
+                        f"<<DIM>>{hook_details}<<RESET>>",
                     )
                     name_printed = True
                 index += 1

@@ -43,7 +43,7 @@ class TestShellScriptHookArgumentBuildingCases:
         dummy_settings = Settings()
         dummy_settings.dm_cache_root = Path(dummy_cache_root)
         dummy_settings.dm_cache_variables = Path(dummy_cache_variables)
-        dummy_settings.indent = dummy_indent
+        dummy_settings.rendered_indent = dummy_indent
         dummy_settings.text_wrap_limit = dummy_text_wrap_limit
 
         # Current working directory related mocked items.
@@ -166,7 +166,7 @@ class TestShellScriptHookArgumentBuildingCases:
         dummy_settings = Settings()
         dummy_settings.dm_cache_root = Path(dummy_cache_root)
         dummy_settings.dm_cache_variables = Path(dummy_cache_variables)
-        dummy_settings.indent = dummy_indent
+        dummy_settings.rendered_indent = dummy_indent
         dummy_settings.text_wrap_limit = dummy_text_wrap_limit
 
         # Current working directory related mocked items.
@@ -324,7 +324,7 @@ class TestShellScriptHookArgumentBuildingCases:
         dummy_settings = Settings()
         dummy_settings.dm_cache_root = Path(dummy_cache_root)
         dummy_settings.dm_cache_variables = Path(dummy_cache_variables)
-        dummy_settings.indent = dummy_indent
+        dummy_settings.rendered_indent = dummy_indent
         dummy_settings.text_wrap_limit = dummy_text_wrap_limit
 
         # Current working directory related mocked items.

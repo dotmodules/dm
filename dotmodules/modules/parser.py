@@ -34,6 +34,42 @@ class ParserError(Exception):
     """
 
 
+KEY__NAME = "name"
+KEY__VERSION = "version"
+KEY__ENABLED = "enabled"
+KEY__DOCUMENTATION = "documentation"
+KEY__VARIABLES = "variables"
+KEY__LINKS = "link"
+KEY__SHELL_SCRIPT_HOOKS = "shell_script_hook"
+KEY__VARIABLE_STATUS_HOOKS = "variable_status_hook"
+
+TEMPLATE__DOCUMENTATION = f"{KEY__DOCUMENTATION}__{{deployment_target}}"
+TEMPLATE__VARIABLES = f"{KEY__VARIABLES}__{{deployment_target}}"
+TEMPLATE__LINKS = f"{KEY__LINKS}__{{deployment_target}}"
+TEMPLATE__SHELL_SCRIPT_HOOKS = f"{KEY__SHELL_SCRIPT_HOOKS}__{{deployment_target}}"
+TEMPLATE__VARIABLE_STATUS_HOOKS = f"{KEY__VARIABLE_STATUS_HOOKS}__{{deployment_target}}"
+
+# NOTE: In the following definitions the type of the values will
+# determine the expected value type.
+EXPECTED_LINK_ITEM: LinkItemDict = {
+    "path_to_target": "string",
+    "path_to_symlink": "string",
+    "name": "string",
+}
+
+EXPECTED_SHELL_SCRIPT_HOOK_ITEM: ShellScriptHookItemDict = {
+    "path_to_script": "string",
+    "name": "string",
+    "priority": 0,
+}
+
+EXPECTED_VARIABLE_STATUS_HOOK_ITEM: VariableStatusHookItemDict = {
+    "path_to_script": "string",
+    "variable_name": "string",
+    "prepare_step_necessary": False,
+}
+
+
 @dataclass
 class ConfigParser:
     """
@@ -43,49 +79,14 @@ class ConfigParser:
 
     loader: ConfigLoader
 
-    class Definition:
-        KEY__NAME = "name"
-        KEY__VERSION = "version"
-        KEY__ENABLED = "enabled"
-        KEY__DOCUMENTATION = "documentation"
-        KEY__VARIABLES = "variables"
-        KEY__LINKS = "links"
-        KEY__SHELL_SCRIPT_HOOKS = "shell_script_hooks"
-        KEY__VARIABLE_STATUS_HOOKS = "variable_status_hooks"
-
-        TEMPLATE__DOCUMENTATION = "documentation__{deployment_target}"
-        TEMPLATE__VARIABLES = "variables__{deployment_target}"
-        TEMPLATE__LINKS = "links__{deployment_target}"
-        TEMPLATE__SHELL_SCRIPT_HOOKS = "shell_script_hooks__{deployment_target}"
-        TEMPLATE__VARIABLE_STATUS_HOOKS = "variable_status_hooks__{deployment_target}"
-
-        # NOTE: In the following definitions the type of the values will
-        # determine the expected value type.
-        EXPECTED_LINK_ITEM: LinkItemDict = {
-            "path_to_target": "string",
-            "path_to_symlink": "string",
-            "name": "string",
-        }
-
-        EXPECTED_SHELL_SCRIPT_HOOK_ITEM: ShellScriptHookItemDict = {
-            "path_to_script": "string",
-            "name": "string",
-            "priority": 0,
-        }
-
-        EXPECTED_VARIABLE_STATUS_HOOK_ITEM: VariableStatusHookItemDict = {
-            "path_to_script": "string",
-            "variable_name": "string",
-            "prepare_step_necessary": False,
-        }
-
     def parse_name(self) -> str:
-        return self._parse_string(key=self.Definition.KEY__NAME)
+        return self._parse_string(key=KEY__NAME, mandatory=False)
 
     def parse_version(self) -> str:
-        return self._parse_string(key=self.Definition.KEY__VERSION)
+        return self._parse_string(key=KEY__VERSION, mandatory=False)
 
     def parse_enabled(self, deployment_target: str) -> bool:
+        # TODO: update description.
         """
         A module can be enabled globally or for different deployment targets
         specifically.
@@ -99,11 +100,13 @@ class ConfigParser:
         target not specified in a module's enabled status definition, it is
         considered as a syntax error.
         """
-        key = self.Definition.KEY__ENABLED
+        key = KEY__ENABLED
         try:
             value = self.loader.get(key=key)
         except LoaderError as e:
-            raise ParserError(f"Mandatory section '{key}' is missing!") from e
+            # raise ParserError(f"Mandatory section '{key}' is missing!") from e
+            # TODO: this is a shortcut that needs to be resolved later on.
+            return True
 
         if isinstance(value, dict):
             if not deployment_target:
@@ -133,14 +136,10 @@ class ConfigParser:
         return value
 
     def parse_documentation(self, deployment_target: str) -> List[str]:
-        docs = self._parse_string(
-            key=self.Definition.KEY__DOCUMENTATION, mandatory=False
-        ).splitlines()
+        docs = self._parse_string(key=KEY__DOCUMENTATION, mandatory=False).splitlines()
 
         if deployment_target:
-            key = self.Definition.TEMPLATE__DOCUMENTATION.format(
-                deployment_target=deployment_target
-            )
+            key = TEMPLATE__DOCUMENTATION.format(deployment_target=deployment_target)
             targeted_docs = self._parse_string(key=key, mandatory=False).splitlines()
             if targeted_docs:
                 # Adding an extra empty line if there are already documentation lines.
@@ -163,10 +162,8 @@ class ConfigParser:
             )
             for key in deployment_target_variables.keys():
                 if key in variables:
-                    deployment_target_variables_section = (
-                        self.Definition.TEMPLATE__VARIABLES.format(
-                            deployment_target=deployment_target
-                        )
+                    deployment_target_variables_section = TEMPLATE__VARIABLES.format(
+                        deployment_target=deployment_target
                     )
                     raise ParserError(
                         "Deployment target specific variable section "
@@ -179,7 +176,7 @@ class ConfigParser:
 
     def _load_global_variables(self) -> Any:
         try:
-            return self.loader.get(key=self.Definition.KEY__VARIABLES)
+            return self.loader.get(key=KEY__VARIABLES)
         except LoaderError:
             # Variables are optional, a missing key would result an empty
             # dictionary.
@@ -187,9 +184,7 @@ class ConfigParser:
 
     def _load_deployment_target_variables(self, deployment_target: str) -> Any:
         try:
-            key = self.Definition.TEMPLATE__VARIABLES.format(
-                deployment_target=deployment_target
-            )
+            key = TEMPLATE__VARIABLES.format(deployment_target=deployment_target)
             return self.loader.get(key=key)
         except LoaderError:
             # Variables are optional, a missing key would result an empty
@@ -201,13 +196,13 @@ class ConfigParser:
         if not variables_is_a_dict:
             raise ParserError(
                 "The '{}' section should have the following syntax: 'VARIABLE_NAME' = ['var_1', 'var_2', ..] !".format(
-                    self.Definition.KEY__VARIABLES
+                    KEY__VARIABLES
                 )
             )
 
         validated_variables = {}
         error_message = "The '{}' section should contain a single string or a list of strings for a variable name!".format(
-            self.Definition.KEY__VARIABLES
+            KEY__VARIABLES
         )
         for key, value in variables.items():
             if isinstance(value, str):
@@ -230,25 +225,21 @@ class ConfigParser:
 
     def parse_links(self, deployment_target: str) -> List[LinkItemDict]:
         links = self._parse_item_list(
-            key=self.Definition.KEY__LINKS,
-            expected_item=self.Definition.EXPECTED_LINK_ITEM,
+            key=KEY__LINKS,
+            expected_item=EXPECTED_LINK_ITEM,
         )
 
         if deployment_target:
-            key = self.Definition.TEMPLATE__LINKS.format(
-                deployment_target=deployment_target
-            )
+            key = TEMPLATE__LINKS.format(deployment_target=deployment_target)
             deployment_target_links = self._parse_item_list(
                 key=key,
-                expected_item=self.Definition.EXPECTED_LINK_ITEM,
+                expected_item=EXPECTED_LINK_ITEM,
             )
 
             for deployment_target_link in deployment_target_links:
                 if deployment_target_link in links:
-                    deployment_target_link_section = (
-                        self.Definition.TEMPLATE__LINKS.format(
-                            deployment_target=deployment_target
-                        )
+                    deployment_target_link_section = TEMPLATE__LINKS.format(
+                        deployment_target=deployment_target
                     )
                     raise ParserError(
                         "Deployment target specific link section "
@@ -264,23 +255,23 @@ class ConfigParser:
         self, deployment_target: str
     ) -> List[ShellScriptHookItemDict]:
         hooks = self._parse_item_list(
-            key=self.Definition.KEY__SHELL_SCRIPT_HOOKS,
-            expected_item=self.Definition.EXPECTED_SHELL_SCRIPT_HOOK_ITEM,
+            key=KEY__SHELL_SCRIPT_HOOKS,
+            expected_item=EXPECTED_SHELL_SCRIPT_HOOK_ITEM,
         )
 
         if deployment_target:
-            key = self.Definition.TEMPLATE__SHELL_SCRIPT_HOOKS.format(
+            key = TEMPLATE__SHELL_SCRIPT_HOOKS.format(
                 deployment_target=deployment_target
             )
             deployment_target_hooks = self._parse_item_list(
                 key=key,
-                expected_item=self.Definition.EXPECTED_SHELL_SCRIPT_HOOK_ITEM,
+                expected_item=EXPECTED_SHELL_SCRIPT_HOOK_ITEM,
             )
 
             for deployment_target_hook in deployment_target_hooks:
                 if deployment_target_hook in hooks:
                     deployment_target_hook_section = (
-                        self.Definition.TEMPLATE__SHELL_SCRIPT_HOOKS.format(
+                        TEMPLATE__SHELL_SCRIPT_HOOKS.format(
                             deployment_target=deployment_target
                         )
                     )
@@ -298,23 +289,23 @@ class ConfigParser:
         self, deployment_target: str
     ) -> List[VariableStatusHookItemDict]:
         hooks = self._parse_item_list(
-            key=self.Definition.KEY__VARIABLE_STATUS_HOOKS,
-            expected_item=self.Definition.EXPECTED_VARIABLE_STATUS_HOOK_ITEM,
+            key=KEY__VARIABLE_STATUS_HOOKS,
+            expected_item=EXPECTED_VARIABLE_STATUS_HOOK_ITEM,
         )
 
         if deployment_target:
-            key = self.Definition.TEMPLATE__VARIABLE_STATUS_HOOKS.format(
+            key = TEMPLATE__VARIABLE_STATUS_HOOKS.format(
                 deployment_target=deployment_target
             )
             deployment_target_hooks = self._parse_item_list(
                 key=key,
-                expected_item=self.Definition.EXPECTED_VARIABLE_STATUS_HOOK_ITEM,
+                expected_item=EXPECTED_VARIABLE_STATUS_HOOK_ITEM,
             )
 
             for deployment_target_hook in deployment_target_hooks:
                 if deployment_target_hook in hooks:
                     deployment_target_hook_section = (
-                        self.Definition.TEMPLATE__VARIABLE_STATUS_HOOKS.format(
+                        TEMPLATE__VARIABLE_STATUS_HOOKS.format(
                             deployment_target=deployment_target
                         )
                     )
@@ -329,6 +320,8 @@ class ConfigParser:
         return hooks
 
     def _parse_string(self, key: str, mandatory: bool = True) -> str:
+        # TODO: there whould be any mandatory field, so the mandatory flag will
+        # be unnecessary.. Remove it!
         try:
             value = self.loader.get(key=key)
         except LoaderError as e:

@@ -79,7 +79,7 @@ class HookExecutionContextMixin:
             module_root=str(module.root),
             dm_cache_root=str(settings.dm_cache_root),
             dm_cache_variables=str(settings.dm_cache_variables),
-            indent=str(settings.indent),
+            indent=str(settings.rendered_indent),
             text_wrap_limit=str(settings.text_wrap_limit),
         )
 
