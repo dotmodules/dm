@@ -1,7 +1,7 @@
 Feature: Module enabled flag
 
   As a user of the dotmodules system,
-  I want to flag modules disabled,
+  I want to flag modules as disabled,
   So that I can specify what modules to be loaded.
 
   Modules are enabled by default, disabling them should be explicit.

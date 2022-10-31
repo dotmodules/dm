@@ -1,15 +1,15 @@
 Feature: Module links
 
   As a user of the dotmodules system,
-  I want create symbolic links for files located in the individual module directories,
+  I want create symbolic links for files located in the module directories,
   So that I can add configuration or scripts into external places,
-  While keeping the configuration module isolated.
+  While keeping the all configuration files isolated.
 
   Background:
     Given I have the main modules directory at "./modules"
     And I set the dotmodules config file name as "dm.toml"
 
-  Scenario: Missing link definitions should be tolereated
+  Scenario: Link definitions are not mandatory
     Given I added an empty config file to "./module_1"
     When I run the dotmodules system
     Then there should be "1" loaded module

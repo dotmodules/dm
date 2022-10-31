@@ -1,10 +1,14 @@
+from abc import ABC, abstractmethod, abstractproperty
 from functools import partial
 from pathlib import Path
-from typing import Optional
 
 from pytest_bdd import parsers
 
 from dotmodules.modules.modules import Modules
+
+# ============================================================================
+#  EXECUTION CONTEXT HANDLING
+# ============================================================================
 
 EXTRA_TYPES = {
     "P": Path,
@@ -14,37 +18,61 @@ EXTRA_TYPES = {
 
 p = partial(parsers.cfparse, extra_types=EXTRA_TYPES)
 
+# ============================================================================
+#  SCENARIO BUILDING ERROR
+# ============================================================================
+
 
 class ScenarioError(Exception):
     """Exception raised on invalid scenario definitions."""
 
 
-class ExecutionContext:
-    def __init__(
-        self, modules: Optional[Modules] = None, exception: Optional[Exception] = None
-    ) -> None:
-        if modules is None and exception is None:
-            raise ValueError(
-                "You have to instantiate the ExecutionConext with a modules object or "
-                "an exception. You cannot omit both!"
-            )
+# ============================================================================
+#  EXECUTION CONTEXT HANDLING
+# ============================================================================
 
-        # Explicit type narrowings becasue of mypy cannot understand exception raising.
-        if modules is not None:
-            self._modules = modules
-        else:
-            self._modules = None
 
-        if exception is not None:
-            self._exception = exception
-        else:
-            self._exception = None
+class ExecutionContext(ABC):
+    @abstractproperty
+    def succeeded(self) -> bool:
+        """Returns if the execution was successful or not"""
+
+    @abstractproperty
+    def modules(self) -> Modules:
+        """It should return the executed module obejct or raise the captured error."""
+
+    @abstractmethod
+    def match_error_message(self, error_message: str) -> None:
+        """It should match an error message if the executoin failed"""
+
+
+class SucceededContext(ExecutionContext):
+    def __init__(self, modules: Modules) -> None:
+        self._modules = modules
+
+    @property
+    def succeeded(self) -> bool:
+        return True
 
     @property
     def modules(self) -> Modules:
-        if self._exception:
-            raise self._exception
         return self._modules
+
+    def match_error_message(self, error_message: str) -> None:
+        raise ScenarioError("SucceededContext cannot match error message")
+
+
+class FailedContext(ExecutionContext):
+    def __init__(self, exception: Exception) -> None:
+        self._exception = exception
+
+    @property
+    def succeeded(self) -> bool:
+        return False
+
+    @property
+    def modules(self) -> Modules:
+        raise self._exception
 
     def match_error_message(self, error_message: str) -> None:
         assert self._exception is not None

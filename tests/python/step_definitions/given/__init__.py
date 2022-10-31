@@ -6,6 +6,4 @@
 #   We have to use star import here unfortunately..
 # F401 '.module_level.*' imported but unused
 #   pytest will make the loaded objects available globally
-from .given import *  # noqa: F401, F403
-from .then import *  # noqa: F401, F403
-from .when import *  # noqa: F401, F403
+from .setup import *  # noqa: F401, F403

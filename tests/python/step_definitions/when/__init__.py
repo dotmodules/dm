@@ -1,4 +1,4 @@
-# NOTE: For more details about the asterisc imports check out the comment in the
+# NOTE: For more details about the star imports check out the comment in the
 # top level conftest.py file.
 
 # Ignoring flake8 errors:
@@ -6,6 +6,4 @@
 #   We have to use star import here unfortunately..
 # F401 '.module_level.*' imported but unused
 #   pytest will make the loaded objects available globally
-from .files_and_directories import *  # noqa: F401, F403
-from .modules_handling import *  # noqa: F401, F403
-from .settings_setup import *  # noqa: F401, F403
+from .execution import *  # noqa: F401, F403

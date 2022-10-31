@@ -8,7 +8,7 @@ Feature: Module enabled flag
     Given I have the main modules directory at "./modules"
     And I set the dotmodules config file name as "dm.toml"
 
-  Scenario: Missing documentation should be tolerated
+  Scenario: Documentation is not mandatory
     Given I added an empty config file to "./module_1"
     When I run the dotmodules system
     Then there should be "1" loaded module

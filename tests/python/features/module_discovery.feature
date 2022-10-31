@@ -11,7 +11,7 @@ Feature: Module discovery
     Given I have the main modules directory at "./modules"
     And I set the dotmodules config file name as "dm.toml"
 
-  Scenario: No modules should be tolerated
+  Scenario: Zero modules should be tolerated
     When I run the dotmodules system
     Then there should be no modules loaded
     And there should be no module level errors

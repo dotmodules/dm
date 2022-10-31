@@ -85,7 +85,6 @@ fix: virtualenv_activated
 test_python: virtualenv_activated
 	@python -m pytest -c pytest.ini \
 		--cov=dotmodules/ \
-		--cov=tests/python \
 		tests/python \
 		dotmodules
 
