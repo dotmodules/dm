@@ -83,7 +83,7 @@ fix: virtualenv_activated
 
 .PHONY: test_python
 test_python: virtualenv_activated
-	@python -m pytest -c pytest.ini \
+	@python -m pytest -s -v --tb=short -c pytest.ini \
 		--cov=dotmodules/ \
 		tests/python \
 		dotmodules

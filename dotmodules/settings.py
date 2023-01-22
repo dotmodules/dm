@@ -7,9 +7,11 @@ from typing import Optional
 class Settings:
     """
     Transfer only dataclass that does not perform any checking on the passed
-    values. The validation is performed by the argparse module. All fields set
+    values. The validation should be performed by the caller process. All fields set
     to be assignable after the initialization.
     """
+
+    default_deployment_target = "default"
 
     # The relative modules path has to be set explicitly.
     raw_relative_modules_path: Optional[Path] = None

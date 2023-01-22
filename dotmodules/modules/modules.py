@@ -6,28 +6,18 @@ from enum import Enum
 from pathlib import Path
 from typing import Iterator, List, Sequence, Union
 
-from dotmodules.modules.hooks import (
-    Hook,
-    LinkCleanUpHook,
-    LinkDeploymentHook,
-    ShellScriptHook,
-    VariableStatusHook,
-)
+from dotmodules.modules.hooks import (Hook, LinkCleanUpHook,
+                                      LinkDeploymentHook, ShellScriptHook,
+                                      VariableStatusHook)
 from dotmodules.modules.links import LinkItem
 from dotmodules.modules.loader import ConfigLoader, LoaderError
-from dotmodules.modules.parser import (
-    ConfigParser,
-    LinkItemDict,
-    ParserError,
-    ShellScriptHookItemDict,
-    VariableStatusHookItemDict,
-)
+from dotmodules.modules.parser import (ConfigParser, LinkItemDict, ParserError,
+                                       ShellScriptHookItemDict,
+                                       VariableStatusHookItemDict)
 from dotmodules.modules.path import PathManager
-from dotmodules.modules.types import (
-    AggregatedHooksType,
-    AggregatedVariableStatusHooksType,
-    AggregatedVariablesType,
-)
+from dotmodules.modules.types import (AggregatedHooksType,
+                                      AggregatedVariableStatusHooksType,
+                                      AggregatedVariablesType)
 from dotmodules.modules.variable_status import VariableStatusManager
 from dotmodules.settings import Settings
 
@@ -72,36 +62,40 @@ class Module:
             loader = ConfigLoader.get_loader_for_config_file(config_file_path=path)
             parser = ConfigParser(loader=loader)
 
+            # Parse metadata
             name = parser.parse_name()
             version = parser.parse_version()
             enabled = parser.parse_enabled(deployment_target=deployment_target)
             documentation = parser.parse_documentation(
                 deployment_target=deployment_target
             )
+
+            # Parse variables
             variables = parser.parse_variables(deployment_target=deployment_target)
+
+            # Parse links
             link_items = parser.parse_links(deployment_target=deployment_target)
+            links = cls._create_links(link_items=link_items)
+
+            # Parse shell script hooks
             shell_script_hook_items = parser.parse_shell_script_hooks(
                 deployment_target=deployment_target
             )
-
-            links = cls._create_links(link_items=link_items)
-            shell_script_hooks = cls._create_shell_script_hooks(
+            hooks = cls._create_shell_script_hooks(
                 shell_script_hook_items=shell_script_hook_items
             )
-            hooks = shell_script_hooks
+            cls._validate_hooks(hooks=hooks)
 
+            if links:
+                hooks += cls._create_default_link_hooks(links=links)
+
+            # Parse variable status hooks
             variable_status_hook_items = parser.parse_variable_status_hooks(
                 deployment_target=deployment_target
             )
             variable_status_hooks = cls._create_variable_status_hooks(
                 variable_status_hook_items=variable_status_hook_items
             )
-
-            cls._validate_hooks(hooks=hooks)
-
-            if links:
-                hooks += cls._create_default_link_hooks(links=links)
-
         except LoaderError as e:
             raise ModuleError(f"Configuration loading error: {e}") from e
         except ParserError as e:
@@ -250,6 +244,11 @@ class Module:
         for hook in self.hooks:
             errors += hook.report_errors(path_manager=path_manager)
         return errors
+
+    @property
+    def warnings(self) -> List[str]:
+        # TODO: implement this feature
+        return []
 
 
 class Modules:

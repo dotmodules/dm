@@ -1,0 +1,8 @@
+{
+  "exclude": [
+    "dependencies",
+    "toml"
+  ],
+  "venvPath": "/Users/tibor/.virtualenvs/",
+  "venv": "dotmodules"
+}

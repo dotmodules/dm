@@ -36,14 +36,17 @@ class ExecutionContext(ABC):
     @abstractproperty
     def succeeded(self) -> bool:
         """Returns if the execution was successful or not"""
+        ...
 
     @abstractproperty
     def modules(self) -> Modules:
-        """It should return the executed module obejct or raise the captured error."""
+        """It should return the executed module object or raise the captured error."""
+        ...
 
     @abstractmethod
-    def match_error_message(self, error_message: str) -> None:
+    def match_global_error_message(self, error_message: str) -> None:
         """It should match an error message if the executoin failed"""
+        ...
 
 
 class SucceededContext(ExecutionContext):
@@ -58,8 +61,10 @@ class SucceededContext(ExecutionContext):
     def modules(self) -> Modules:
         return self._modules
 
-    def match_error_message(self, error_message: str) -> None:
-        raise ScenarioError("SucceededContext cannot match error message")
+    def match_global_error_message(self, error_message: str) -> None:
+        raise ScenarioError(
+            f"SucceededContext cannot match error message '{error_message}'"
+        )
 
 
 class FailedContext(ExecutionContext):
@@ -74,6 +79,6 @@ class FailedContext(ExecutionContext):
     def modules(self) -> Modules:
         raise self._exception
 
-    def match_error_message(self, error_message: str) -> None:
+    def match_global_error_message(self, error_message: str) -> None:
         assert self._exception is not None
         assert error_message in str(self._exception)

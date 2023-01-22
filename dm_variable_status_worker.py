@@ -4,7 +4,7 @@ from pathlib import Path
 from dotmodules.modules.variable_status import VariableStatusRefreshTask
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--transfer-file-path", type=Path, required=True)
     parsed_args = parser.parse_args()

@@ -194,7 +194,7 @@ status__bandit=$((status__bandit_module + status__bandit_tests))
 # CHECK - MYPY
 #==============================================================================
 
-if output__mypy="$(MYPY_FORCE_COLOR=1 mypy dotmodules tests dm.py 2>&1)"
+if output__mypy="$(MYPY_FORCE_COLOR=1 mypy --strict dotmodules tests dm.py 2>&1)"
 then
   status__mypy=0
 else
